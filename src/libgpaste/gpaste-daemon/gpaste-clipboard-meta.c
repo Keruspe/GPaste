@@ -343,10 +343,14 @@ g_paste_clipboard_meta_serialize (GdkContentSerializer *serializer)
     }
     else
     {
-        g_auto (GStrv) uris = g_paste_clipboard_file_list_get_uris (g_value_get_boxed (value));
+        /* An empty list is a NULL boxed, which GTK's own serializer writes
+         * nothing for: registered for every caller in the process, this one
+         * may be handed one GPaste never makes. */
+        GdkFileList *files = g_value_get_boxed (value);
+        g_auto (GStrv) uris = (files) ? g_paste_clipboard_file_list_get_uris (files) : NULL;
         g_autoptr (GString) list = g_string_new (NULL);
 
-        for (GStrv uri = uris; *uri; ++uri)
+        for (GStrv uri = uris; uri && *uri; ++uri)
             g_string_append_printf (list, "%s\r\n", *uri);
         bytes = g_string_free_to_bytes (g_steal_pointer (&list));
     }
@@ -655,8 +659,12 @@ g_paste_clipboard_meta_source_add (GPasteClipboardMetaSource *self,
                                    const gchar               *mimetype,
                                    GBytes                    *bytes)
 {
-    /* Keep the first representation registered for a given mimetype. */
-    if (g_hash_table_contains (self->contents, mimetype))
+    /* Keep the first representation registered for a given mimetype, the
+     * typed payload's among them: a host that initialised GTK has GDK serialise
+     * a file list to its text form too, which would otherwise be advertised
+     * twice. */
+    if (g_hash_table_contains (self->contents, mimetype) ||
+        g_hash_table_contains (self->serialize_mimetypes, mimetype))
         return;
 
     self->mimetypes = g_list_append (self->mimetypes, g_strdup (mimetype));
@@ -926,6 +934,26 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_value_init (&value, GDK_TYPE_FILE_LIST);
         g_value_set_boxed (&value, file_list);
         g_paste_clipboard_meta_source_add_value (source, &value);
+
+        /* Plus the text form GTK serialises a file list to, which the GDK
+         * backend offers through it: each file's path, or its uri for one with
+         * none, a line each -- what a terminal or a text field pastes. */
+        g_autoptr (GString) paths = g_string_new (NULL);
+        g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+
+        for (const GSList *f = files; f; f = f->next)
+        {
+            g_autofree gchar *path = g_file_get_path (f->data);
+            g_autofree gchar *uri = (path) ? NULL : g_file_get_uri (f->data);
+
+            if (paths->len)
+                g_string_append_c (paths, '\n');
+            g_string_append (paths, (path) ? path : uri);
+        }
+
+        g_autoptr (GBytes) paths_bytes = g_string_free_to_bytes (g_steal_pointer (&paths));
+
+        g_paste_clipboard_meta_source_add (source, META_MIME_TEXT, paths_bytes);
         g_paste_clipboard_meta_source_add_special_values (source, item);
         g_paste_clipboard_meta_publish_source (self, source);
         return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;

@@ -579,6 +579,135 @@ publish_image (Fixture      *f,
     g_assert_cmpuint (assert_serves_image (f), ==, 0);
 }
 
+/* What the selection serves as @mime, read as another application would. */
+static GBytes *
+transfer (Fixture     *f,
+          const gchar *mime)
+{
+    Transfer transfer = { 0 };
+    g_autoptr (GOutputStream) stream = g_memory_output_stream_new_resizable ();
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    meta_selection_transfer_async (f->selection, META_SELECTION_CLIPBOARD, mime, -1, stream, NULL, on_transferred, &transfer);
+    while (!transfer.done && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+    g_assert_true (transfer.done);
+    g_assert_no_error (transfer.error);
+    g_output_stream_close (stream, NULL, NULL);
+
+    return g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (stream));
+}
+
+static void
+on_serialized (GObject      *source_object G_GNUC_UNUSED,
+               GAsyncResult *result,
+               gpointer      user_data)
+{
+    Transfer *transfer = user_data;
+
+    gdk_content_serialize_finish (result, &transfer->error);
+    transfer->done = TRUE;
+}
+
+/* The uri-list serializer GPaste registers for the whole of gnome-shell writes
+ * nothing for an empty file list, as GTK's own does, rather than read through
+ * the NULL it is. */
+static void
+serialize_empty_file_list (Fixture      *f G_GNUC_UNUSED,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_auto (GValue) value = G_VALUE_INIT;
+    g_autoptr (GOutputStream) stream = g_memory_output_stream_new_resizable ();
+    Transfer transfer = { 0 };
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    g_value_init (&value, GDK_TYPE_FILE_LIST);
+    gdk_content_serialize_async (stream, "text/uri-list", &value, G_PRIORITY_DEFAULT, NULL, on_serialized, &transfer);
+    while (!transfer.done && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+    g_assert_true (transfer.done);
+    g_assert_no_error (transfer.error);
+    g_output_stream_close (stream, NULL, NULL);
+    g_assert_cmpuint (g_memory_output_stream_get_data_size (G_MEMORY_OUTPUT_STREAM (stream)), ==, 0);
+}
+
+/* How many times @type offers @mime. */
+static guint
+offered_times (Fixture          *f,
+               MetaSelectionType type,
+               const gchar      *mime)
+{
+    GList *mimetypes = meta_selection_get_mimetypes (f->selection, type);
+    guint times = 0;
+
+    for (const GList *m = mimetypes; m; m = m->next)
+        times += g_str_equal (m->data, mime);
+    g_list_free_full (mimetypes, g_free);
+
+    return times;
+}
+
+/* The text form GTK's own serializer writes a file list as, which a host that
+ * initialised GTK has GDK know: each file's path, or its uri, a line each. */
+static void
+serialize_file_list_text (GdkContentSerializer *serializer)
+{
+    GdkFileList *file_list = g_value_get_boxed (gdk_content_serializer_get_value (serializer));
+    g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+    g_autoptr (GString) text = g_string_new (NULL);
+
+    for (const GSList *file = files; file; file = file->next)
+    {
+        g_autofree gchar *path = g_file_get_path (file->data);
+        g_autofree gchar *uri = (path) ? NULL : g_file_get_uri (file->data);
+
+        if (text->len)
+            g_string_append_c (text, '\n');
+        g_string_append (text, (path) ? path : uri);
+    }
+
+    g_output_stream_write_all (gdk_content_serializer_get_output_stream (serializer), text->str, text->len, NULL, NULL, NULL);
+    gdk_content_serializer_return_success (serializer);
+}
+
+/* A file list put back on the clipboard pastes as text too, as the GDK
+ * backend's does: each file's path, a line each, beside the uri list -- offered
+ * once, in a host whose GDK serialises a file list to that text itself as much
+ * as in gnome-shell, where it knows no text form for one. The first is run in
+ * a process of its own, the serializer it registers staying registered. */
+static void
+publish_uris (Fixture      *f,
+              gconstpointer user_data G_GNUC_UNUSED)
+{
+    if (g_test_subprocess ())
+        gdk_content_register_serializer (GDK_TYPE_FILE_LIST, "text/plain;charset=utf-8", serialize_file_list_text, NULL, NULL);
+
+    g_autoptr (GPasteItem) item = g_paste_uris_item_new_from_str ("file:///tmp/a%20b\nfile:///tmp/c");
+
+    g_assert_nonnull (item);
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, item, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+    g_assert_cmpuint (offered_times (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"), ==, 1);
+
+    g_autoptr (GBytes) text = transfer (f, "text/plain;charset=utf-8");
+    g_autoptr (GBytes) expected = g_bytes_new_static ("/tmp/a b\n/tmp/c", strlen ("/tmp/a b\n/tmp/c"));
+    g_autoptr (GBytes) uris = transfer (f, "text/uri-list");
+
+    g_assert_true (g_bytes_equal (text, expected));
+    g_assert_cmpuint (g_bytes_get_size (uris), >, 0);
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+    }
+}
+
 /* gnome-shell disposes a daemon it lets go of, and its clipboards with it, but
  * mutter still holds the source they published until something else is
  * copied: that source serves what it was given on its own. */
@@ -668,7 +797,9 @@ main (int argc, char *argv[])
     g_test_add ("/meta/publish/image", Fixture, NULL, fixture_setup, publish_image, fixture_teardown);
     g_test_add ("/meta/publish/outlives-clipboard", Fixture, NULL, fixture_setup, publish_outlives_clipboard, fixture_teardown);
     g_test_add ("/meta/publish/let-go", Fixture, NULL, fixture_setup, publish_let_go, fixture_teardown);
+    g_test_add ("/meta/publish/uris", Fixture, NULL, fixture_setup, publish_uris, fixture_teardown);
     g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
+    g_test_add ("/meta/serialize/empty-file-list", Fixture, NULL, fixture_setup, serialize_empty_file_list, fixture_teardown);
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
     g_test_add ("/meta/read/secret-bounded", Fixture, NULL, fixture_setup, secret_bounded, fixture_teardown);
