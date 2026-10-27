@@ -55,6 +55,8 @@ passphrase_reply_free (gpointer data)
     g_free (reply);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PassphraseReply, passphrase_reply_free)
+
 /* And what a migration prompt came back with. */
 typedef struct
 {
@@ -357,7 +359,7 @@ g_paste_prompt_request_reply_passphrase (GPastePromptRequest  *self,
         return;
     }
 
-    PassphraseReply *reply = g_new0 (PassphraseReply, 1);
+    g_autoptr (PassphraseReply) reply = g_new0 (PassphraseReply, 1);
 
     /* Into secure memory the moment it crosses out of the backend: the entry
      * widget's own buffer is ordinary heap and beyond our reach, but everything
@@ -365,7 +367,7 @@ g_paste_prompt_request_reply_passphrase (GPastePromptRequest  *self,
     reply->passphrase = g_paste_passphrase_new (passphrase);
     reply->remember = remember;
 
-    g_task_return_pointer (task, reply, passphrase_reply_free);
+    g_task_return_pointer (task, g_steal_pointer (&reply), passphrase_reply_free);
 }
 
 /**
@@ -568,7 +570,7 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
      * the tag is what keeps a migration result from being read as a passphrase. */
     g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_prompt_passphrase_async, NULL);
 
-    PassphraseReply *reply = g_task_propagate_pointer (G_TASK (result), error);
+    g_autoptr (PassphraseReply) reply = g_task_propagate_pointer (G_TASK (result), error);
 
     if (!reply)
         return NULL;
@@ -576,11 +578,7 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
     if (remember)
         *remember = reply->remember;
 
-    GPastePassphrase *passphrase = g_steal_pointer (&reply->passphrase);
-
-    g_free (reply);
-
-    return passphrase;
+    return g_steal_pointer (&reply->passphrase);
 }
 
 /**

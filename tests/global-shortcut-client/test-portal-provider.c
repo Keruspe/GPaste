@@ -194,8 +194,7 @@ method_reply (Request *request)
 static void
 respond (Request *request, guint response)
 {
-    g_auto (GVariantBuilder) results;
-    g_variant_builder_init (&results, G_VARIANT_TYPE_VARDICT);
+    g_auto (GVariantBuilder) results = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     if (request->registration && !response)
         g_variant_builder_add (&results, "{sv}", "session_handle", g_variant_new_string (request->session));
     g_autoptr (GError) error = NULL;
@@ -1034,8 +1033,7 @@ invalid_session_handle (Fixture *f, gconstpointer user_data)
     Request *session = grab (f, shortcuts);
     method_reply (session);
     barrier (f);
-    g_auto (GVariantBuilder) results;
-    g_variant_builder_init (&results, G_VARIANT_TYPE_VARDICT);
+    g_auto (GVariantBuilder) results = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     if (mode != 0)
     {
         GVariant *handle = mode == 1 ? g_variant_new_uint32 (42) :
@@ -1185,8 +1183,7 @@ partial_bind (Fixture *f, gconstpointer user_data)
     Request *bind = bind_session (f, session, FALSE);
     method_reply (bind);
     barrier (f);
-    g_auto (GVariantBuilder) bound;
-    g_variant_builder_init (&bound, G_VARIANT_TYPE ("a(sa{sv})"));
+    g_auto (GVariantBuilder) bound = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("a(sa{sv})"));
     if (GPOINTER_TO_UINT (user_data))
         g_variant_builder_add (&bound, "(sa{sv})", "first", NULL);
     g_autoptr (GVariant) results = g_variant_ref_sink (

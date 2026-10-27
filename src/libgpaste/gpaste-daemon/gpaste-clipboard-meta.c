@@ -498,16 +498,21 @@ struct _GPasteClipboardMetaSource
 
 G_DEFINE_FINAL_TYPE (GPasteClipboardMetaSource, g_paste_clipboard_meta_source, META_TYPE_SELECTION_SOURCE)
 
+/* A #GCopyFunc takes a user_data g_strdup () does not: cast to one, g_strdup ()
+ * would be called through a type it does not have. */
+static gpointer
+g_paste_clipboard_meta_source_copy_mimetype (gconstpointer mimetype,
+                                             gpointer      user_data G_GNUC_UNUSED)
+{
+    return g_strdup (mimetype);
+}
+
 static GList *
 g_paste_clipboard_meta_source_get_mimetypes (MetaSelectionSource *source)
 {
-    const GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
-    GList *ret = NULL;
+    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
 
-    for (const GList *m = self->mimetypes; m; m = m->next)
-        ret = g_list_prepend (ret, g_strdup (m->data));
-
-    return g_list_reverse (ret);
+    return g_list_copy_deep (self->mimetypes, g_paste_clipboard_meta_source_copy_mimetype, NULL);
 }
 
 typedef struct
@@ -548,7 +553,7 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
                                           GAsyncReadyCallback  callback,
                                           gpointer             user_data)
 {
-    const GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
+    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
     GTask *task = g_task_new (source, cancellable, callback, user_data);
 
     g_task_set_source_tag (task, g_paste_clipboard_meta_source_read_async);

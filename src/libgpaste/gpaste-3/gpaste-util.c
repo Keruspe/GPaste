@@ -32,10 +32,8 @@
 static GVariant *
 app_get_platform_data (void)
 {
-    g_auto (GVariantBuilder) builder;
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     const gchar *startup_id;
-
-    g_variant_builder_init_static (&builder, G_VARIANT_TYPE_VARDICT);
 
     if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
         g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
@@ -160,9 +158,7 @@ static GVariant *
 activate_ui_params (const gchar *action,
                     GVariant    *arg)
 {
-    g_auto (GVariantBuilder) params;
-
-    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
+    g_auto (GVariantBuilder) params = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("av"));
 
     if (arg)
         g_variant_builder_add (&params, "v", arg);
