@@ -51,6 +51,15 @@ vm.runInContext(`${source}\nthis.helpers = {logFailure, debugFailure, replaceCan
 
 const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = context.helpers;
 
+// As runSuite () in suite.cjs does.
+let finished = false;
+process.on('exit', () => {
+    if (!finished) {
+        console.error('Dependencies: the suite stopped on a promise that never settled');
+        process.exitCode = 1;
+    }
+});
+
 (async () => {
     // A call failing as its daemon left is told from one failing otherwise, and
     // one failing with no GLib.Error at all is that second kind, not a
@@ -101,4 +110,4 @@ const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = c
     await assert.rejects(awaitReply(live, Promise.reject(new TypeError('broken'))), TypeError);
 
     console.log('Dependencies: failure levels, replaced requests and their replies passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+})().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { finished = true; });

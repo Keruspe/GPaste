@@ -215,8 +215,7 @@ test_clipboard_dispose (GObject *object)
     G_OBJECT_CLASS (test_clipboard_parent_class)->dispose (object);
 }
 
-/* The cached value is a plain allocation, and a disposed provider still answers
- * get_text () for it, as the GDK backend does. */
+/* As in gpaste-test-clipboard-provider.c. */
 static void
 test_clipboard_finalize (GObject *object)
 {

@@ -268,7 +268,7 @@ multi_source_new (const gchar * const *mimetypes,
 
 /* That copy, as the selection's owner. */
 static void
-offer_formats (Fixture            *f,
+offer_formats (Fixture             *f,
                const gchar * const *mimetypes,
                GBytes             **contents)
 {

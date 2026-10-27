@@ -13,6 +13,8 @@ let focus = null;
 const notified = [];
 const copied = [];
 const errors = [];
+// What GJS hands a failed call, unlike a JS Error a programming error throws.
+class GLibError extends Error {}
 const weakRefs = [];
 const timers = [];
 const removedSources = [];
@@ -88,7 +90,6 @@ const context = vm.createContext({
     GPasteDummyHistoryItem: Actor,
     GPasteSearchItem: Actor,
     GPaste: {
-        Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -106,7 +107,8 @@ const context = vm.createContext({
         return [!cancellable.is_cancelled(), reply];
     },
     debugFailure() {},
-    daemonGone: e => !!e.gone,
+    // As the real one: only a GLib.Error tells of a daemon gone.
+    daemonGone: e => e instanceof GLibError && !!e.gone,
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }, is_cancelled() { return !!this.cancelled; }};
@@ -313,6 +315,24 @@ runSuite('Indicator', async () => {
     // Folded with the focus in them, which goes back to the row.
     assert.equal(focus, third);
 
+    // Opened, they are brought into the history's view; one of them taken --
+    // an upload, the rich text removed -- or the menu closing folds them.
+    shownActors.length = 0;
+    actions._toggleItemActions(third, 'c', false);
+    assert.deepEqual(shownActors, [actions._itemActions]);
+    actions._client.upload_and_copy = () => {};
+    actions._upload('c');
+    assert.equal(actions._itemActions.visible, false);
+    actions._toggleItemActions(third, 'c', false);
+    actions._client.strip_rich_text = () => {};
+    actions._stripRichText('c');
+    assert.equal(actions._itemActions.visible, false);
+    actions._toggleItemActions(third, 'c', false);
+    actions._updateIndexVisibility = () => {};
+    actions._historySwitcher.collapse = () => {};
+    actions._onOpenStateChanged(actions.menu, false);
+    assert.equal(actions._itemActions.visible, false);
+
     // A refresh rebinding only the rows after theirs leaves them be...
     actions._toggleItemActions(second, 'b', false);
     actions._available = 4;
@@ -451,10 +471,30 @@ runSuite('Indicator', async () => {
     assert.equal(overtypedRebuilt, 0);
     assert.equal(overtyped._history.length, 2);
 
+    // A reload whose size read is out when the daemon goes is given up with it:
+    // the answer of the daemon gone does not rebuild the rows the next one is
+    // to fill.
+    const departed = withActions(['a', 'b']);
+    let departedRebuilt = 0;
+    let answerDeparted = null;
+
+    departed._searchItem = {text: '', favourites: false};
+    departed._hasSearch = () => false;
+    departed._daemonReady = () => true;
+    delete departed._fetchAvailable;
+    departed._client.get_history_size = () => new Promise(resolve => { answerDeparted = resolve; });
+    departed._rebuild = () => ++departedRebuilt;
+    departed._passFailed = () => {};
+    const departing = departed._reload();
+    departed._onDaemonGone();
+    answerDeparted(2);
+    await departing;
+    assert.equal(departedRebuilt, 0);
+
     // A call failing because its daemon left logs nothing, the presence saying
     // so next; any other failure is logged.
     const leaving = withActions([]);
-    let failure = Object.assign(new Error('gone'), {gone: true});
+    let failure = Object.assign(new GLibError('gone'), {gone: true});
 
     leaving._client.get_history_size = () => Promise.reject(failure);
     leaving._client.search_text = () => Promise.reject(failure);
@@ -676,13 +716,18 @@ runSuite('Indicator', async () => {
     // still finishes the D-Bus reply without reaching for that indicator.
     notified.length = 0;
     let lateUpload;
+    let lateFinished = 0;
     const collected = withActions(['a']);
     collected._client.upload_and_copy = (uuid, cancellable, callback) => { lateUpload = callback; };
-    collected._client.upload_and_copy_finish = () => 'https://paste.rs/late';
+    collected._client.upload_and_copy_finish = () => {
+        lateFinished++;
+        return 'https://paste.rs/late';
+    };
     collected._upload('a');
     assert.equal(weakRefs.length > 0, true);
     weakRefs.at(-1).target = undefined;
     lateUpload(collected._client, null);
+    assert.equal(lateFinished, 1);
     assert.equal(notified.length, 0);
 
     // A done one is said too, without the address, which the daemon has kept

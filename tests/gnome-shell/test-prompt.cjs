@@ -9,13 +9,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {Signals} = require('./suite.cjs');
 
 const errors = [];
 const dialogs = [];
 
-// Signals as the shell's actors carry them, enough to emit one by hand.
-class Actor {
+class Actor extends Signals {
     constructor(params = {}) {
+        super();
         Object.assign(this, params);
         this.children = [];
         this.visible = true;
@@ -23,17 +24,6 @@ class Actor {
     }
 
     add_child(child) { this.children.push(child); }
-
-    connect(signal, handler) {
-        (this._handlers ??= []).push({signal, handler});
-    }
-
-    emit(signal) {
-        for (const {signal: name, handler} of this._handlers ?? []) {
-            if (name === signal)
-                handler(this);
-        }
-    }
 
     get_text() { return ''; }
 }
@@ -53,7 +43,12 @@ class ModalDialog extends Actor {
         dialogs.push(this);
     }
 
-    addButton(params) { return new Actor(params); }
+    addButton(params) {
+        const button = new Actor(params);
+
+        (this.buttons ??= []).push(button);
+        return button;
+    }
     setInitialKeyFocus() {}
     open() { this.opened = true; return true; }
     close() { this.emit('closed'); this.destroy(); }
@@ -182,6 +177,51 @@ assert.deepEqual(errors, ['GPaste: Title: Message']);
 assert.equal(sessionMode.handler, null);
 assert.equal(dialogs.length, 3);
 
+// Asked anything once shut down, unlocked or not -- the storage layer asking
+// again as a dismissal unblocks it -- it puts no dialog up: a question is
+// dismissed and a report goes to the log.
+for (const locked of [false, true]) {
+    sessionMode.update(locked);
+
+    const late = request();
+    const lateMigration = Object.assign(request(), {get_current: () => 0, get_offered: () => [0], can_keep: () => true});
+    const shownBefore = dialogs.length;
+
+    errors.length = 0;
+    prompt.vfunc_passphrase(late);
+    prompt.vfunc_migration(lateMigration);
+    prompt.vfunc_report('Late', 'Report');
+    assert.equal(dialogs.length, shownBefore);
+    assert.deepEqual(late.answers, ['dismissed']);
+    assert.deepEqual(lateMigration.answers, ['dismissed']);
+    assert.deepEqual(errors, ['GPaste: Late: Report']);
+}
+
+// Shut down with a dialog up, unlocked: it is closed, its request answered as
+// a closed dialog answers, and that answer asking again, as the storage layer
+// can, finds the prompt shut down already rather than putting a dialog up for
+// an extension gone.
+{
+    sessionMode.update(false);
+
+    const closing = new context.Prompt();
+    const upNow = request();
+    const askedAgain = Object.assign(request(), {get_current: () => 0, get_offered: () => [0], can_keep: () => true});
+
+    upNow.reply_passphrase = function (passphrase) {
+        this.answers.push(passphrase);
+        closing.vfunc_migration(askedAgain);
+    };
+    closing.vfunc_passphrase(upNow);
+
+    const shownBefore = dialogs.length;
+
+    closing.shutdown();
+    assert.deepEqual(upNow.answers, [null]);
+    assert.deepEqual(askedAgain.answers, ['dismissed']);
+    assert.equal(dialogs.length, shownBefore);
+}
+
 // The migration dialog names "Keep as is" only where it offers it: not for a
 // backend this build cannot open, which is on no list.
 const migrationPrompt = new context.Prompt();
@@ -204,6 +244,7 @@ for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], 
     const [migrationContent] = dialogs.at(-1).contentLayout.children;
 
     assert.equal(migrationContent.description, description);
+    assert.equal(dialogs.at(-1).buttons.some(button => button.label === 'MIGRATION_KEEP'), keep);
     dialogs.at(-1).close();
 }
 

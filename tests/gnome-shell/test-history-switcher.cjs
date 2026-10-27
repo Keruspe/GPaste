@@ -28,6 +28,8 @@ class Modal extends Actor {
 }
 let focus = null;
 const errors = [];
+// What GJS hands a failed call, unlike a JS Error a programming error throws.
+class GLibError extends Error {}
 const context = vm.createContext({
     console: {error: message => errors.push(message)},
     _: value => value,
@@ -41,7 +43,6 @@ const context = vm.createContext({
     Clutter: {}, St: {}, Ornament: {}, GPasteDeleteButton: Actor,
     GPaste: {
         DEFAULT_HISTORY: 'default',
-        Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -55,7 +56,8 @@ const context = vm.createContext({
             errors.push(e.message);
         }
     },
-    daemonGone: e => !!e.gone,
+    // As the real one: only a GLib.Error tells of a daemon gone.
+    daemonGone: e => e instanceof GLibError && !!e.gone,
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }};
@@ -321,7 +323,7 @@ process.on('exit', () => {
     const leaving = switcher();
 
     for (const gone of [true, false]) {
-        const failure = Object.assign(new Error('NoReply'), {gone});
+        const failure = Object.assign(new GLibError('NoReply'), {gone});
 
         leaving._client.list_histories = () => Promise.reject(failure);
         leaving._client.get_history_size = () => Promise.reject(failure);

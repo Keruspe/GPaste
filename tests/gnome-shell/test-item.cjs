@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {Signals} = require('./suite.cjs');
+const {Signals, runSuite} = require('./suite.cjs');
 
 const errors = [];
 const debugged = [];
@@ -110,7 +110,7 @@ async function filled(row, bus, uuid, value) {
     await new Promise(resolve => setImmediate(resolve));
 }
 
-(async () => {
+runSuite('Item', async () => {
     // Text past element-size is cut with an ellipsis, and a larger size shows
     // more of it again, without the item being read again; 0 shows all of it, up to what a row could show.
     {
@@ -235,7 +235,4 @@ async function filled(row, bus, uuid, value) {
     }
 
     console.log('Item: text bound, what the row acts on, the menu key and quiet failures passed');
-})().catch(e => {
-    console.log(e);
-    process.exit(1);
 });

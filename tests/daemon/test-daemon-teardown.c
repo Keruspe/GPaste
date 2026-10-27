@@ -762,6 +762,9 @@ test_upload_shortcut_ends_quietly (Fixture      *fixture,
     g_assert_null (daemon);
 }
 
+/* Long enough for a cancelled upload to have come back. */
+#define UPLOAD_CANCEL_MS 500
+
 /* A re-exec replaces the process, so the uploads out end before it, as cancelled;
  * the daemon gnome-shell hosts carries on through one, its uploads with it. */
 static void
@@ -785,8 +788,7 @@ upload_through_reexec (Fixture *fixture,
 
     if (in_process)
     {
-        /* Long enough for a cancelled upload to have come back. */
-        g_paste_test_bus_pump (500);
+        g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
         g_assert_null (result);
         g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
     }
@@ -851,8 +853,7 @@ test_reexecute_store_busy (Fixture      *fixture,
 
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
-    /* Long enough for a cancelled upload to have come back. */
-    g_paste_test_bus_pump (500);
+    g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
     g_assert_null (uploaded);
 
     storage_busy = FALSE;

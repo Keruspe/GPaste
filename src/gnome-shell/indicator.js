@@ -438,6 +438,10 @@ class GPasteIndicator extends Button {
     // rather than waiting for one, since this is the user asking -- and start
     // the client's wait over.
     _retry() {
+        // Neither guard here is one a row alone can reach -- the placeholder goes
+        // with the menu, and shows Loading, insensitive, while _connecting --
+        // which is why no test sees one missing: they keep a stray call
+        // harmless.
         if (this._destroyed)
             return;
 
@@ -1360,7 +1364,10 @@ class GPasteIndicator extends Button {
         this._destroyed = true;
         // And the reads still out go with it: nothing is left to show them, and
         // what awaits them stops at the reply rather than reaching for a menu
-        // that has gone.
+        // that has gone. Both this and the select-search idle below are
+        // doubled -- by _reconcileConnection ()'s _destroyed check, and by the
+        // menu's own close on destroy (_onOpenStateChanged ()) -- which is why
+        // no test sees either missing alone.
         this._listing?.cancel();
         this._cancelConnectRetry();
         this._cancelSelectSearch();
