@@ -590,9 +590,10 @@ the composer's warning: its caller builds the composer without
 real GTK on the private Xvfb. It checks both late-reply orders, closure between
 replies, a closed parent retained by another operation, and an intentionally
 hidden parent. The edit must not hold the window alive and thereby prevent the
-`destroy` signal cancelling its reads. It also answers the save itself: the
-dialog and its Cancel are held while the save is out but go with their window.
-It is built without `G_LOG_USE_STRUCTURED`, so that
+`destroy` signal cancelling its reads. It also answers the save itself: an
+untouched timeout goes out as unchanged, the dialog and its Cancel are held while
+the save is out but go with their window, and a failed edit says it could not
+save the password. It is built without `G_LOG_USE_STRUCTURED`, so that
 `g_test_expect_message()` catches the warning a failure leaves.
 `test-ui-edit-item` holds Edit Item's one
 read to the same: a closed parent and a retained closed one get no dialog, an
