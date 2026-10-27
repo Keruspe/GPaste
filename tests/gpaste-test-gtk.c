@@ -55,6 +55,23 @@ g_paste_test_gtk_find_button (GtkWidget   *root,
     return NULL;
 }
 
+/* Whether a label in @root's tree, @root included, shows @text as written. */
+gboolean
+g_paste_test_gtk_shows_label (GtkWidget   *root,
+                              const gchar *text)
+{
+    if (GTK_IS_LABEL (root) && !g_strcmp0 (gtk_label_get_text (GTK_LABEL (root)), text))
+        return TRUE;
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+    {
+        if (g_paste_test_gtk_shows_label (child, text))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 static gboolean
 dialog_closed (gconstpointer window,
                gconstpointer arg G_GNUC_UNUSED)

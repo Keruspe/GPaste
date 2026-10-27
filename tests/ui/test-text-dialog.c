@@ -513,6 +513,29 @@ form_dialog_held (void)
     gtk_window_destroy (window);
 }
 
+/* A toast says what it was handed, an & a translation may hold included,
+ * rather than nothing for markup Pango refuses. */
+static void
+toast_plain (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    GtkWindow *window = GTK_WINDOW (adw_application_window_new (NULL));
+    GtkWidget *overlay = adw_toast_overlay_new ();
+    GtkWidget *origin = gtk_label_new (NULL);
+
+    adw_toast_overlay_set_child (ADW_TOAST_OVERLAY (overlay), origin);
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), overlay);
+    gtk_window_present (window);
+    g_paste_gtk_util_toast (origin, "Fish & chips");
+    g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (window), "Fish & chips"));
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -531,6 +554,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
     g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
     g_test_add_func ("/ui/form_dialog/held", form_dialog_held);
+    g_test_add_func ("/ui/toast/plain", toast_plain);
     g_test_add_func ("/ui/confirm_dialog/empty_without_daemon", empty_confirmed_without_daemon);
     g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (CONFIRM_WINDOW_GONE), confirm_answered_once);
     g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (CONFIRM_ANSWERED_THEN_WINDOW_GONE), confirm_answered_once);

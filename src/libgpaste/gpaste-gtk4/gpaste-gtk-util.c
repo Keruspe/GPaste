@@ -172,9 +172,7 @@ g_paste_gtk_util_toast (GtkWidget   *origin,
 
     /* Plain: @message is a translation, and an & or a < a translator wrote
      * would have Pango refuse it as markup, the toast saying nothing at the
-     * very moment it is the only report of a failure. No test reads a toast
-     * back, AdwToastOverlay handing none out; the window's own is held to it
-     * (/ui/daemon-presence/version-toast). */
+     * very moment it is the only report of a failure (/ui/toast/plain). */
     adw_toast_set_use_markup (toast, FALSE);
     adw_toast_overlay_add_toast (ADW_TOAST_OVERLAY (content), toast);
 }

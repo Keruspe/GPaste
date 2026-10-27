@@ -291,8 +291,10 @@ test_item_star_named (void)
     gtk_window_present (GTK_WINDOW (window));
     g_paste_ui_item_set_favourited (row, TRUE);
     gtk_test_accessible_assert_property (GTK_ACCESSIBLE (row->favourite), GTK_ACCESSIBLE_PROPERTY_LABEL, "Unpin");
+    g_assert_cmpstr (gtk_widget_get_tooltip_text (row->favourite), ==, "Unpin");
     g_paste_ui_item_set_favourited (row, FALSE);
     gtk_test_accessible_assert_property (GTK_ACCESSIBLE (row->favourite), GTK_ACCESSIBLE_PROPERTY_LABEL, "Pin");
+    g_assert_cmpstr (gtk_widget_get_tooltip_text (row->favourite), ==, "Pin");
 
     gtk_window_destroy (GTK_WINDOW (window));
 }

@@ -301,7 +301,7 @@ drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
-clicking it does, that a row handed to another item blanks its text and
+clicking it does, its accessible name and its tooltip alike, that a row handed to another item blanks its text and
 offers no action until that item is read, and that a row lays out a bounded part
 of a long item's text. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
@@ -349,7 +349,7 @@ and a Restart pressed as the name passes on waits for the answer, signalling
 another such daemon and nothing at all for this version's (`legacy-restart-asked`).
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
-sidebar that went with the window. With the widest window buttons (KDE's
+sidebar that went with the window, the list going once it has. With the widest window buttons (KDE's
 icon, minimize, maximize and close), the window at its minimum width opens on
 the history page, the list keeping the focus, and fits in each of its states --
 selection mode, the search bar, the banner -- and at text scales up to 1.5; it
@@ -420,6 +420,10 @@ rows staying as it was, and a pinned-items read answered so is no "No Pinned
 Items". A stand-in stops by
 closing its connection first, as a real daemon goes: unexported while still
 owning the name, it would answer a call with an error no real daemon gives.
+What it answered goes out before it closes (`fake_daemon_stop()` says why): a
+Select answered right before it goes, its answer held behind an announcement on
+GDBus' worker, is answered (`stand-in-answers-first`, which skips itself when
+the test was held off the processor for as long as the announcement was).
 One allowing its replacement is not queued for the name once replaced, a real
 daemon quitting then. The focus restoration case
 checks that its wait predicate rejects focus still on the list.
@@ -597,6 +601,7 @@ The graphical tool's suites that look widgets up in a dialog link
 `gpaste_test_gtk_dep` (`tests/gpaste-test-gtk.c`), which carries
 `gpaste_test_bus_dep` along, rather than keep a copy of each helper:
 `g_paste_test_gtk_find_widget()` and `_find_button()` search a widget's tree,
+`_shows_label()` whether a label in it shows a text as written,
 `_wait_dialog_closed()` waits on the dialog of an `AdwWindow` or an
 `AdwApplicationWindow` going, at most `G_PASTE_TEST_BUS_WAIT_SECONDS`, and
 `_dialog_text()` and `_set_dialog_text()` read and write a dialog's text view.

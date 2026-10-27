@@ -154,6 +154,9 @@ typedef struct
     GPtrArray             *held_items;
     guint                  selects;
     gchar                 *selected;
+    /* Announce an update ahead of answering a Select, as a daemon publishing
+     * the item it selects does. */
+    gboolean               announce_selects;
     /* The lowest index read since the test last set it. */
     guint64                lowest_read;
     /* Appended to every item's value, as an edit would. */
@@ -297,6 +300,8 @@ on_select (GPasteDaemon3         *skeleton,
 
     g_set_str (&daemon->selected, uuid);
     ++daemon->selects;
+    if (daemon->announce_selects)
+        g_paste_daemon3_emit_raw_update (skeleton, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
     g_paste_daemon3_complete_select (skeleton, invocation);
 
     return TRUE;
@@ -445,12 +450,18 @@ fake_daemon_start (FakeDaemon *daemon)
 }
 
 /* Gone as a real daemon goes, its names and its object off the bus at once:
- * the connection closed first. Unexported first, it would still own the name
- * for a moment, and a call landing then would read an error no real daemon
- * gives -- no object at the path -- which the window reports as a failure. */
+ * the connection closed first, once what it answered has gone out, as a
+ * daemon flushes its replies before it exits. A close finding writes still
+ * queued drops them, and a call answered would fail as one its daemon left
+ * without answering, in whichever case runs when that failure comes back
+ * (/ui/daemon-presence/stand-in-answers-first). Unexported first, it would
+ * still own the name for a moment, and a call landing then would read an
+ * error no real daemon gives -- no object at the path -- which the window
+ * reports as a failure. */
 static void
 fake_daemon_stop (FakeDaemon *daemon)
 {
+    g_dbus_connection_flush_sync (daemon->connection, NULL, NULL);
     g_dbus_connection_close_sync (daemon->connection, NULL, NULL);
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (daemon->skeleton));
     g_clear_object (&daemon->skeleton);
@@ -1058,8 +1069,9 @@ test_merge_entry_focus_released (void)
 }
 
 /* A window closed while the list's size request is out: the list outlives the
- * sidebar, the reply holding it, and the reply must not reach for the sidebar
- * gone with the window (see the panel field of GPasteUiHistory). */
+ * sidebar, the reply holding it until it lands, and the reply must not reach
+ * for the sidebar gone with the window (see the panel field of
+ * GPasteUiHistory). */
 static void
 test_reply_after_close (void)
 {
@@ -1089,17 +1101,21 @@ test_reply_after_close (void)
     /* Destroyed and let go of, as the application does: the list stands on,
      * held by the reply, and the sidebar does not. */
     GtkWidget *panel = window->panel;
+    GPasteUiHistory *history = window->history;
 
     g_object_add_weak_pointer (G_OBJECT (panel), (gpointer *) &panel);
+    g_object_add_weak_pointer (G_OBJECT (history), (gpointer *) &history);
     gtk_window_destroy (GTK_WINDOW (window));
     g_clear_object (&window);
     drain ();
     g_assert_null (panel);
+    g_assert_nonnull (history);
 
     g_paste_daemon3_complete_get_history_size (daemon.skeleton, g_steal_pointer (&daemon.held_size), 3);
     g_dbus_connection_flush_sync (daemon.connection, NULL, &error);
     g_assert_no_error (error);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
+    g_assert_null (history);
 
     fake_daemon_stop (&daemon);
 }
@@ -1278,6 +1294,61 @@ test_search_enter_restart (void)
     g_assert_cmpuint (old.selects, ==, 0);
 
     close_activation_window (window, &successor);
+}
+
+/* Set to hold the next Update a stand-in sends on GDBus' worker thread, which
+ * every connection of the process shares, a quarter of a second: what it
+ * writes after it waits the while in its queue. stall_over is set once the
+ * quarter is over. */
+static gint stall_update;
+static gint stall_over;
+
+static GDBusMessage *
+stall_update_filter (GDBusConnection *connection G_GNUC_UNUSED,
+                     GDBusMessage    *message,
+                     gboolean         incoming,
+                     gpointer         user_data G_GNUC_UNUSED)
+{
+    if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_SIGNAL &&
+        g_paste_str_equal (g_dbus_message_get_member (message), "Update") &&
+        g_atomic_int_compare_and_exchange (&stall_update, TRUE, FALSE))
+    {
+        g_usleep (G_USEC_PER_SEC / 4);
+        g_atomic_int_set (&stall_over, TRUE);
+    }
+
+    return message;
+}
+
+/* As fake_daemon_stop () says: a Select the stand-in answered right before it
+ * goes, its answer queued behind an announcement, is answered. */
+static void
+test_stand_in_answers_first (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GAsyncResult) result = NULL;
+    FakeDaemon daemon = { .size = 1, .announce_selects = TRUE };
+
+    g_assert_no_error (error);
+    fake_daemon_start (&daemon);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
+    g_dbus_connection_add_filter (daemon.connection, stall_update_filter, NULL, NULL);
+    g_atomic_int_set (&stall_over, FALSE);
+    g_atomic_int_set (&stall_update, TRUE);
+
+    g_paste_client_select (client, "00000000-0000-4000-8000-000000000000", NULL, g_paste_test_env_keep_result, &result);
+    g_paste_test_bus_wait_until (selected, &daemon, NULL);
+    g_assert_cmpuint (daemon.selects, ==, 1);
+    /* A stall already over let the answer out before the stop began -- this
+     * thread held off the processor for as long -- leaving the stop nothing
+     * queued to drop. */
+    if (g_atomic_int_get (&stall_over))
+        g_test_skip ("The answer went out before the stand-in began to go");
+    fake_daemon_stop (&daemon);
+    g_paste_test_env_wait_result (&result);
+    g_paste_client_select_finish (client, result, &error);
+    g_assert_no_error (error);
 }
 
 /* Nor does an update listing the same search again while Enter waits on it --
@@ -1483,6 +1554,7 @@ test_filtered_count (void)
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
     g_paste_test_bus_wait_until (sidebar_has_history, window, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (sidebar_has_history (window, G_PASTE_DEFAULT_HISTORY));
     daemon.hold_filters = TRUE;
     g_paste_ui_history_search (window->history, "match");
     g_paste_test_bus_wait_for_count (&daemon.filters, 1);
@@ -1522,6 +1594,7 @@ test_activate_unread_rows (void)
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
     g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
+    g_assert_true (has_held_items (&daemon, NULL));
     g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
     release_items (&daemon);
     g_paste_test_bus_wait_until (selected, &daemon, NULL);
@@ -2429,6 +2502,7 @@ test_client_fails (void)
     g_autoptr (GPasteUiWindow) window = g_object_ref (G_PASTE_UI_WINDOW (g_paste_ui_window_new (app)));
 
     g_paste_test_bus_wait_until (connection_answered, window, NULL);
+    g_assert_true (connection_answered (window, NULL));
     g_test_assert_expected_messages ();
     fail_client_builds = FALSE;
     g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
@@ -2771,6 +2845,7 @@ test_legacy_restart_asked (gconstpointer user_data)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (banner_says, window, _("An older GPaste daemon is still running"));
+    g_assert_true (banner_says (window, _("An older GPaste daemon is still running")));
 
     /* Queued behind the older one, the successor gets the name as it is let
      * go of: another such daemon, or this version's, serving nothing yet. */
@@ -2874,6 +2949,7 @@ test_listing_after_switch (void)
 
     g_paste_daemon3_set_history (daemon.skeleton, "work");
     g_paste_test_bus_wait_until (history_is_work, client, NULL);
+    g_assert_true (history_is_work (client, NULL));
     drain ();
 
     g_paste_daemon3_complete_list_histories (daemon.skeleton, g_steal_pointer (&daemon.held_listing), g_variant_new_parsed (LISTING_TWO));
@@ -2910,6 +2986,7 @@ test_listing_overtaken (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.listings, 1);
     g_paste_test_bus_wait_until (sidebar_has_history, window, "work");
+    g_assert_true (sidebar_has_history (window, "work"));
 
     daemon.hold_listings = TRUE;
     daemon.listings = 0;
@@ -2931,10 +3008,13 @@ test_listing_overtaken (void)
     fake_daemon_stop (&daemon);
 }
 
-/* A listing still out when its daemon goes is given up on: the bus answers it
- * with an error once that daemon is off it, which a listing still standing
- * would report, critically -- fatal in a test. Nothing announces that report
- * not coming, hence the pump. */
+/* A listing still out when its daemon goes ends without a word: given up on by
+ * the presence edge, or, were it still standing, answered by the bus with an
+ * error of a daemon gone, which on_histories_ready () drops -- either way no
+ * warning, which would be fatal in a test. Which of the two ends it is
+ * listing-handoff's to pin, the cancellation being what keeps a late listing
+ * off the next daemon's rows; this one pins the silence. Nothing announces a
+ * report not coming, hence the pump. */
 static void
 test_listing_abandoned (void)
 {
@@ -3030,6 +3110,7 @@ test_listing_pruned (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.listings, 1);
     g_paste_test_bus_wait_until (sidebar_has_history, window, "work");
+    g_assert_true (sidebar_has_history (window, "work"));
 
     fake_daemon_stop (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
@@ -3109,7 +3190,9 @@ test_listing_handoff (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&old.listings, 1);
     g_paste_test_bus_wait_until (sidebar_has_history, window, "work");
+    g_assert_true (sidebar_has_history (window, "work"));
     g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (2));
+    g_assert_true (history_rows_are (window, GUINT_TO_POINTER (2)));
 
     /* Held, so that a row dropped and added again could not come back at the
      * same address and pass for the one kept. */
@@ -3195,6 +3278,7 @@ test_listing_handoff (void)
 
     g_paste_daemon3_complete_list_histories (successor.skeleton, g_steal_pointer (&successor.held_listing), g_variant_new_parsed (LISTING_THREE));
     g_paste_test_bus_wait_until (sidebar_has_history, window, "other");
+    g_assert_true (sidebar_has_history (window, "other"));
     g_paste_test_bus_round_trip (bus, successor.connection);
     g_assert_true (sidebar_item (window, "work") == work);
     g_assert_true (sidebar_enabled (window, "work"));
@@ -3325,6 +3409,7 @@ test_owner_learned (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
     g_paste_test_bus_wait_until (list_shown, window, NULL);
+    g_assert_true (list_shown (window, NULL));
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
     g_assert_cmpuint (daemon.listings, ==, 1);
     g_assert_cmpuint (daemon.sizings, ==, 1);
@@ -3357,6 +3442,7 @@ test_listing_owner_size_error (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (2));
+    g_assert_true (history_rows_are (window, GUINT_TO_POINTER (2)));
     gtk_widget_grab_focus (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
     g_assert_true (history_has_focus (window));
 
@@ -3449,6 +3535,7 @@ test_focus_restored (void)
     fake_daemon_stop (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
     g_paste_test_bus_wait_until (focus_moved_away, window, NULL);
+    g_assert_true (focus_moved_away (window, NULL));
     /* Taken off the window's list of what acts on a daemon for the test's
      * sake: what the user can reach meanwhile is sensitive. */
     gtk_widget_set_sensitive (elsewhere, TRUE);
@@ -3536,11 +3623,13 @@ test_upload_after_row_removed (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (upload_armed, window, NULL);
+    g_assert_true (upload_armed (window, NULL));
 
     g_autoptr (GPasteUiItem) row = g_object_ref (G_PASTE_UI_ITEM (find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM)));
 
     g_assert_true (gtk_widget_activate_action (GTK_WIDGET (row), "item.upload", NULL));
     g_paste_test_bus_wait_until (upload_held, &daemon, NULL);
+    g_assert_true (upload_held (&daemon, NULL));
 
     daemon.size = 0;
     g_paste_daemon3_emit_raw_update (daemon.skeleton, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ALL, "", 0);
@@ -3948,6 +4037,7 @@ test_version_toast (void)
     g_assert_false (window->shell_owner_known);
     g_assert_null (window->version_toast);
     g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_assert_true (shell_owner_known (window, NULL));
     g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), daemon.connection);
     g_assert_nonnull (window->version_toast);
     g_assert_false (adw_toast_get_use_markup (window->version_toast));
@@ -4011,6 +4101,7 @@ test_version_toast_owner_replaced (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_assert_true (shell_owner_known (window, NULL));
     g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), current.connection);
     g_assert_true (window->version_offered);
     g_assert_null (window->version_toast);
@@ -4088,6 +4179,7 @@ test_version_toast_in_shell (void)
     g_assert_false (restart_enabled (window));
     g_assert_null (window->version_toast);
     g_paste_test_bus_wait_until (shell_owner_known, window, NULL);
+    g_assert_true (shell_owner_known (window, NULL));
     /* Owned by the shell itself, which is what the window has to learn first:
      * restart_can_help () answers no for an owner not known yet whatever else
      * it reads. */
@@ -4114,6 +4206,7 @@ test_version_toast_in_shell (void)
                                                      NULL, NULL, NULL, NULL);
 
     g_paste_test_bus_wait_until (shell_owner_is, window, g_dbus_connection_get_unique_name (shell));
+    g_assert_true (shell_owner_is (window, g_dbus_connection_get_unique_name (shell)));
     daemon.in_shell = FALSE;
     fake_daemon_start (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
@@ -4153,6 +4246,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/reply-after-close", test_reply_after_close);
     g_test_add_func ("/ui/daemon-presence/search-enter-waits", test_search_enter_waits);
     g_test_add_func ("/ui/daemon-presence/search-enter-restart", test_search_enter_restart);
+    g_test_add_func ("/ui/daemon-presence/stand-in-answers-first", test_stand_in_answers_first);
     g_test_add_func ("/ui/daemon-presence/search-enter-survives-update", test_search_enter_survives_update);
     g_test_add_func ("/ui/daemon-presence/activate-unread-rows", test_activate_unread_rows);
     g_test_add_func ("/ui/daemon-presence/selection-mode-keys", test_selection_mode_keys);

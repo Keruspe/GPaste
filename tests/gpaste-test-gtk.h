@@ -22,6 +22,8 @@ GtkWidget *g_paste_test_gtk_find_widget         (GtkWidget          *root,
                                                  GType               type);
 GtkWidget *g_paste_test_gtk_find_button         (GtkWidget          *root,
                                                  const gchar        *label);
+gboolean   g_paste_test_gtk_shows_label         (GtkWidget          *root,
+                                                 const gchar        *text);
 void       g_paste_test_gtk_wait_dialog_closed  (GtkWindow          *window);
 gchar     *g_paste_test_gtk_dialog_text         (AdwDialog          *dialog);
 void       g_paste_test_gtk_set_dialog_text     (AdwDialog          *dialog,
