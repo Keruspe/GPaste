@@ -17,7 +17,13 @@
 static GdkContentFormats *formats;
 static GTask *pending_text;
 static GTask *pending_texture;
+/* A value read out, a colour's or a file list's, and the type it asked for. */
+static GTask *pending_value;
+static GType pending_value_type;
+static GValue read_value = G_VALUE_INIT;
 static guint publications;
+/* What the last publication offered. */
+static GdkContentProvider *published;
 /* Whether GDK refuses a claim, as it does one another client won meanwhile. */
 static gboolean refuse_claims;
 /* What the hints workaround answers here: whether it can convert this display at
@@ -46,10 +52,33 @@ mock_local (GdkClipboard *clipboard G_GNUC_UNUSED)
 
 static gboolean
 mock_set_content (GdkClipboard       *clipboard G_GNUC_UNUSED,
-                  GdkContentProvider *content   G_GNUC_UNUSED)
+                  GdkContentProvider *content)
 {
     ++publications;
+    g_set_object (&published, content);
     return !refuse_claims;
+}
+
+static void
+mock_read_value (GdkClipboard       *clipboard   G_GNUC_UNUSED,
+                 GType               type,
+                 int                 io_priority G_GNUC_UNUSED,
+                 GCancellable       *cancellable,
+                 GAsyncReadyCallback callback,
+                 gpointer            user_data)
+{
+    g_assert_null (pending_value);
+    pending_value = g_task_new (NULL, cancellable, callback, user_data);
+    pending_value_type = type;
+}
+
+/* Transfer none, as GTK's: the value lives until the next read. */
+static const GValue *
+mock_read_value_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
+                        GAsyncResult *result,
+                        GError      **error)
+{
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 static void
@@ -174,6 +203,8 @@ mock_hints_get_owner (GPasteClipboardX11Hints *self G_GNUC_UNUSED)
 #define gdk_clipboard_read_texture_async mock_read_texture
 #define gdk_clipboard_read_texture_finish mock_read_texture_finish
 #define gdk_clipboard_read_async mock_read_mime
+#define gdk_clipboard_read_value_async mock_read_value
+#define gdk_clipboard_read_value_finish mock_read_value_finish
 #define gdk_clipboard_read_finish mock_read_mime_finish
 #define g_paste_clipboard_x11_hints_new mock_hints_new
 #define g_paste_clipboard_x11_hints_read mock_hints_read
@@ -271,7 +302,15 @@ fixture_teardown (Fixture      *f,
         g_task_return_pointer (pending_texture, NULL, NULL);
         g_clear_object (&pending_texture);
     }
+    if (pending_value)
+    {
+        g_task_return_pointer (pending_value, NULL, NULL);
+        g_clear_object (&pending_value);
+    }
     pump (10);
+    g_clear_object (&published);
+    if (G_IS_VALUE (&read_value))
+        g_value_unset (&read_value);
     g_clear_object (&f->manager);
     f->clipboard->settings = NULL;
     g_clear_object (&f->clipboard);
@@ -891,6 +930,125 @@ formats_deadline_slow_owner (Fixture      *f,
     g_assert_cmpuint (publications, ==, before);
 }
 
+static void
+count_update (guint *updates)
+{
+    ++*updates;
+}
+
+static void
+offer_value (GType type)
+{
+    g_clear_pointer (&formats, gdk_content_formats_unref);
+    formats = gdk_content_formats_new_for_gtype (type);
+}
+
+/* The value read out answered, a red colour or a file list of two. */
+static void
+answer_value (void)
+{
+    g_autoptr (GTask) task = g_steal_pointer (&pending_value);
+
+    g_assert_nonnull (task);
+    if (G_IS_VALUE (&read_value))
+        g_value_unset (&read_value);
+    g_value_init (&read_value, pending_value_type);
+    if (pending_value_type == GDK_TYPE_RGBA)
+    {
+        static const GdkRGBA red = { 1., 0., 0., 1. };
+
+        g_value_set_boxed (&read_value, &red);
+    }
+    else
+    {
+        g_autoslist (GFile) files = g_slist_append (NULL, g_file_new_for_path ("/tmp/a"));
+
+        files = g_slist_append (files, g_file_new_for_path ("/tmp/b"));
+        g_value_take_boxed (&read_value, gdk_file_list_new_from_list (files));
+    }
+    g_task_return_pointer (task, &read_value, NULL);
+}
+
+/* A copy of a @type value, announced the way GTK does it: empty formats first,
+ * and the targets next (see hints_unavailable ()). */
+static void
+copy_value (Fixture *f,
+            GType    type)
+{
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    offer_value (type);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+    g_assert_true (pending_value_type == type);
+    answer_value ();
+    pump (10);
+}
+
+/* A colour, and a file list, copied are read through GDK's value reads and
+ * recorded as what they are; the same colour copied again is no new copy. */
+static void
+read_value_kinds (Fixture      *f,
+                  gconstpointer user_data)
+{
+    GType type = (GType) GPOINTER_TO_SIZE (user_data);
+    GPasteItemKind kind = (type == GDK_TYPE_RGBA) ? G_PASTE_ITEM_KIND_COLOR : G_PASTE_ITEM_KIND_URIS;
+
+    copy_value (f, type);
+    g_assert_cmpint (g_paste_item_get_kind (g_paste_history_get (f->history, 0)), ==, kind);
+
+    if (kind != G_PASTE_ITEM_KIND_COLOR)
+        return;
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (f->history, 0)));
+    guint length = g_paste_history_get_length (f->history);
+    guint updates = 0;
+
+    g_signal_connect_swapped (f->history, "update", G_CALLBACK (count_update), &updates);
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    offer_value (type);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+    answer_value ();
+    pump (10);
+    g_assert_cmpuint (g_paste_history_get_length (f->history), ==, length);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (f->history, 0)), ==, uuid);
+    g_assert_cmpuint (updates, ==, 0);
+    g_signal_handlers_disconnect_by_data (f->history, &updates);
+}
+
+/* A colour put back on the clipboard is offered as one, a file list as one,
+ * and an image as one: each a typed value GTK serialises, not bare text. */
+static void
+publish_kinds (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    static const guchar pixels[] = { 1, 2, 3, 255 };
+    g_autoptr (GBytes) data = g_bytes_new_static (pixels, sizeof (pixels));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, data, 4);
+    g_autoptr (GPasteItem) color = g_paste_color_item_new_from_str ("#ff0000");
+    g_autoptr (GPasteItem) uris = g_paste_uris_item_new_from_str ("file:///tmp/a\nfile:///tmp/b");
+    g_autoptr (GPasteItem) image = g_paste_image_item_new (texture);
+    struct { GPasteItem *item; GType type; } cases[] = {
+        { color, GDK_TYPE_RGBA      },
+        { uris,  GDK_TYPE_FILE_LIST },
+        { image, GDK_TYPE_TEXTURE   },
+    };
+
+    g_paste_item_set_state (image, G_PASTE_ITEM_STATE_ACTIVE);
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_clear_object (&published);
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), cases[i].item, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+        g_assert_nonnull (published);
+
+        g_autoptr (GdkContentFormats) offered = gdk_content_provider_ref_formats (published);
+
+        g_assert_true (gdk_content_formats_contain_gtype (offered, cases[i].type));
+    }
+}
+
 /* An owner whose targets GDK names nothing of -- only names with no mimetype,
  * or TARGETS refused -- has them come back as the same empty formats as the
  * change before them: answered at once as an owner offering nothing handled,
@@ -1022,6 +1180,9 @@ main (int argc, char **argv)
     g_test_add ("/gdk/formats/release", Fixture, NULL, fixture_setup, formats_release, fixture_teardown);
     g_test_add ("/gdk/formats/claimed-during-grace", Fixture, NULL, fixture_setup, formats_claimed_during_grace, fixture_teardown);
     g_test_add ("/gdk/formats/unmapped-targets", Fixture, NULL, fixture_setup, formats_unmapped_targets, fixture_teardown);
+    g_test_add ("/gdk/read/color", Fixture, GSIZE_TO_POINTER (GDK_TYPE_RGBA), fixture_setup, read_value_kinds, fixture_teardown);
+    g_test_add ("/gdk/read/file-list", Fixture, GSIZE_TO_POINTER (GDK_TYPE_FILE_LIST), fixture_setup, read_value_kinds, fixture_teardown);
+    g_test_add ("/gdk/publish/kinds", Fixture, NULL, fixture_setup, publish_kinds, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);

@@ -192,10 +192,10 @@ g_paste_clipboard_gdk_formats_wait_answer (GPasteClipboardGdkFormatsWait *wait,
 
     /* A whole wait with no TARGETS reply is a selection nobody owns -- a release,
      * which GTK announces with the same empty formats as a new owner -- or an
-     * owner nothing can paste from either.
-     * Neither holds what a record names, so the answer is a no, retiring it
-     * rather than leaving it unconfirmed until the next copy
-     * (/gdk/formats/deadline).
+     * owner slow to serve them. Only the first, which X tells apart (below), is
+     * a no, retiring the record rather than leaving it unconfirmed until the
+     * next copy (/gdk/formats/deadline); an owner whose targets come back naming
+     * nothing is answered before the deadline (on_real_changed ()).
      *
      * And the cache is cleared, not ignored: the selection is then empty, which
      * is what has ensure_not_empty () put the history's head back on it. That
@@ -709,6 +709,10 @@ g_paste_clipboard_gdk_on_rgba_ready (GObject      *source_object,
         return;
     }
 
+    /* The colour the cache already holds is no new copy. The history would add
+     * nothing for it either, finding it at its head, so what this spares is
+     * building the item to find that out, which no test tells apart
+     * (/gdk/read/color). */
     if (self->content.kind == CLIPBOARD_CONTENT_COLOR && gdk_rgba_equal (rgba, &self->content.rgba))
     {
         data->update->unchanged = TRUE;
