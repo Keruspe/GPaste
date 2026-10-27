@@ -21,26 +21,30 @@
 #endif
 
 /* Every GPaste app is reached the same way: the standard interface a desktop
- * application exports, on the bus name and object path its own name makes. The
- * graphical tool is the one addressed by a caller that is not spawning it, so
- * it is spelled out rather than built. */
+ * application exports, on the bus name and object path its own name makes
+ * (g_paste_util_app_call_new ()). */
 #define G_PASTE_APPLICATION_IFACE "org.freedesktop.Application"
-#define G_PASTE_UI_BUS_NAME       "org.gnome.GPaste.Ui"
-#define G_PASTE_UI_OBJECT_PATH    "/org/gnome/GPaste/Ui"
 
 /* Copied from glib's gio/gapplication-tool.c: X11's startup id, and Wayland's
  * activation token, without which the window opened has the shell's
- * focus-stealing prevention say it is ready rather than come up. */
+ * focus-stealing prevention say it is ready rather than come up.
+ *
+ * Only a process started with them has them in its environment -- gpaste-client
+ * run from a launcher. The daemon is handed a token with a shortcut, by the
+ * portal, and passes it as @activation_token; GNOME Shell opens the tool
+ * through its own launch, which makes one (actions.js); a search the overview
+ * hands over comes with none. */
 static GVariant *
-app_get_platform_data (void)
+app_get_platform_data (const gchar *activation_token)
 {
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     const gchar *startup_id;
-    const gchar *activation_token;
 
+    if (!activation_token)
+        activation_token = g_getenv ("XDG_ACTIVATION_TOKEN");
     if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
         g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
-    if ((activation_token = g_getenv ("XDG_ACTIVATION_TOKEN")))
+    if (activation_token)
         g_variant_builder_add (&builder, "{sv}", "activation-token", g_variant_new_string (activation_token));
 
     return g_variant_builder_end (&builder);
@@ -68,6 +72,23 @@ g_paste_util_app_call_free (GPasteUtilAppCall *call)
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteUtilAppCall, g_paste_util_app_call_free)
+
+/* The call of @method on the GPaste app named @app. @parameters is consumed if
+ * floating, and held until the call is made; @method is a static string. */
+static GPasteUtilAppCall *
+g_paste_util_app_call_new (const gchar *app,
+                           const gchar *method,
+                           GVariant    *parameters)
+{
+    GPasteUtilAppCall *call = g_new (GPasteUtilAppCall, 1);
+
+    call->name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    call->path = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+    call->method = method;
+    call->parameters = g_variant_ref_sink (parameters);
+
+    return call;
+}
 
 /* The reply, waited for to say why an app did not open: the bus answers one it
  * cannot start with an error, which is all a broken install or a failing unit
@@ -119,45 +140,36 @@ g_paste_util_app_call_on_bus (GObject      *source_object G_GNUC_UNUSED,
                             name);
 }
 
-/* @parameters is consumed if floating, and held until the call is made;
- * @method is a static string. */
+/* Its arguments are taken as g_paste_util_app_call_new () takes them. */
 static void
-g_paste_util_call_app (const gchar *name,
-                       const gchar *path,
+g_paste_util_call_app (const gchar *app,
                        const gchar *method,
                        GVariant    *parameters)
 {
-    GPasteUtilAppCall *call = g_new (GPasteUtilAppCall, 1);
-
-    call->name = g_strdup (name);
-    call->path = g_strdup (path);
-    call->method = method;
-    call->parameters = g_variant_ref_sink (parameters);
-
-    g_bus_get (G_BUS_TYPE_SESSION, NULL /* cancellable */, g_paste_util_app_call_on_bus, call);
+    g_bus_get (G_BUS_TYPE_SESSION, NULL /* cancellable */, g_paste_util_app_call_on_bus,
+               g_paste_util_app_call_new (app, method, parameters));
 }
 
 /* The call's own result is what says whether it worked: @error may be %NULL, in
  * which case there is nothing to look at. */
 static gboolean
-g_paste_util_call_app_sync (const gchar *name,
-                            const gchar *path,
+g_paste_util_call_app_sync (const gchar *app,
                             const gchar *method,
                             GVariant    *parameters,
                             GError     **error)
 {
-    g_autoptr (GVariant) owned = g_variant_ref_sink (parameters);
+    g_autoptr (GPasteUtilAppCall) call = g_paste_util_app_call_new (app, method, parameters);
     g_autoptr (GDBusConnection) bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL /* cancellable */, error);
 
     if (!bus)
         return FALSE;
 
     g_autoptr (GVariant) ret = g_dbus_connection_call_sync (bus,
-                                                            name,
-                                                            path,
+                                                            call->name,
+                                                            call->path,
                                                             G_PASTE_APPLICATION_IFACE,
-                                                            method,
-                                                            owned,
+                                                            call->method,
+                                                            call->parameters,
                                                             NULL, /* reply type */
                                                             G_DBUS_CALL_FLAGS_NONE,
                                                             -1,
@@ -176,12 +188,18 @@ g_paste_util_call_app_sync (const gchar *name,
 G_PASTE_VISIBLE void
 g_paste_util_spawn (const gchar *app)
 {
+    g_paste_util_spawn_with_token (app, NULL);
+}
+
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE void
+g_paste_util_spawn_with_token (const gchar *app,
+                               const gchar *activation_token)
+{
     g_return_if_fail (g_utf8_validate (app, -1, NULL));
+    g_return_if_fail (!activation_token || g_utf8_validate (activation_token, -1, NULL));
 
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-
-    g_paste_util_call_app (name, object, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()));
+    g_paste_util_call_app (app, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data (activation_token)));
 }
 
 /**
@@ -203,10 +221,7 @@ g_paste_util_spawn_sync (const gchar *app,
     g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-
-    return g_paste_util_call_app_sync (name, object, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data ()), error);
+    return g_paste_util_call_app_sync (app, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data (NULL)), error);
 }
 
 /* The ActivateAction payload, which is the whole of what the two flavours below
@@ -221,7 +236,7 @@ activate_ui_params (const gchar *action,
     if (arg)
         g_variant_builder_add (&params, "v", arg);
 
-    return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ());
+    return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data (NULL));
 }
 
 /**
@@ -242,7 +257,7 @@ g_paste_util_activate_ui (const gchar *action,
 
     g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
 
-    g_paste_util_call_app (G_PASTE_UI_BUS_NAME, G_PASTE_UI_OBJECT_PATH, "ActivateAction", activate_ui_params (action, owned));
+    g_paste_util_call_app ("Ui", "ActivateAction", activate_ui_params (action, owned));
 }
 
 /**
@@ -274,8 +289,7 @@ g_paste_util_activate_ui_sync (const gchar *action,
 
     g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
 
-    return g_paste_util_call_app_sync (G_PASTE_UI_BUS_NAME, G_PASTE_UI_OBJECT_PATH, "ActivateAction",
-                                       activate_ui_params (action, owned), error);
+    return g_paste_util_call_app_sync ("Ui", "ActivateAction", activate_ui_params (action, owned), error);
 }
 
 /**

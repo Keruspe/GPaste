@@ -230,8 +230,8 @@ test_shortcuts_handed_over (Fixture      *fixture,
 
     g_paste_history_add (history, g_paste_text_item_new ("kept"));
     g_paste_history_flush (history);
-    keybinding_pop (NULL, history);
-    keybinding_make_password (NULL, fixture->daemon);
+    keybinding_pop (NULL, NULL, history);
+    keybinding_make_password (NULL, NULL, fixture->daemon);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_true (G_PASTE_IS_TEXT_ITEM (g_paste_history_get (history, 0)));
     g_paste_history_resume (history);
@@ -767,7 +767,7 @@ test_upload_shortcut_ends_quietly (Fixture      *fixture,
     GPasteDaemon *daemon = fixture->daemon;
 
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
-    keybinding_upload (NULL, daemon);
+    keybinding_upload (NULL, NULL, daemon);
     g_assert_nonnull (daemon->uploads);
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (daemon));
 

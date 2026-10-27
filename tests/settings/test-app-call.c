@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 /* g_paste_util_spawn () against a real bus, in a process of its own that holds
- * no other reference to it: the call reaches an app that is there, and one the
- * bus cannot start is warned about. */
+ * no other reference to it: the call reaches an app that is there, with the
+ * activation token it is handed, and one the bus cannot start is warned
+ * about. */
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 
 static const gchar app_xml[] =
     "<node>"
@@ -16,26 +18,28 @@ static const gchar app_xml[] =
     "  </interface>"
     "</node>";
 
+/* The activation token the last Activate came with, "(none)" for none. */
 static void
 on_app_call (GDBusConnection       *connection     G_GNUC_UNUSED,
              const gchar           *sender         G_GNUC_UNUSED,
              const gchar           *object_path    G_GNUC_UNUSED,
              const gchar           *interface_name G_GNUC_UNUSED,
              const gchar           *method_name,
-             GVariant              *parameters     G_GNUC_UNUSED,
+             GVariant              *parameters,
              GDBusMethodInvocation *invocation,
              gpointer               user_data)
 {
-    if (g_paste_str_equal (method_name, "Activate"))
-        *(gboolean *) user_data = TRUE;
-    g_dbus_method_invocation_return_value (invocation, NULL);
-}
+    gchar **activated = user_data;
 
-static gboolean
-is_true (gconstpointer flag,
-         gconstpointer arg G_GNUC_UNUSED)
-{
-    return *(const gboolean *) flag;
+    if (g_paste_str_equal (method_name, "Activate"))
+    {
+        g_autoptr (GVariant) platform_data = g_variant_get_child_value (parameters, 0);
+        const gchar *token = "(none)";
+
+        g_variant_lookup (platform_data, "activation-token", "&s", &token);
+        g_set_str (activated, token);
+    }
+    g_dbus_method_invocation_return_value (invocation, NULL);
 }
 
 /* The app owns its name on a connection of its own, so that the session bus
@@ -54,7 +58,7 @@ test_spawn_reaches_app (void)
     g_autoptr (GDBusNodeInfo) info = g_dbus_node_info_new_for_xml (app_xml, &error);
     g_autoptr (GDBusConnection) app = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
     static const GDBusInterfaceVTable vtable = { on_app_call, NULL, NULL, { 0 } };
-    gboolean activated = FALSE;
+    g_autofree gchar *activated = NULL;
 
     g_assert_no_error (error);
 
@@ -65,9 +69,16 @@ test_spawn_reaches_app (void)
     guint32 owned = g_paste_test_bus_name_call (app, "RequestName", g_variant_new ("(su)", "org.gnome.GPaste.Ui", 0));
 
     g_assert_cmpuint (owned, ==, 1 /* primary owner */);
+    g_unsetenv ("XDG_ACTIVATION_TOKEN");
     g_paste_util_spawn ("Ui");
-    g_paste_test_bus_wait_until (is_true, &activated, NULL);
-    g_assert_true (activated);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &activated, NULL);
+    g_assert_cmpstr (activated, ==, "(none)");
+
+    /* The daemon's, handed by the portal with a shortcut. */
+    g_clear_pointer (&activated, g_free);
+    g_paste_util_spawn_with_token ("Ui", "token");
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &activated, NULL);
+    g_assert_cmpstr (activated, ==, "token");
 
     g_dbus_connection_unregister_object (app, registration);
 }

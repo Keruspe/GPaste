@@ -172,6 +172,10 @@ until the extension is disabled.
 reaching either of its buttons scrolls the row into the history's view, and the
 buttons act on the item the row was opened for.
 
+`actions` runs the shipped menu footer: Open GPaste launches the graphical tool
+through the shell's app system, which hands it an activation token, and through
+`GPaste.util_spawn()` only for a tool the shell does not know.
+
 `daemon` runs the shipped in-shell daemon runner over bus, daemon, storage and
 main loop doubles: a takeover, a failed export and a dropped connection all
 flush and dispose the daemon, and a takeover, a failed export and a failed
@@ -528,8 +532,9 @@ own process group (`/util/pid-file`).
 
 `test-app-call` runs `g_paste_util_spawn()` against the test bus for real, each
 case in a subprocess holding no other reference to the session bus: the call
-reaches an app owning its name, the connection kept until the reply, and one
-the bus cannot start is warned about.
+reaches an app owning its name, the connection kept until the reply, with the
+activation token the daemon is handed (`g_paste_util_spawn_with_token()`), and
+one the bus cannot start is warned about.
 
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls
@@ -539,8 +544,9 @@ paths differing from predictions, invalid session handles, untrusted senders,
 partial/empty grants, retry exhaustion and cancellation -- a portal appearing
 after the budget was spent against an unowned name getting it whole --, and
 retired-request deadlines. The keybinder hands the portal its bindings in the
-order they were added, a re-added key taking its place; a keypad key's
-trigger names the keypad key. Name handoffs leave the old server alive and assert that its known
+order they were added, a re-added key taking its place, and the activation
+token an activation carries reaches the binding (`activation-token`); a keypad
+key's trigger names the keypad key. Name handoffs leave the old server alive and assert that its known
 and late-created sessions are closed on its unique connection; separate tests
 actually disconnect that server. `Closed` immediately following a create
 response is queued on the I/O thread before main-context dispatch to test the

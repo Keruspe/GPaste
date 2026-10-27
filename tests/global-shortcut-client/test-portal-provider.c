@@ -236,7 +236,10 @@ on_client_ready (GObject *source G_GNUC_UNUSED, GAsyncResult *result, gpointer u
 }
 
 static void
-on_activated (GPasteGlobalShortcutClient *client G_GNUC_UNUSED, const gchar *id, gpointer user_data)
+on_activated (GPasteGlobalShortcutClient *client G_GNUC_UNUSED,
+              const gchar                *id,
+              const gchar                *activation_token G_GNUC_UNUSED,
+              gpointer                    user_data)
 {
     Fixture *f = user_data;
     g_assert_cmpstr (id, ==, "first");
@@ -369,14 +372,24 @@ bind_session (Fixture *f, Request *create, gboolean response_first)
     return bind;
 }
 
+/* The portal activating "first" on @session, handing @token with it if any. */
+static void
+activate_with_token (Fixture *f, Request *session, const gchar *token)
+{
+    g_auto (GVariantBuilder) options = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
+    g_autoptr (GError) error = NULL;
+    if (token)
+        g_variant_builder_add (&options, "{sv}", "activation_token", g_variant_new_string (token));
+    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
+        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, &options), &error);
+    g_assert_no_error (error);
+    barrier (f);
+}
+
 static void
 activate (Fixture *f, Request *session)
 {
-    g_autoptr (GError) error = NULL;
-    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
-        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, NULL), &error);
-    g_assert_no_error (error);
-    barrier (f);
+    activate_with_token (f, session, NULL);
 }
 
 static void
@@ -1348,6 +1361,7 @@ retired_method_denied (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 
 static void
 keybinder_activated (GPasteKeybinding *binding G_GNUC_UNUSED,
+                     const gchar      *activation_token G_GNUC_UNUSED,
                      gpointer          user_data)
 {
     ++*(guint *) user_data;
@@ -1396,15 +1410,58 @@ keybinder_order (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
         g_assert_cmpstr (id, ==, ids[i]);
     }
     complete (f, bind, FALSE, 0);
-
-    g_autoptr (GError) error = NULL;
-
-    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
-        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, NULL), &error);
-    g_assert_no_error (error);
-    barrier (f);
+    activate (f, session);
     g_assert_cmpuint (fresh, ==, 1);
     g_assert_cmpuint (stale, ==, 0);
+}
+
+/* A keybinder of the one binding "first", on launch-ui's <Control>a, its
+ * session bound: @session is set to that session. */
+static GPasteKeybinder *
+one_binding_keybinder (Fixture *f, GPasteSettings *settings, GPasteKeybindingFunc callback, gpointer data, Request **session)
+{
+    g_paste_settings_set_keybindings_enabled (settings, TRUE);
+    g_paste_settings_set_launch_ui (settings, "<Control>a");
+
+    GPasteKeybinder *keybinder = g_paste_keybinder_new (settings, f->client);
+
+    g_paste_keybinder_add_keybinding (keybinder,
+                                      g_paste_keybinding_new ("first", "First", g_paste_settings_get_launch_ui,
+                                                              callback, data));
+    g_paste_keybinder_activate_all (keybinder);
+    barrier (f);
+
+    *session = g_ptr_array_index (f->creates, 0);
+    complete (f, bind_session (f, *session, FALSE), FALSE, 0);
+
+    return keybinder;
+}
+
+static void
+keybinder_record_token (GPasteKeybinding *binding G_GNUC_UNUSED,
+                        const gchar      *activation_token,
+                        gpointer          user_data)
+{
+    g_ptr_array_add (user_data, g_strdup ((activation_token) ? activation_token : "(none)"));
+}
+
+/* The token the portal hands with an activation reaches the binding, for the
+ * graphical tool the launch-ui shortcut opens to be raised with: without one,
+ * the shell's focus-stealing prevention says a window already open is ready
+ * rather than raising it. */
+static void
+keybinder_activation_token (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPtrArray) tokens = g_ptr_array_new_with_free_func (g_free);
+    Request *session;
+    g_autoptr (GPasteKeybinder) keybinder = one_binding_keybinder (f, settings, keybinder_record_token, tokens, &session);
+
+    activate_with_token (f, session, "token");
+    activate (f, session);
+    g_assert_cmpuint (tokens->len, ==, 2);
+    g_assert_cmpstr (tokens->pdata[0], ==, "token");
+    g_assert_cmpstr (tokens->pdata[1], ==, "(none)");
 }
 
 static void
@@ -1470,6 +1527,7 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add ("/keybinder/switch-enabled", Fixture, GINT_TO_POINTER (TRUE), setup, keybinder_switch, teardown);
     g_test_add ("/keybinder/order", Fixture, NULL, setup, keybinder_order, teardown);
+    g_test_add ("/keybinder/activation-token", Fixture, NULL, setup, keybinder_activation_token, teardown);
     g_test_add ("/keybinder/switch-disabled", Fixture, GINT_TO_POINTER (FALSE), setup, keybinder_switch, teardown);
     /* Unexpected warnings are failures; exhaustion tests expect theirs
      * explicitly. */

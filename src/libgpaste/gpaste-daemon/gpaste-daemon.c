@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-util-private.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
 #include <gpaste-daemon/gpaste-daemon.h>
@@ -982,6 +983,7 @@ keybinding_may_change (GPasteHistory *history)
  * for is armed on the clipboards, which the history has no reach into. */
 static void
 keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
+                          const gchar      *activation_token G_GNUC_UNUSED,
                           gpointer          data)
 {
     GPasteDaemon *daemon = data;
@@ -1009,6 +1011,7 @@ keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
+                const gchar      *activation_token G_GNUC_UNUSED,
                 gpointer          data)
 {
     if (keybinding_may_change (data))
@@ -1017,6 +1020,7 @@ keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
+                         const gchar      *activation_token G_GNUC_UNUSED,
                          gpointer          data)
 {
     g_paste_daemon_show_history (data, NULL);
@@ -1024,6 +1028,7 @@ keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_sync_clipboard_to_primary (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      const gchar      *activation_token G_GNUC_UNUSED,
                                       gpointer          data)
 {
     g_paste_clipboards_manager_sync_from_to (data, TRUE);
@@ -1031,6 +1036,7 @@ keybinding_sync_clipboard_to_primary (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_sync_primary_to_clipboard (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      const gchar      *activation_token G_GNUC_UNUSED,
                                       gpointer          data)
 {
     g_paste_clipboards_manager_sync_from_to (data, FALSE);
@@ -1038,9 +1044,10 @@ keybinding_sync_primary_to_clipboard (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
+                      const gchar      *activation_token,
                       gpointer          data G_GNUC_UNUSED)
 {
-    g_paste_util_spawn ("Ui");
+    g_paste_util_spawn_with_token ("Ui", activation_token);
 }
 
 static void
@@ -1070,6 +1077,7 @@ on_keybinding_upload_done (GObject      *source_object,
 
 static void
 keybinding_upload (GPasteKeybinding *self G_GNUC_UNUSED,
+                   const gchar      *activation_token G_GNUC_UNUSED,
                    gpointer          data)
 {
     g_paste_daemon_upload (data, NULL, on_keybinding_upload_done, NULL);

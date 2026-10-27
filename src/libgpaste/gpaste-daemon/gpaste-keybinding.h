@@ -15,6 +15,7 @@ G_PASTE_FINAL_TYPE (Keybinding, keybinding, KEYBINDING, GObject)
 
 typedef const gchar *(*GPasteKeybindingGetter) (GPasteSettings *settings);
 typedef void         (*GPasteKeybindingFunc)   (GPasteKeybinding *self,
+                                                const gchar      *activation_token,
                                                 gpointer          data);
 
 const gchar    *g_paste_keybinding_get_dconf_key   (GPasteKeybinding *self);
@@ -26,7 +27,8 @@ void            g_paste_keybinding_activate      (GPasteKeybinding *self,
                                                   GPasteSettings   *settings);
 void            g_paste_keybinding_deactivate    (GPasteKeybinding *self);
 gboolean        g_paste_keybinding_is_active     (GPasteKeybinding *self);
-void            g_paste_keybinding_perform       (GPasteKeybinding *self);
+void            g_paste_keybinding_perform       (GPasteKeybinding *self,
+                                                  const gchar      *activation_token);
 
 GPasteKeybinding *g_paste_keybinding_new (const gchar           *dconf_key,
                                           const gchar           *description,

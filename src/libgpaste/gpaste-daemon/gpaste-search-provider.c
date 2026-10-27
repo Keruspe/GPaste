@@ -357,6 +357,8 @@ g_paste_search_provider_handle_launch_search (GPasteSearchProvider  *self,
 {
     g_autofree gchar *search = g_paste_search_provider_join_terms (terms);
 
+    /* With no activation token: the overview hands none over, a timestamp
+     * alone (see app_get_platform_data () in gpaste-util.c). */
     g_paste_util_activate_ui ("search", g_variant_new_string (search));
 
     g_paste_shell_search_provider2_complete_launch_search (self->skeleton, invocation);

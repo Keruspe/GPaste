@@ -136,15 +136,18 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 /**
  * g_paste_keybinding_perform:
  * @self: a #GPasteKeybinding instance
+ * @activation_token: (nullable): the token the shortcut's activation came with,
+ *     for a window it opens to be raised with
  *
  * Runs the callback associated to the keybinding
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_perform (GPasteKeybinding *self)
+g_paste_keybinding_perform (GPasteKeybinding *self,
+                            const gchar      *activation_token)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-    self->callback (self, self->user_data);
+    self->callback (self, activation_token, self->user_data);
 }
 
 static void

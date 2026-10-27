@@ -1460,11 +1460,13 @@ g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
         const gchar *shortcut_id;
         guint64 timestamp G_GNUC_UNUSED;
         g_autoptr (GVariant) options = NULL;
+        const gchar *activation_token = NULL;
         g_variant_get (parameters, "(&o&st@a{sv})",
                        &session_handle, &shortcut_id, &timestamp, &options);
+        g_variant_lookup (options, "activation_token", "&s", &activation_token);
 
         if (g_paste_str_equal (session_handle, self->session_handle))
-            g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id);
+            g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id, activation_token);
     }
 }
 
@@ -1580,6 +1582,8 @@ g_paste_global_shortcut_client_class_init (GPasteGlobalShortcutClientClass *klas
      * GPasteGlobalShortcutClient::keybinding-activated:
      * @client: the object on which the signal was emitted
      * @id: the id of the activated shortcut (its dconf key)
+     * @activation_token: (nullable): the token the portal handed with it, which
+     *     a window opened in answer is raised with
      *
      * The "keybinding-activated" signal is emitted when a registered shortcut
      * is pressed by the user.
@@ -1590,9 +1594,10 @@ g_paste_global_shortcut_client_class_init (GPasteGlobalShortcutClientClass *klas
                                                   0,
                                                   NULL, /* accumulator */
                                                   NULL, /* accumulator data */
-                                                  g_cclosure_marshal_VOID__STRING,
+                                                  NULL, /* marshaller */
                                                   G_TYPE_NONE,
-                                                  1,
+                                                  2,
+                                                  G_TYPE_STRING,
                                                   G_TYPE_STRING);
 }
 

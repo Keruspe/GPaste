@@ -6,6 +6,24 @@ import {PopupMenuItem, PopupSeparatorMenuItem} from 'resource:///org/gnome/shell
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import GPaste from 'gi://GPaste?version=3';
+import Shell from 'gi://Shell';
+
+/**
+ * Open the graphical tool as the dash would: the shell's own launch hands it a
+ * Wayland activation token, without which the shell's focus-stealing
+ * prevention says a window it already has open is ready rather than raising
+ * it, and a running one is raised by the shell itself. GPaste.util_spawn () is
+ * for a tool installed without its desktop file, which has nothing else to
+ * launch it by.
+ */
+function openUi() {
+    const app = Shell.AppSystem.get_default().lookup_app('org.gnome.GPaste.Ui.desktop');
+
+    if (app)
+        app.activate();
+    else
+        GPaste.util_spawn('Ui');
+}
 
 /**
  * Add what the menu can do beyond listing the history, under the history it
@@ -28,7 +46,7 @@ import GPaste from 'gi://GPaste?version=3';
  */
 export function addGPasteFooter(menu, extension) {
     const open = new PopupMenuItem(_('Open GPaste'));
-    open.connect('activate', () => GPaste.util_spawn('Ui'));
+    open.connect('activate', () => openUi());
 
     const preferences = new PopupMenuItem(_('Preferences'));
     preferences.connect('activate', () => extension.openPreferences());

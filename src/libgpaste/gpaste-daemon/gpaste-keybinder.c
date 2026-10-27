@@ -255,6 +255,7 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 static void
 on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
                          const gchar                *id,
+                         const gchar                *activation_token,
                          gpointer                    user_data)
 {
     GPasteKeybinder *self = user_data;
@@ -266,7 +267,7 @@ on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
     _Keybinding *k = self->keybindings->pdata[index];
 
     if (g_paste_keybinding_is_active (k->binding))
-        g_paste_keybinding_perform (k->binding);
+        g_paste_keybinding_perform (k->binding, activation_token);
 }
 
 static void

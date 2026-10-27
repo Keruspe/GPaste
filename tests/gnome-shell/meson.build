@@ -3,6 +3,9 @@ if node.found()
   test('history-switcher', node,
     args: [files('test-history-switcher.cjs'), meson.project_source_root() / 'src/gnome-shell/historySwitcher.js'],
   )
+  test('actions', node,
+    args: [files('test-actions.cjs'), meson.project_source_root() / 'src/gnome-shell/actions.js'],
+  )
   test('daemon', node,
     args: [files('test-daemon.cjs'), meson.project_source_root() / 'src/gnome-shell/daemon.js'],
   )
