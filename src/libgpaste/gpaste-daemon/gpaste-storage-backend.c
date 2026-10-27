@@ -820,7 +820,12 @@ _g_paste_storage_list_histories (const gchar *extension,
 
         name[strlen (name) - suffix_len] = '\0';
         /* A stray file -- ".xml", or one an older GPaste wrote for an empty name
-         * -- names nothing a history could be read, counted or deleted under. */
+         * -- names nothing a history could be read, counted or deleted under.
+         * So do the "." and ".." and the names past this storage's length GPaste
+         * 50 took as well, whose histories stay on the disk, unlisted, after an
+         * upgrade: accepted, the name naming images/<name>/ here too, where no
+         * such name has a place, and a rename path being more than so rare a
+         * history is worth. */
         if (g_paste_util_history_name_is_valid (name))
             g_strv_builder_take (history_names, g_steal_pointer (&name));
     }

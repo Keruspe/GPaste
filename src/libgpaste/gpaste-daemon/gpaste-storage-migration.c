@@ -2859,6 +2859,13 @@ doctor_rekey_run (GTask        *task,
         const gchar *name = g_ptr_array_index (refuting, i);
         gboolean split = FALSE;
 
+        /* Asked before the re-key, which derives @other's key for the history
+         * again: nothing here keeps a key from one open to the next. The other
+         * way round, as rekey_histories () goes, a passphrase typed wrong
+         * would cost two derivations a history instead of one, and warn of a
+         * history it cannot read for each -- a mistyped answer being what
+         * this prompt has to expect, where a change of passphrase starts from
+         * one the store already took. */
         if (g_paste_storage_backend_refutes_passphrase (backend, name))
         {
             g_ptr_array_add (self->refuting, g_strdup (name));
