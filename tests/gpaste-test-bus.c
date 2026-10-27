@@ -99,23 +99,13 @@ on_wait_timeout (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
-/* The main context iterated until @done says so, or until the deadline: the
- * caller asserts what it waited for, which says what timed out. */
+/* g_paste_test_env_wait_until () for G_PASTE_TEST_BUS_WAIT_SECONDS. */
 void
 g_paste_test_bus_wait_until (GPasteTestBusDone done,
                              gconstpointer     data,
                              gconstpointer     arg)
 {
-    gboolean timed_out = FALSE;
-    guint source = g_timeout_add_seconds (G_PASTE_TEST_BUS_WAIT_SECONDS, on_wait_timeout, &timed_out);
-
-    g_source_set_name_by_id (source, "[GPaste] test wait deadline");
-
-    while (!done (data, arg) && !timed_out)
-        g_main_context_iteration (NULL, TRUE);
-
-    if (!timed_out)
-        g_source_remove (source);
+    g_paste_test_env_wait_until (done, data, arg, G_PASTE_TEST_BUS_WAIT_SECONDS);
 }
 
 /* A GPasteTestBusDone for a pointer that something fills in: @pointer is the
@@ -189,11 +179,19 @@ g_paste_test_bus_wait_for_owner (GDBusProxy      *proxy,
     g_assert_true (owner_reached (proxy, owner));
 }
 
+/* Read atomically: a count a bus filter keeps is bumped on GDBus's worker
+ * thread, with g_atomic_int_inc (), while this reads it on the main one. */
+static guint
+count_read (const guint *count)
+{
+    return (guint) g_atomic_int_get ((const gint *) count);
+}
+
 static gboolean
 count_reached (gconstpointer count,
                gconstpointer at_least)
 {
-    return *(const guint *) count >= GPOINTER_TO_UINT (at_least);
+    return count_read (count) >= GPOINTER_TO_UINT (at_least);
 }
 
 /* The main context run for @ms: for what happens on a later frame or timer
@@ -246,5 +244,5 @@ g_paste_test_bus_wait_for_count (const guint *count,
                                  guint        at_least)
 {
     g_paste_test_bus_wait_until (count_reached, count, GUINT_TO_POINTER (at_least));
-    g_assert_cmpuint (*count, >=, at_least);
+    g_assert_cmpuint (count_read (count), >=, at_least);
 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <gio/gio.h>
+#include <gpaste-test-env.h>
 
 G_BEGIN_DECLS
 
@@ -12,8 +13,7 @@ G_BEGIN_DECLS
  * machine without hanging on a regression. */
 #define G_PASTE_TEST_BUS_WAIT_SECONDS 10
 
-typedef gboolean (*GPasteTestBusDone) (gconstpointer data,
-                                       gconstpointer arg);
+typedef GPasteTestEnvDone GPasteTestBusDone;
 
 GDBusConnection *g_paste_test_bus_connect        (const gchar                *address);
 GDBusConnection *g_paste_test_bus_new_server     (GTestDBus                  *bus,

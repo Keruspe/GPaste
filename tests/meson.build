@@ -29,7 +29,7 @@ test('test-env', test_env, depends: [gpaste_schemas, test_bus_supervisor], timeo
 gpaste_test_bus_lib = static_library(
   'gpaste-test-bus',
   sources: 'gpaste-test-bus.c',
-  dependencies: [ gio_dep ],
+  dependencies: [ gio_dep, gpaste_test_env_dep ],
 )
 
 gpaste_test_bus_dep = declare_dependency(

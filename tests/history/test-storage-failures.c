@@ -2131,7 +2131,7 @@ on_emptied (GObject      *source G_GNUC_UNUSED,
     g_set_object ((GAsyncResult **) user_data, result);
 }
 
-/* EmptyHistory, waited for as its D-Bus answer is. */
+/* As in test-history.c. */
 static void
 empty_history (const GPasteDaemonMethods *methods,
                const gchar               *name,
@@ -2140,8 +2140,7 @@ empty_history (const GPasteDaemonMethods *methods,
     g_autoptr (GAsyncResult) result = NULL;
 
     g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result_within (&result, 60);
     g_paste_daemon_methods_empty_history_finish (result, error);
 }
 

@@ -42,10 +42,33 @@
 
 #include <sqlite3.h>
 #include <string.h>
+#endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+#include <gpaste-daemon/gpaste-secret-stream-converter.h>
+
 #include <sodium.h>
-#endif
+
+/* Every key this binary derives costs libsodium's minimum, as in
+ * test-storage-failures.c, which says why the stores still read back. GPaste
+ * derives with Argon2id alone, and never with parameters its own check
+ * refuses: deriving at the minimum whatever is asked would let a derivation
+ * attempted with those pass the cases refusing them. */
+int
+crypto_pwhash (unsigned char * const       out,
+               unsigned long long          outlen,
+               const char * const          passwd,
+               unsigned long long          passwdlen,
+               const unsigned char * const salt,
+               unsigned long long          opslimit,
+               size_t                      memlimit,
+               int                         alg)
+{
+    g_assert_cmpint (alg, ==, crypto_pwhash_ALG_ARGON2ID13);
+    g_assert_true (g_paste_crypto_parameters_derivable (opslimit, memlimit));
+
+    return crypto_pwhash_argon2id (out, outlen, passwd, passwdlen, salt, crypto_pwhash_argon2id_OPSLIMIT_MIN, crypto_pwhash_argon2id_MEMLIMIT_MIN, alg);
+}
 #endif
 
 /* Every history a case builds, held weakly, so that run_from_defaults () can
@@ -1705,7 +1728,9 @@ on_emptied (GObject      *source G_GNUC_UNUSED,
     g_set_object ((GAsyncResult **) user_data, result);
 }
 
-/* EmptyHistory, waited for as its D-Bus answer is. */
+/* EmptyHistory, waited for as its D-Bus answer is, and as long as
+ * run_migration () waits: an encrypted flavour's emptying derives a key, which
+ * a loaded machine makes slow. */
 static void
 empty_history (const GPasteDaemonMethods *methods,
                const gchar               *name,
@@ -1714,8 +1739,7 @@ empty_history (const GPasteDaemonMethods *methods,
     g_autoptr (GAsyncResult) result = NULL;
 
     g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result_within (&result, 60);
     g_paste_daemon_methods_empty_history_finish (result, error);
 }
 

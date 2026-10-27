@@ -774,7 +774,7 @@ on_emptied (GObject      *source G_GNUC_UNUSED,
     g_set_object ((GAsyncResult **) user_data, result);
 }
 
-/* EmptyHistory, waited for as its D-Bus answer is. */
+/* As in test-history.c. */
 static void
 empty_history (const GPasteDaemonMethods *methods,
                const gchar               *name,
@@ -783,8 +783,7 @@ empty_history (const GPasteDaemonMethods *methods,
     g_autoptr (GAsyncResult) result = NULL;
 
     g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result_within (&result, 60);
     g_paste_daemon_methods_empty_history_finish (result, error);
 }
 
@@ -885,8 +884,7 @@ test_empty_other_off_main_loop (void)
     wait_worker ();
     g_assert_null (result);
     release_worker ();
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
     g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
     g_assert_no_error (error);
     finish_history (history);
@@ -929,8 +927,7 @@ test_empty_other_then_switch (void)
 
     wait_load (history);
     g_thread_join (g_steal_pointer (&release));
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
     g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
@@ -972,8 +969,7 @@ test_empty_other_flushed (void)
     g_autolist (GPasteItem) items = read_items (backend, "empty-flushed");
 
     g_assert_null (items);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
 }
 
 /* Another history is emptied in the flavour the history runs on, as it is
