@@ -489,8 +489,11 @@ export const GPasteShellPrompt = GObject.registerClass({
         dialog.connect('destroy', () => this._open.delete(dialog));
 
         // It cannot fail on GNOME Shell 51, the only one metadata.json declares:
-        // ModalDialog.pushModal() takes the grab whatever else holds one, a
-        // dialog opened over another modal stacking on it.
+        // open() answers false only when pushModal() does, and Shell 51's
+        // pushModal() answers true whatever else holds a grab -- a dialog
+        // opened over another modal stacks on it, and no check of the seat's
+        // grab state is there to refuse it -- so no answer is owed for an open
+        // that failed.
         dialog.open();
     }
 

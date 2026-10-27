@@ -570,9 +570,7 @@ class GPasteIndicator extends Button {
         this._history = [];
     }
 
-    // The same row again folds the actions away; another row takes them.
-    // Focused when the keyboard asked, which has nowhere else to reach them
-    // from; a click leaves the focus with the pointer.
+    // As the history switcher's _toggleActions () does its rows'.
     _toggleItemActions(row, uuid, fromKeyboard) {
         if (this._itemActions.visible && this._itemActionsRow === row) {
             this._hideItemActions();
@@ -596,11 +594,10 @@ class GPasteIndicator extends Button {
             this._itemActions.focus();
     }
 
-    // A focused actor that is hidden is one Clutter drops the key focus for,
-    // which would strand a keyboard that has just used one of the buttons: it
-    // goes back to the row the actions were for. _refresh() and _rebuild()
-    // pick a surviving focus target after changing the rows. Reached from
-    // teardown as well, which may come before _setup () has built any of this.
+    // As the history switcher's _hideActions() says: the keyboard goes back to
+    // the row the actions were for. _refresh() and _rebuild() pick a surviving
+    // focus target after changing the rows. Reached from teardown as well,
+    // which may come before _setup () has built any of this.
     _hideItemActions(refocus = true) {
         if (!this._itemActions)
             return;

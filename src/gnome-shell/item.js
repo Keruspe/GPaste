@@ -207,10 +207,8 @@ export class GPasteItem extends PopupMenuItem {
         this.connect('notify::active', () => this._updateActionsVisibility());
         this._updateActionsVisibility();
 
-        // Recognised on press, as the shell's own right clicks are. A gesture
-        // that recognises cancels the others on the same points, so the row's
-        // own click gesture -- which takes any button -- never gets to the
-        // release it would select on.
+        // As the history switcher's rows recognise theirs, on press: the row's
+        // own click gesture never gets to the release it would select on.
         const rightClick = new Clutter.ClickGesture({
             required_button: Clutter.BUTTON_SECONDARY,
             recognize_on_press: true,
@@ -218,7 +216,7 @@ export class GPasteItem extends PopupMenuItem {
         rightClick.connect('recognize', () => this._askActions(false));
         this.add_action(rightClick);
 
-        // What St emits for the menu key and Shift+F10.
+        // As on the history switcher's rows: the menu key and Shift+F10.
         this.connect('popup-menu', () => this._askActions(true));
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;

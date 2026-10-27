@@ -430,6 +430,12 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
  * GetItems fails the whole batch over the gone one, so what the search found it
  * with is all that is left to describe it by.
  *
+ * Nothing secret outlives a password's removal by it: what is kept is a
+ * #GPasteClientItem, the item as a listing sends it -- the string a user is
+ * shown, which for a password is its name (g_paste_daemon_methods_item_variant
+ * ()) -- and the cleartext never crosses the bus to be kept at all. A password
+ * deleted after a search leaves its name here until the next one.
+ *
  * Only for a removal: any other update may have replaced an item under a new
  * uuid -- a text item made a password, say -- and describing the uuid gone
  * from before the change would name that result by the cleartext just made a
