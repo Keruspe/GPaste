@@ -169,21 +169,53 @@ def bash_behaviour():
 
     # History names straight off disk, any of which may hold what the shell
     # would expand: offered quoted, each once, none of them run -- under the
-    # bash before 5.2 too, which expands an array subscript once more.
-    for compat in (None, '51'):
+    # bash before 5.2 too, which expands an array subscript once more, and
+    # under a failglob the user set, three of the patterns matching nothing. A
+    # name may start with a dot.
+    for compat, stubs in ((None, ':'), ('51', ':'), (None, 'shopt -s failglob')):
         with tempfile.TemporaryDirectory() as data, tempfile.TemporaryDirectory() as cwd:
             histories = Path(data) / 'gpaste'
             histories.mkdir()
-            for name in ('$(touch ran).xml', 'my work.xml', 'plain.xml', 'plain.db'):
+            for name in ('$(touch ran).xml', 'my work.xml', 'plain.xml', '.dot.xml'):
                 (histories / name).touch()
             env = dict(os.environ, XDG_DATA_HOME=data)
             if compat:
                 env['BASH_COMPAT'] = compat
-            offered = bash_complete(['gpaste-client', 'switch-history', ''], env=env, cwd=cwd)
+            offered = bash_complete(['gpaste-client', 'switch-history', ''], env=env, cwd=cwd, stubs=stubs)
             if (Path(cwd) / 'ran').exists():
                 failures.append(f'a history name was run as a command (BASH_COMPAT={compat})')
-            if sorted(offered) != sorted(['\\$\\(touch\\ ran\\)', 'my\\ work', 'plain']):
-                failures.append(f'history names offered as {offered} (BASH_COMPAT={compat})')
+            if sorted(offered) != sorted(['\\$\\(touch\\ ran\\)', 'my\\ work', 'plain', '.dot']):
+                failures.append(f'history names offered as {offered} (BASH_COMPAT={compat}, {stubs})')
+            # Inside a quote the user opened, a name goes in as it is.
+            for quote in ("'", '"'):
+                offered = bash_complete(['gpaste-client', 'switch-history', f'{quote}my w'], env=env, cwd=cwd)
+                if offered != ['my work']:
+                    failures.append(f'{quote}my w completed as {offered}')
+
+    # A name holding a colon, which bash breaks the word at: bash-completion,
+    # where it is installed, puts the pieces back together, and what is offered
+    # goes in after the colon.
+    bash_completion = Path('/usr/share/bash-completion/bash_completion')
+    if bash_completion.exists():
+        with tempfile.TemporaryDirectory() as data:
+            histories = Path(data) / 'gpaste'
+            histories.mkdir()
+            for name in ('work:2024.xml', 'work:2025.xml'):
+                (histories / name).touch()
+            script = ('source "$1"; source "$2"; COMP_WORDS=(gpaste-client sh work : 202); COMP_CWORD=4; '
+                      'COMP_LINE="gpaste-client sh work:202"; COMP_POINT=${#COMP_LINE}; _gpaste-client; '
+                      'printf \'%s\\n\' "${COMPREPLY[@]}"')
+            out = subprocess.run(['bash', '-c', script, 'bash', str(bash_completion), str(ROOT / 'data/completions/gpaste-client')],
+                                 capture_output=True, text=True, check=True, env=dict(os.environ, XDG_DATA_HOME=data)).stdout
+            if sorted(out.split()) != ['2024', '2025']:
+                failures.append(f'work:202 completed as {out.split()}')
+
+    # A path holding a space is one candidate.
+    with tempfile.TemporaryDirectory() as cwd:
+        (Path(cwd) / 'my notes.txt').touch()
+        offered = bash_complete(['gpaste-client', 'file', 'my'], cwd=cwd)
+        if offered != ['my notes.txt']:
+            failures.append(f'a path with a space offered as {offered}')
 
     # A word typed of a name matches it however the shell has to quote the rest:
     # a control character makes all of it $'...', which no letter of the name
@@ -224,6 +256,85 @@ def bash_behaviour():
     for verb, options in bash_options(['list-histories', 'lh']).items():
         if '--zero' not in options:
             failures.append(f'no --zero after {verb}, which it reads')
+
+    return failures
+
+
+def zsh_run(body, env=None):
+    """@body run with the zsh completion loaded, _describe and _arguments
+    stubbed to print what they are handed."""
+    script = ('_describe () { print -rl -- "${(@P)${@[-1]}}"; }; _arguments () { print -rl -- "$@"; }; '
+              'source "$1" >/dev/null; ' + body)
+    return subprocess.run(['zsh', '-f', '-c', script, 'zsh', str(ROOT / 'data/completions/_gpaste-client')],
+                          capture_output=True, text=True, check=True, env=env).stdout.splitlines()
+
+
+def zsh_behaviour():
+    """What the zsh completion has to get right beyond the verbs it offers."""
+    failures = []
+
+    with tempfile.TemporaryDirectory() as data:
+        (Path(data) / 'gpaste').mkdir()
+        (Path(data) / 'gpaste' / 'work:2024.xml').touch()
+        (Path(data) / 'gpaste' / '.dot.xml').touch()
+        (Path(data) / 'gpaste' / 'ab\\cd.xml').touch()
+        (Path(data) / 'gpaste' / 'a\\:b.xml').touch()
+        offered = zsh_run('_gpaste-client_histories', env=dict(os.environ, XDG_DATA_HOME=data))
+        # The backslashes doubled, then the colons escaped: what _describe
+        # reads back as the names themselves.
+        if sorted(offered) != sorted(['.dot', 'work\\:2024', 'ab\\\\cd', 'a\\\\\\:b']):
+            failures.append(f'history names offered as {offered}')
+
+    # The options after the verb are its own as much as before it, and
+    # --use-index there too makes the item arguments indexes.
+    for words, current, expected in ((['delete', '-i', ''], 3, '1:item:_gpaste-client_indexes'),
+                                     (['delete', '-oi', ''], 3, '1:item:_gpaste-client_indexes'),
+                                     (['merge', '-d', 'i', ''], 4, '*:item:_gpaste-client_uuids')):
+        quoted = ' '.join(f"'{w}'" for w in words)
+        specs = zsh_run(f'words=({quoted}); CURRENT={current}; typeset -A opt_args; _gpaste-client_arguments')
+        if expected not in specs:
+            failures.append(f'{" ".join(words)} completed by {specs[-1:]}, not {expected}')
+        if not any('--use-index' in spec for spec in specs):
+            failures.append(f'{" ".join(words)} knows no options after the verb')
+
+    # After any verb, taking arguments or not.
+    _, every, _ = verbs()
+    for verb in sorted(every):
+        specs = zsh_run(f"words=('{verb}' ''); CURRENT=2; typeset -A opt_args; _gpaste-client_arguments")
+        if not any('--zero' in spec for spec in specs):
+            failures.append(f'no options completed after {verb}')
+
+    return failures
+
+
+def fish_behaviour():
+    """What the fish completion has to get right beyond the verbs it offers: a
+    history offered for the first argument alone, the verb read as getopt_long
+    reads the line -- past an option's value, a bundle's included, and never an
+    argument spelled like a verb -- and a name holding a line break or a tab
+    left out rather than offered in pieces."""
+    failures = []
+
+    def complete(line, env=None, cwd=None):
+        return subprocess.run(['fish', '--no-config', '-c', 'source $argv[1]; complete -C $argv[2]',
+                               str(ROOT / 'data/completions/gpaste-client.fish'), line],
+                              capture_output=True, text=True, check=True, env=env, cwd=cwd).stdout
+
+    with tempfile.TemporaryDirectory() as data:
+        (Path(data) / 'gpaste').mkdir()
+        for name in ('work', 'a\tb', 'x\ny'):
+            (Path(data) / 'gpaste' / f'{name}.xml').touch()
+        env = dict(os.environ, XDG_DATA_HOME=data)
+        for line, offered in (('gpaste-client switch-history ', True),
+                              ('gpaste-client backup-history work ', False),
+                              ('gpaste-client -ft 5 sh ', True),
+                              ('gpaste-client add-password sh ', False)):
+            out = complete(line, env)
+            candidates = [c.split('\t')[0] for c in out.splitlines()]
+            if ('work' in candidates) != offered:
+                failures.append(f'"{line}" offers {out.split()}')
+            if offered and set(candidates) != {'work'}:
+                failures.append(f'"{line}" offers names in pieces: {candidates}')
 
     return failures
 
@@ -298,6 +409,7 @@ def main():
             failures.append(f'data/completions/gpaste-client does not offer --use-index after: {", ".join(missing)}')
 
     if shutil.which('zsh'):
+        failures += [f'data/completions/_gpaste-client: {f}' for f in zsh_behaviour()]
         with tempfile.TemporaryDirectory() as scratch:
             listed = zsh_descriptions(Path(scratch))
         if listed.count(b'1: a') != 2 or controls(listed, b'\n'):
@@ -308,6 +420,7 @@ def main():
             failures.append(f'data/completions/_gpaste-client offers histories from {listed} beside a GPaste directory')
 
     if shutil.which('fish'):
+        failures += [f'data/completions/gpaste-client.fish: {f}' for f in fish_behaviour()]
         with tempfile.TemporaryDirectory() as scratch:
             listed = fish_descriptions(Path(scratch))
         if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):

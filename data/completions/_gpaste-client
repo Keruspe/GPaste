@@ -38,8 +38,15 @@ _gpaste-client_histories() {
         dir=${dir}/gpaste
     fi
 
-    names=(${dir}/*.(xml|xmls|db|dbs)(N:t:r))
-    names=(${(u)names})
+    # A name may start with a dot (D); the empty one is no history.
+    names=(${dir}/*.(xml|xmls|db|dbs)(ND:t:r))
+    names=(${(u)names:#})
+    # _describe splits each entry at its first colon, the rest being the
+    # description, and a history's name may hold one -- and takes a backslash
+    # for quoting what follows, which a name may hold too: doubled first, so
+    # that a backslash before a colon is not taken for that colon's escape.
+    names=(${names//\\/\\\\})
+    names=(${names//:/\\:})
 
     _describe -t histories 'history' names
 }
@@ -123,58 +130,100 @@ _gpaste-client_subcommands() {
     _describe -t commands 'gpaste-client subcommand' subcommands
 }
 
+# Every option, declared both before the verb and to each verb's own
+# _arguments: getopt_long permutes, so they are accepted anywhere on the line,
+# and an option after the verb is otherwise taken for its first argument.
+_gpaste_client_options=(
+    '(-h --help)'{-h,--help}'[Display the help.]'
+    '(-v --version)'{-v,--version}'[Display the version.]'
+    '(-f --favourites)'{-f,--favourites}'[Only display the pinned items.]'
+    '(-i --use-index)'{-i,--use-index}'[Use the index of the item instead of its UUID.]'
+    '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]'
+    '(-r --raw)'{-r,--raw}'[Display the raw item, without its UUID.]'
+    '(-e --reverse)'{-e,--reverse}'[Display the items in reverse order.]'
+    '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]'
+    '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]:decoration:'
+    '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]:separator:'
+    '(-t --timeout)'{-t,--timeout}'[How long a password stays on the clipboard, in seconds; 0 for as long as anything else.]:seconds:'
+)
+
+# Whether --use-index is on the line, before the verb (@opt_args) or after it
+# (@words, from the verb on): -i in a bundle of short options too, unless an
+# option taking a value comes first in it.
+(( $+functions[_gpaste-client_use_index] )) ||
+_gpaste-client_use_index() {
+    local word flag
+
+    (( ${+opt_args[-i]} || ${+opt_args[--use-index]} )) && return 0
+
+    for word in ${words[2,CURRENT-1]}; do
+        [[ ${word} == --use-index ]] && return 0
+        [[ ${word} == -[^-]* ]] || continue
+        for flag in ${(s::)word#-}; do
+            [[ ${flag} == i ]] && return 0
+            [[ ${flag} == [dst] ]] && break
+        done
+    done
+
+    return 1
+}
+
 (( $+functions[_gpaste-client_arguments] )) ||
 _gpaste-client_arguments() {
     # Which of the two an item argument is spelled as depends on --use-index.
     local item=_gpaste-client_uuids
 
-    (( ${+opt_args[-i]} || ${+opt_args[--use-index]} )) && item=_gpaste-client_indexes
+    _gpaste-client_use_index && item=_gpaste-client_indexes
 
     case ${words[1]} in
         (empty|e|delete-history|dh|switch-history|sh)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '1:history:_gpaste-client_histories'
             ;;
         (backup-history|bh)
             # <history> <backup name>, the history being optional.
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '1:history:_gpaste-client_histories' \
                 '2:backup name:'
             ;;
         (file|f)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '*:file:_files'
             ;;
         (get|g|select|set|s|delete|del|d|remove|rm|upload|u|upload-and-copy|uc|strip-rich-text|srt|favourite|fav|unfavourite|unfav)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 "1:item:${item}"
             ;;
         (replace)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 "1:item:${item}" \
                 '2:contents:'
             ;;
         (make-password|mp)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 "1:item:${item}" \
                 '2:name:'
             ;;
         (merge|m)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 "*:item:${item}"
             ;;
         (add|a)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '1:text:'
             ;;
         (add-password|ap)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '1:name:' \
                 '2:password:'
             ;;
         (search)
-            _arguments -s : \
+            _arguments -s : "${_gpaste_client_options[@]}" \
                 '1:pattern:'
+            ;;
+        (*)
+            # A verb with no arguments still takes the options after it.
+            _arguments -s : "${_gpaste_client_options[@]}"
             ;;
     esac
 }
@@ -183,20 +232,7 @@ _gpaste-client() {
     local context state state_descr line curcontext="${curcontext}"
     typeset -A opt_args
 
-    # getopt_long permutes, so every option is accepted anywhere on the line;
-    # they are declared once here rather than per subcommand.
-    _arguments -s -C : \
-        '(-h --help)'{-h,--help}'[Display the help.]' \
-        '(-v --version)'{-v,--version}'[Display the version.]' \
-        '(-f --favourites)'{-f,--favourites}'[Only display the pinned items.]' \
-        '(-i --use-index)'{-i,--use-index}'[Use the index of the item instead of its UUID.]' \
-        '(-o --oneline)'{-o,--oneline}'[Display each item on one line.]' \
-        '(-r --raw)'{-r,--raw}'[Display the raw item, without its UUID.]' \
-        '(-e --reverse)'{-e,--reverse}'[Display the items in reverse order.]' \
-        '(-z --zero)'{-z,--zero}'[Use a NUL character instead of a newline between each item.]' \
-        '(-d --decoration)'{-d,--decoration}'[Add the decoration at the beginning and end of each item before merging.]:decoration:' \
-        '(-s --separator)'{-s,--separator}'[Add a separator between each item when merging.]:separator:' \
-        '(-t --timeout)'{-t,--timeout}'[How long a password stays on the clipboard, in seconds; 0 for as long as anything else.]:seconds:' \
+    _arguments -s -C : "${_gpaste_client_options[@]}" \
         '1: :_gpaste-client_subcommands' \
         '*:: :->arguments' && return
 
