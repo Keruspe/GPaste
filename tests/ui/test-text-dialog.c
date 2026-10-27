@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 
@@ -47,12 +49,21 @@ make_paragraphs (gsize length)
 }
 
 static void
-on_answer (const gchar *text,
-           gpointer     user_data)
+never_submitted (AdwDialog   *dialog G_GNUC_UNUSED,
+                 const gchar *text G_GNUC_UNUSED,
+                 gpointer     user_data G_GNUC_UNUSED)
 {
-    gboolean *refused = user_data;
+    g_assert_not_reached ();
+}
 
-    *refused = !text;
+/* Set when the dialog lets go of its caller's state: at once, when it refused
+ * to open. */
+static void
+on_released (gpointer user_data)
+{
+    gboolean *released = user_data;
+
+    *released = TRUE;
 }
 
 static GtkTextView *
@@ -80,7 +91,7 @@ open_with (gconstpointer user_data)
     gboolean expect_refusal = GPOINTER_TO_INT (user_data);
     g_autofree gchar *text = (expect_refusal) ? make_line (OVER_THE_LIMIT)
                                               : make_paragraphs (OVER_THE_LIMIT);
-    gboolean refused = FALSE;
+    gboolean released = FALSE;
 
     if (!have_display)
     {
@@ -92,19 +103,19 @@ open_with (gconstpointer user_data)
      * destroyed, which is what every test here ends with. */
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, never_submitted, &released, on_released);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
 
     if (expect_refusal)
     {
-        g_assert_true (refused);
+        g_assert_true (released);
         g_assert_null (dialog);
         gtk_window_destroy (GTK_WINDOW (window));
         return;
     }
 
-    g_assert_false (refused);
+    g_assert_false (released);
     g_assert_nonnull (dialog);
     adw_dialog_force_close (dialog);
     gtk_window_destroy (GTK_WINDOW (window));
@@ -116,7 +127,6 @@ static void
 insert_a_long_line (void)
 {
     g_autofree gchar *pasted = make_line (OVER_THE_LIMIT);
-    gboolean refused = FALSE;
 
     if (!have_display)
     {
@@ -126,7 +136,7 @@ insert_a_long_line (void)
 
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", "short", on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", "short", never_submitted, NULL, NULL);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
@@ -161,7 +171,6 @@ insert_a_long_line_below (void)
     g_autofree gchar *line = make_line (OVER_THE_LIMIT);
     g_autofree gchar *pasted = g_strdup_printf ("\n%s\n", line);
     g_autofree gchar *paragraphs = make_paragraphs (OVER_THE_LIMIT);
-    gboolean refused = FALSE;
 
     if (!have_display)
     {
@@ -171,7 +180,7 @@ insert_a_long_line_below (void)
 
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", "short", on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", "short", never_submitted, NULL, NULL);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
@@ -206,7 +215,7 @@ open_other_delimiters (gconstpointer user_data)
 {
     const gchar *delimiter = user_data;
     g_autofree gchar *text = make_paragraphs_ended_by (OVER_THE_LIMIT, delimiter);
-    gboolean refused = FALSE;
+    gboolean released = FALSE;
 
     if (!have_display)
     {
@@ -216,11 +225,11 @@ open_other_delimiters (gconstpointer user_data)
 
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, never_submitted, &released, on_released);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
 
-    g_assert_false (refused);
+    g_assert_false (released);
     g_assert_nonnull (dialog);
     adw_dialog_force_close (dialog);
     gtk_window_destroy (GTK_WINDOW (window));
@@ -234,7 +243,6 @@ join_into_a_long_line (void)
 {
     g_autofree gchar *line = make_line (UNDER_THE_LIMIT);
     g_autofree gchar *text = g_strdup_printf ("%s\n%s\nshort\nshort", line, line);
-    gboolean refused = FALSE;
 
     if (!have_display)
     {
@@ -244,7 +252,7 @@ join_into_a_long_line (void)
 
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Edit Item", "Save", text, never_submitted, NULL, NULL);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
@@ -298,7 +306,6 @@ find_button (GtkWidget   *root,
 static void
 empty_not_confirmed (void)
 {
-    gboolean refused = FALSE;
 
     if (!have_display)
     {
@@ -308,7 +315,7 @@ empty_not_confirmed (void)
 
     AdwApplicationWindow *window = ADW_APPLICATION_WINDOW (adw_application_window_new (NULL));
 
-    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Add New Item", "Add", NULL, on_answer, &refused);
+    g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Add New Item", "Add", NULL, never_submitted, NULL, NULL);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     GtkWidget *confirm = find_button (GTK_WIDGET (dialog), "Add");
@@ -461,6 +468,51 @@ empty_confirmed_without_daemon (void)
     gtk_window_destroy (window);
 }
 
+/* A form held for its call can be neither closed nor confirmed again, the last
+ * failure taken down; a failure gives it back with what went wrong, and a call
+ * that went through closes it. One no longer presented is never held. */
+static void
+form_dialog_held (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    GtkWidget *confirm;
+    AdwDialog *dialog = g_paste_gtk_util_form_dialog ("Form", "Send", gtk_label_new ("content"), 300, 0, &confirm);
+    g_autoptr (AdwDialog) held = g_object_ref (dialog);
+    guint closed = 0;
+
+    g_signal_connect_swapped (dialog, "closed", G_CALLBACK (g_paste_test_bus_count_emission), &closed);
+    g_assert_false (g_paste_gtk_util_form_dialog_hold (dialog));
+    gtk_window_present (window);
+    adw_dialog_present (dialog, GTK_WIDGET (window));
+
+    AdwBanner *banner = ADW_BANNER (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_BANNER));
+
+    g_assert_true (g_paste_gtk_util_form_dialog_hold (dialog));
+    g_assert_true (g_paste_gtk_util_form_dialog_is_held (dialog));
+    g_assert_false (g_paste_gtk_util_form_dialog_hold (dialog));
+    g_assert_false (adw_dialog_get_can_close (dialog));
+    g_assert_false (gtk_widget_get_sensitive (confirm));
+
+    g_assert_true (g_paste_gtk_util_form_dialog_done (dialog, "Refused"));
+    g_assert_false (g_paste_gtk_util_form_dialog_is_held (dialog));
+    g_assert_true (adw_dialog_get_can_close (dialog));
+    g_assert_true (adw_banner_get_revealed (banner));
+    g_assert_cmpstr (adw_banner_get_title (banner), ==, "Refused");
+
+    g_assert_true (g_paste_gtk_util_form_dialog_hold (dialog));
+    g_assert_false (adw_banner_get_revealed (banner));
+    g_assert_false (g_paste_gtk_util_form_dialog_done (dialog, NULL));
+    g_assert_cmpuint (closed, ==, 1);
+    g_assert_false (g_paste_gtk_util_form_dialog_hold (dialog));
+    gtk_window_destroy (window);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -478,6 +530,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog/paragraph_separator_lines_opened", "\u2029", open_other_delimiters);
     g_test_add_func ("/ui/text_dialog/joined_line_refused", join_into_a_long_line);
     g_test_add_func ("/ui/text_dialog/empty_not_confirmed", empty_not_confirmed);
+    g_test_add_func ("/ui/form_dialog/held", form_dialog_held);
     g_test_add_func ("/ui/confirm_dialog/empty_without_daemon", empty_confirmed_without_daemon);
     g_test_add_data_func ("/ui/confirm_dialog/window_gone", GINT_TO_POINTER (CONFIRM_WINDOW_GONE), confirm_answered_once);
     g_test_add_data_func ("/ui/confirm_dialog/answered_then_window_gone", GINT_TO_POINTER (CONFIRM_ANSWERED_THEN_WINDOW_GONE), confirm_answered_once);

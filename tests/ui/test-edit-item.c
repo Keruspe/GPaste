@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-3/gpaste-client.h>
 
 typedef struct
@@ -33,44 +34,36 @@ finish_item (GPasteClient *client G_GNUC_UNUSED,
     return g_paste_client_item_new ("00000000-0000-4000-8000-000000000001", "Text", G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
-static guint replaces;
+static GPasteTestGtkSave save;
 
-/* Counted and never answered: how a failed save is reported is the window's
- * business, and linking it in would bring the whole graphical tool along. */
+static gchar *
+finish_save (GPasteClient *client G_GNUC_UNUSED,
+             GAsyncResult *result G_GNUC_UNUSED,
+             GError      **error)
+{
+    return g_paste_test_gtk_save_finish (&save, error);
+}
+
 static void
 send_replace (GPasteClient       *client G_GNUC_UNUSED,
               const gchar        *uuid G_GNUC_UNUSED,
               const gchar        *contents G_GNUC_UNUSED,
               GCancellable       *cancellable G_GNUC_UNUSED,
-              GAsyncReadyCallback callback G_GNUC_UNUSED,
-              gpointer            data G_GNUC_UNUSED)
+              GAsyncReadyCallback callback,
+              gpointer            data)
 {
-    ++replaces;
+    g_paste_test_gtk_save_send (&save, callback, data);
 }
 
 #define g_paste_client_get_item read_item
 #define g_paste_client_get_item_finish finish_item
 #define g_paste_client_replace send_replace
+#define g_paste_client_replace_finish finish_save
 #include "../../src/ui/gpaste-ui-edit-item.c"
+#undef g_paste_client_replace_finish
 #undef g_paste_client_replace
 #undef g_paste_client_get_item_finish
 #undef g_paste_client_get_item
-
-gpointer
-g_paste_ui_report_string (GtkWidget           *origin G_GNUC_UNUSED,
-                          GPasteUiStringFinish finish G_GNUC_UNUSED,
-                          const gchar         *message G_GNUC_UNUSED)
-{
-    return NULL;
-}
-
-void
-g_paste_ui_report_string_cb (GObject      *source_object G_GNUC_UNUSED,
-                             GAsyncResult *res G_GNUC_UNUSED,
-                             gpointer      user_data G_GNUC_UNUSED)
-{
-    g_assert_not_reached ();
-}
 
 static void
 reply (GPasteClient *client)
@@ -155,22 +148,26 @@ edit_window_lifetime (gconstpointer user_data)
 }
 
 static void
-count_refused_answer (const gchar *text,
-                      gpointer     user_data)
+never_submitted (AdwDialog   *dialog G_GNUC_UNUSED,
+                 const gchar *text G_GNUC_UNUSED,
+                 gpointer     user_data G_GNUC_UNUSED)
 {
-    guint *answers = user_data;
+    g_assert_not_reached ();
+}
 
-    g_assert_null (text);
-    ++*answers;
+static void
+count_release (gpointer user_data)
+{
+    ++*(guint *) user_data;
 }
 
 /* A text dialog is only put up over a window it can live in: libadwaita gives it
  * a window of its own over anything else, with a lifecycle of its own that
  * g_paste_gtk_util_text_dialog () refuses to take on. Such a parent is a
- * programmer error, reported as one, and nothing is put up -- but the callback
- * is still answered, once, as a cancellation, the caller's state being freed
- * there. With @user_data, the parent is an Adwaita window that cannot be
- * resized, which libadwaita does not host a dialog in either. */
+ * programmer error, reported as one, and nothing is put up -- but @destroy is
+ * still called, once, the caller's state being freed there. With @user_data,
+ * the parent is an Adwaita window that cannot be resized, which libadwaita does
+ * not host a dialog in either. */
 static void
 foreign_parent_refused (gconstpointer user_data)
 {
@@ -191,7 +188,7 @@ foreign_parent_refused (gconstpointer user_data)
         /* The refusal is a critical, which g_test_init () makes fatal: survived
          * here, so that what comes after it can be checked. */
         g_log_set_always_fatal (G_LOG_FATAL_MASK);
-        g_paste_gtk_util_text_dialog (parent, "Edit Item", "Save", "some text", count_refused_answer, &answers);
+        g_paste_gtk_util_text_dialog (parent, "Edit Item", "Save", "some text", never_submitted, &answers, count_release);
         g_assert_cmpuint (answers, ==, 1);
 
         /* Nothing was connected to the parent either. */
@@ -237,47 +234,10 @@ unhostable_window_refused (void)
     g_test_trap_assert_stderr ("*CRITICAL*g_paste_ui_edit_item_show*g_paste_gtk_util_can_host_dialog*");
 }
 
-static GtkWidget *
-find_button (GtkWidget   *root,
-             const gchar *label)
-{
-    if (GTK_IS_BUTTON (root) && !g_strcmp0 (gtk_button_get_label (GTK_BUTTON (root)), label))
-        return root;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkWidget *found = find_button (child, label);
-
-        if (found)
-            return found;
-    }
-
-    return NULL;
-}
-
-static GtkTextBuffer *
-find_buffer (GtkWidget *root)
-{
-    if (GTK_IS_TEXT_VIEW (root))
-        return gtk_text_view_get_buffer (GTK_TEXT_VIEW (root));
-
-    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkTextBuffer *found = find_buffer (child);
-
-        if (found)
-            return found;
-    }
-
-    return NULL;
-}
-
-/* Save on the edit dialog over @window, its text set to @text first unless
- * %NULL, waiting for the dialog to answer. */
-static void
-save_edit (GPasteClient *client,
-           GtkWindow    *window,
-           const gchar  *text)
+/* The edit dialog over @window, its read answered. */
+static AdwDialog *
+edit_dialog (GPasteClient *client,
+             GtkWindow    *window)
 {
     g_paste_ui_edit_item_show (client, window, "00000000-0000-4000-8000-000000000001");
     reply (client);
@@ -285,15 +245,12 @@ save_edit (GPasteClient *client,
     AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
 
     g_assert_nonnull (dialog);
-    if (text)
-        gtk_text_buffer_set_text (find_buffer (GTK_WIDGET (dialog)), text, -1);
-    g_signal_emit_by_name (find_button (GTK_WIDGET (dialog), "Save"), "clicked");
-    while (adw_window_get_visible_dialog (ADW_WINDOW (window)))
-        g_main_context_iteration (NULL, TRUE);
+
+    return dialog;
 }
 
-/* Saving the text as it was read sends nothing: Replace would make a new item
- * of it all the same, and drop its rich text. */
+/* Saving the text as it was read sends nothing and closes: Replace would make
+ * a new item of it all the same, and drop its rich text. */
 static void
 unchanged_not_saved (void)
 {
@@ -307,12 +264,74 @@ unchanged_not_saved (void)
     GtkWindow *window = GTK_WINDOW (adw_window_new ());
 
     gtk_window_present (window);
-    replaces = 0;
-    save_edit (client, window, NULL);
-    g_assert_cmpuint (replaces, ==, 0);
-    save_edit (client, window, "Text edited");
-    g_assert_cmpuint (replaces, ==, 1);
+    save.sent = 0;
+
+    AdwDialog *dialog = edit_dialog (client, window);
+
+    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    g_paste_test_gtk_wait_dialog_closed (window);
+    g_assert_cmpuint (save.sent, ==, 0);
     gtk_window_destroy (window);
+}
+
+/* An edit the daemon refuses -- the item gone meanwhile, or too big -- is not
+ * lost with the dialog. */
+static void
+refusal_kept (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+
+    gtk_window_present (window);
+    save.sent = 0;
+
+    AdwDialog *dialog = edit_dialog (client, window);
+
+    g_paste_test_gtk_set_dialog_text (dialog, "Text edited");
+    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    g_assert_cmpuint (save.sent, ==, 1);
+    {
+        g_autofree gchar *text = g_paste_test_gtk_dialog_text (dialog);
+
+        g_assert_cmpstr (text, ==, "Text edited");
+    }
+    g_paste_test_gtk_assert_refusal_kept (&save, client, window, dialog, "Save", "Could not save the edited item");
+    g_assert_cmpuint (save.sent, ==, 2);
+    gtk_window_destroy (window);
+}
+
+/* A window going while the save is out takes the dialog, and frees what the
+ * edit held; the answer after that has nothing left to tell -- @user_data
+ * holding the dialog alive across it, as an accessible or an animation can,
+ * the answer reaching a dialog no longer presented, which it leaves alone. */
+static void
+window_gone_while_saving (gconstpointer user_data)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+
+    gtk_window_present (window);
+
+    AdwDialog *dialog = edit_dialog (client, window);
+    g_autoptr (AdwDialog) held = (user_data) ? g_object_ref (dialog) : NULL;
+
+    g_paste_test_gtk_set_dialog_text (dialog, "Text edited");
+    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    gtk_window_destroy (window);
+    g_assert_cmpuint (G_OBJECT (client)->ref_count, ==, 1);
+    g_paste_test_gtk_save_answer (&save, client);
 }
 
 int
@@ -331,5 +350,8 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/text_dialog_answer/fixed_size_parent_refused", GINT_TO_POINTER (TRUE), foreign_parent_refused);
     g_test_add_func ("/ui/edit_item/unhostable_window_refused", unhostable_window_refused);
     g_test_add_func ("/ui/edit_item/unchanged_not_saved", unchanged_not_saved);
+    g_test_add_func ("/ui/edit_item/refusal_kept", refusal_kept);
+    g_test_add_data_func ("/ui/edit_item/window_gone_while_saving", GINT_TO_POINTER (FALSE), window_gone_while_saving);
+    g_test_add_data_func ("/ui/edit_item/window_gone_while_saving_held", GINT_TO_POINTER (TRUE), window_gone_while_saving);
     return g_paste_test_env_run ();
 }

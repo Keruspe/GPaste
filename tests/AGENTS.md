@@ -572,20 +572,43 @@ one, for a server with nothing but a generated skeleton on it: a single
 nothing announces -- a warning *not* coming, or a timer the code under test
 runs on its own; anything with a state to wait for waits on it instead.
 
+The graphical tool's suites that look widgets up in a dialog link
+`gpaste_test_gtk_dep` (`tests/gpaste-test-gtk.c`), which carries
+`gpaste_test_bus_dep` along, rather than keep a copy of each helper:
+`g_paste_test_gtk_find_widget()` and `_find_button()` search a widget's tree,
+`_wait_dialog_closed()` waits on the dialog of an `AdwWindow` or an
+`AdwApplicationWindow` going, at most `G_PASTE_TEST_BUS_WAIT_SECONDS`, and
+`_dialog_text()` and `_set_dialog_text()` read and write a dialog's text view.
+A `GPasteTestGtkSave` is the save a
+suite's stand-in for a client call keeps for its case to answer
+(`_save_send()`, `_save_finish()`, `_save_answer()`), which
+`_assert_refusal_kept()` walks through a refusal and a second try, expecting
+the composer's warning: its caller builds the composer without
+`G_LOG_USE_STRUCTURED`, as `test-ui-edit-item` and `test-ui-new-item` do.
+
 `test-ui-password` controls the edit dialog's two asynchronous replies while using
 real GTK on the private Xvfb. It checks both late-reply orders, closure between
 replies, a closed parent retained by another operation, and an intentionally
 hidden parent. The edit must not hold the window alive and thereby prevent the
-`destroy` signal cancelling its reads. `test-ui-edit-item` holds Edit Item's one
+`destroy` signal cancelling its reads. It also answers the save itself: the
+dialog and its Cancel are held while the save is out but go with their window.
+It is built without `G_LOG_USE_STRUCTURED`, so that
+`g_test_expect_message()` catches the warning a failure leaves.
+`test-ui-edit-item` holds Edit Item's one
 read to the same: a closed parent and a retained closed one get no dialog, an
 open one does, and a window closed under the dialog goes and frees what the edit
 held, even while something else holds the dialog; a text dialog refuses a
 parent libadwaita would not host it in, answering once as a cancellation, and
 Edit Item refuses such a window before its read goes out. Saving the text as
-it was read sends no Replace, a changed one does.
+it was read sends no Replace and closes. A refused save keeps the dialog up,
+which neither closes nor takes a second press while the save is out, with the
+text and the failure in it, and a window going while it is out frees what the
+edit held.
 `test-ui-new-item` checks that a window closed under the New Item composer
-goes and frees what the composer held, and that a window the dialog would
-refuse is refused on the way in.
+goes and frees what the composer held, that a window the dialog would
+refuse is refused on the way in, and that a refused item stays in the dialog as
+Edit Item's does, over an application window as the graphical tool's is. Both
+build `gpaste-ui-composer.c` in, without `G_LOG_USE_STRUCTURED`.
 
 Clipboard regressions also cover synchronous password eviction invalidating a
 source cache during synchronization, distinct named passwords sharing a value,

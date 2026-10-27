@@ -10,8 +10,7 @@
 
 /* What the dialog needs to answer: the call to make and the form to update
  * when it replies. @name, @password and @timeout are the rows themselves,
- * read at confirm time, @strength the row rating what @password holds; @confirm
- * is the button the two entries gate, and @submitted guards a pending call.
+ * read at confirm time, @strength the row rating what @password holds.
  *
  * @uuid is what says which call: an item to turn into a password, or %NULL for
  * a password being added from nothing -- which is the one shape carrying
@@ -24,10 +23,7 @@ typedef struct
     GtkEditable         *password;
     GtkWidget           *strength;
     GtkAdjustment       *timeout;
-    GtkWidget           *confirm;
     AdwPreferencesGroup *group;
-    gboolean             submitted;
-    gboolean             closed;
 } PasswordDialogData;
 
 static void
@@ -60,15 +56,6 @@ is_complete (PasswordDialogData *data)
     return password && *password;
 }
 
-static void
-on_dialog_closed (AdwDialog *dialog G_GNUC_UNUSED,
-                  gpointer   user_data)
-{
-    PasswordDialogData *data = user_data;
-
-    data->closed = TRUE;
-}
-
 /* A pending call must not keep a cancelled dialog and its password alive. */
 typedef struct
 {
@@ -92,30 +79,15 @@ on_password_saved (GObject      *source_object,
         return;
 
     PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
-
-    if (data->closed)
-        return;
-
-    if (uuid)
-    {
-        adw_dialog_close (dialog);
-        return;
-    }
-
-    data->submitted = FALSE;
-    gtk_widget_set_sensitive (GTK_WIDGET (data->group), TRUE);
-    gtk_widget_set_sensitive (data->confirm, is_complete (data));
-
     gboolean conflict = g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS);
     const gchar *message = conflict ? _("A password with this name already exists. Choose another name.")
                          : data->uuid ? _("Could not make the item a password")
                                       : _("Could not add the password");
 
-    /* Escaped, the group taking markup: @message is a translation. No test can
-     * tell, no message holding an & or a <. */
-    g_autofree gchar *escaped = g_markup_escape_text (message, -1);
+    if (!g_paste_gtk_util_form_dialog_done (dialog, (uuid) ? NULL : message))
+        return;
 
-    adw_preferences_group_set_description (data->group, escaped);
+    gtk_widget_set_sensitive (GTK_WIDGET (data->group), TRUE);
     if (conflict)
         gtk_widget_grab_focus (GTK_WIDGET (data->name));
     else if (error)
@@ -127,22 +99,19 @@ on_confirm (GtkButton *button,
             gpointer   user_data)
 {
     PasswordDialogData *data = user_data;
+    AdwDialog *dialog = ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG));
 
-    if (data->submitted || data->closed || !is_complete (data))
+    if (!is_complete (data) || !g_paste_gtk_util_form_dialog_hold (dialog))
         return;
 
     const gchar *name = gtk_editable_get_text (data->name);
     guint timeout = (guint) gtk_adjustment_get_value (data->timeout);
-    AdwDialog *dialog = ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG));
     PasswordRequest *request = g_new0 (PasswordRequest, 1);
 
     g_weak_ref_init (&request->dialog, dialog);
     request->finish = data->uuid ? g_paste_client_make_password_finish : g_paste_client_add_password_finish;
 
-    data->submitted = TRUE;
-    gtk_widget_set_sensitive (GTK_WIDGET (button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (data->group), FALSE);
-    adw_preferences_group_set_description (data->group, NULL);
 
     /* The confirm button follows the entries, so neither of these can be empty
      * -- which is exactly what both calls refuse outright. */
@@ -158,17 +127,13 @@ on_confirm (GtkButton *button,
     }
 }
 
-/* Editing cannot enable a second submission while the daemon is answering. */
 static void
-on_form_changed (GtkEditable *entry G_GNUC_UNUSED,
+on_form_changed (GtkEditable *entry,
                  gpointer     user_data)
 {
     PasswordDialogData *data = user_data;
 
-    if (data->submitted)
-        return;
-
-    gtk_widget_set_sensitive (data->confirm, is_complete (data));
+    g_paste_gtk_util_form_dialog_set_complete (ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (entry), ADW_TYPE_DIALOG)), is_complete (data));
 }
 
 /* The password gates the button as the name does, and is the one thing here
@@ -251,10 +216,9 @@ password_dialog (GPasteClient *client,
     data->uuid = g_strdup (uuid);
     data->name = GTK_EDITABLE (name_row);
     data->timeout = adw_spin_row_get_adjustment (ADW_SPIN_ROW (timeout_row));
-    data->confirm = confirm;
     data->group = ADW_PREFERENCES_GROUP (group);
 
-    gtk_widget_set_sensitive (confirm, is_complete (data));
+    g_paste_gtk_util_form_dialog_set_complete (dialog, is_complete (data));
 
     /* Every handler below reads the whole of @data, so none of them is connected
      * before all of it is filled in. */
@@ -262,7 +226,6 @@ password_dialog (GPasteClient *client,
         g_signal_connect (data->password, "changed", G_CALLBACK (on_password_changed), data);
     g_signal_connect (name_row, "changed", G_CALLBACK (on_form_changed), data);
     g_signal_connect (confirm, "clicked", G_CALLBACK (on_confirm), data);
-    g_signal_connect (dialog, "closed", G_CALLBACK (on_dialog_closed), data);
 
     /* The dialog outlives this function and the data outlives the dialog's
      * widgets, so it hangs off the dialog rather than off the confirm button:

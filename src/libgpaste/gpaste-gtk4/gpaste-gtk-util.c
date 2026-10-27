@@ -36,7 +36,7 @@ on_confirm_response (AdwAlertDialog *dialog,
     g_paste_gtk_confirm_dialog_answer (ADW_DIALOG (dialog), g_paste_str_equal (response, "confirm"));
 }
 
-/* Connected as g_paste_gtk_text_dialog_cancel () is. */
+/* Connected as g_paste_gtk_text_dialog_release () is. */
 static void
 g_paste_gtk_confirm_dialog_refuse (AdwDialog *dialog)
 {
@@ -318,6 +318,41 @@ on_form_dialog_cancel (GtkButton *button,
     adw_dialog_close (ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG)));
 }
 
+#define FORM_DIALOG_KEY "form-dialog-data"
+
+/* Kept on the dialog, so it lives exactly as long as the dialog does: whether
+ * what the form holds can be confirmed
+ * (g_paste_gtk_util_form_dialog_set_complete ()), whether a call made of it is
+ * out (g_paste_gtk_util_form_dialog_hold ()), and whether the dialog was closed
+ * -- which a reply landing later finds. */
+typedef struct
+{
+    GtkWidget *confirm;
+    AdwBanner *failure;
+    gboolean   complete;
+    gboolean   held;
+    gboolean   closed;
+} GPasteGtkFormDialogData;
+
+static void
+on_form_dialog_closed (AdwDialog *dialog,
+                       gpointer   user_data G_GNUC_UNUSED)
+{
+    GPasteGtkFormDialogData *data = g_object_get_data (G_OBJECT (dialog), FORM_DIALOG_KEY);
+
+    data->closed = TRUE;
+}
+
+/* Closed, or its window destroyed under it: a dialog something else still holds
+ * -- an accessible, a pending animation, the inspector -- is only unparented
+ * then, and libadwaita refuses to close one that is no longer presented. */
+static gboolean
+g_paste_gtk_form_dialog_gone (AdwDialog               *dialog,
+                              GPasteGtkFormDialogData *data)
+{
+    return data->closed || !gtk_widget_get_parent (GTK_WIDGET (dialog));
+}
+
 /**
  * g_paste_gtk_util_form_dialog:
  * @heading: what the dialog is for
@@ -326,12 +361,16 @@ on_form_dialog_cancel (GtkButton *button,
  * @width: the content width to give the dialog
  * @height: the content height to give it, or 0 to let @content ask for its own
  * @confirm: (out) (transfer none): the confirm button, which the caller connects
- *           to and is free to follow -- desensitizing it while the form is
- *           incomplete, and again once it has been pressed, since closing is
- *           asynchronous and the button stays live until it happens
+ *           to: the shell keeps it insensitive while the form is incomplete
+ *           (g_paste_gtk_util_form_dialog_set_complete ()) and while the call
+ *           confirming made is out
  *
  * The shell every composer puts up: @content under a header bar offering to
- * cancel or to confirm, cancelling being all it handles by itself.
+ * cancel or to confirm, cancelling being all it handles by itself. Confirming
+ * is the caller's, which holds the dialog up while the call it makes is out
+ * (g_paste_gtk_util_form_dialog_hold ()) and lets it go once that call answers
+ * (g_paste_gtk_util_form_dialog_done ()): a dialog gone the moment the user
+ * confirmed would take what they wrote with it, should the daemon refuse it.
  *
  * A dialog rather than an alert: an alert is a short message with a question
  * attached, and a composer is neither -- a text editor six hundred pixels wide,
@@ -367,9 +406,12 @@ g_paste_gtk_util_form_dialog (const gchar *heading,
     adw_header_bar_pack_start (ADW_HEADER_BAR (header), cancel);
     adw_header_bar_pack_end (ADW_HEADER_BAR (header), *confirm);
 
+    GtkWidget *failure = adw_banner_new ("");
     GtkWidget *toolbar = adw_toolbar_view_new ();
 
+    adw_banner_set_use_markup (ADW_BANNER (failure), FALSE);
     adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), failure);
     adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
 
     AdwDialog *dialog = adw_dialog_new ();
@@ -379,8 +421,140 @@ g_paste_gtk_util_form_dialog (const gchar *heading,
     if (height)
         adw_dialog_set_content_height (dialog, height);
     adw_dialog_set_child (dialog, toolbar);
+    g_object_bind_property (dialog, "can-close", cancel, "sensitive", G_BINDING_SYNC_CREATE);
+
+    GPasteGtkFormDialogData *data = g_new0 (GPasteGtkFormDialogData, 1);
+
+    data->confirm = *confirm;
+    data->failure = ADW_BANNER (failure);
+    /* As GTK makes the button, until the caller says what the form holds. */
+    data->complete = TRUE;
+    g_object_set_data_full (G_OBJECT (dialog), FORM_DIALOG_KEY, data, g_free);
+    g_signal_connect (dialog, "closed", G_CALLBACK (on_form_dialog_closed), NULL);
 
     return dialog;
+}
+
+/**
+ * g_paste_gtk_util_form_dialog_set_complete:
+ * @dialog: a dialog g_paste_gtk_util_form_dialog () put up
+ * @complete: whether what the form holds can be confirmed
+ *
+ * Say whether the form is complete: confirm can be pressed while it is, and no
+ * call made of what it holds is out (g_paste_gtk_util_form_dialog_hold ()).
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_form_dialog_set_complete (AdwDialog *dialog,
+                                           gboolean   complete)
+{
+    g_return_if_fail (ADW_IS_DIALOG (dialog));
+
+    GPasteGtkFormDialogData *data = g_object_get_data (G_OBJECT (dialog), FORM_DIALOG_KEY);
+
+    g_return_if_fail (data);
+
+    data->complete = complete;
+    gtk_widget_set_sensitive (data->confirm, complete && !data->held);
+}
+
+/**
+ * g_paste_gtk_util_form_dialog_hold:
+ * @dialog: a dialog g_paste_gtk_util_form_dialog () put up
+ *
+ * Hold @dialog up for the call made of what it holds: it can be neither closed
+ * nor confirmed again, and the failure the last call said is taken down, until
+ * g_paste_gtk_util_form_dialog_done () says how this one went. What the form's
+ * own fields do meanwhile is the caller's.
+ *
+ * Returns: whether the dialog is held, which one held already or no longer
+ *          presented is not -- a second press of confirm, or one landing after
+ *          the close -- the caller then making no call
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gtk_util_form_dialog_hold (AdwDialog *dialog)
+{
+    g_return_val_if_fail (ADW_IS_DIALOG (dialog), FALSE);
+
+    GPasteGtkFormDialogData *data = g_object_get_data (G_OBJECT (dialog), FORM_DIALOG_KEY);
+
+    g_return_val_if_fail (data, FALSE);
+
+    if (data->held || g_paste_gtk_form_dialog_gone (dialog, data))
+        return FALSE;
+
+    data->held = TRUE;
+    /* Cancel follows. */
+    adw_dialog_set_can_close (dialog, FALSE);
+    gtk_widget_set_sensitive (data->confirm, FALSE);
+    adw_banner_set_revealed (data->failure, FALSE);
+
+    return TRUE;
+}
+
+/**
+ * g_paste_gtk_util_form_dialog_is_held:
+ * @dialog: a dialog g_paste_gtk_util_form_dialog () put up
+ *
+ * Whether @dialog is held up for a call (g_paste_gtk_util_form_dialog_hold ()).
+ *
+ * Returns: whether the call made of what it holds is out
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gtk_util_form_dialog_is_held (AdwDialog *dialog)
+{
+    g_return_val_if_fail (ADW_IS_DIALOG (dialog), FALSE);
+
+    GPasteGtkFormDialogData *data = g_object_get_data (G_OBJECT (dialog), FORM_DIALOG_KEY);
+
+    g_return_val_if_fail (data, FALSE);
+
+    return data->held;
+}
+
+/**
+ * g_paste_gtk_util_form_dialog_done:
+ * @dialog: a dialog g_paste_gtk_util_form_dialog_hold () held up
+ * @failure: (nullable): what to say should the call have failed, or %NULL if it
+ *           went through
+ *
+ * Let @dialog go: closed when the call went through, or back to the user with
+ * @failure said above the form, for them to change what it holds and confirm
+ * again, or cancel. A dialog no longer presented -- closed, or its window
+ * destroyed under it while something else still holds it -- is left alone,
+ * with nobody left to close it for nor to tell.
+ *
+ * Returns: whether @dialog is back with the user, its caller then giving the
+ *          form's fields back
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_gtk_util_form_dialog_done (AdwDialog   *dialog,
+                                   const gchar *failure)
+{
+    g_return_val_if_fail (ADW_IS_DIALOG (dialog), FALSE);
+
+    GPasteGtkFormDialogData *data = g_object_get_data (G_OBJECT (dialog), FORM_DIALOG_KEY);
+
+    g_return_val_if_fail (data, FALSE);
+    g_return_val_if_fail (data->held, FALSE);
+
+    data->held = FALSE;
+
+    if (g_paste_gtk_form_dialog_gone (dialog, data))
+        return FALSE;
+
+    adw_dialog_set_can_close (dialog, TRUE);
+
+    if (!failure)
+    {
+        adw_dialog_close (dialog);
+        return FALSE;
+    }
+
+    adw_banner_set_title (data->failure, failure);
+    adw_banner_set_revealed (data->failure, TRUE);
+    gtk_widget_set_sensitive (data->confirm, data->complete);
+
+    return TRUE;
 }
 
 /* The longest line the composer will put in a #GtkTextView, in characters.
@@ -532,70 +706,49 @@ on_text_dialog_delete_range (GtkTextBuffer *buffer,
     g_signal_stop_emission_by_name (buffer, "delete-range");
 }
 
-/* Kept on the dialog, so it lives exactly as long as the dialog does. @answer
- * is what the user wrote, set only when they confirmed: the result is delivered
- * from "closed", which is the way out of the dialog every choice of the user's
- * goes through.
+/* Kept on the dialog, so it lives exactly as long as the dialog does.
  *
- * Not the only way out, though: a dialog whose window is destroyed under it goes
- * without emitting "closed". The callback is then answered as a cancellation, so
- * it is answered exactly once whatever happens -- which is what lets a caller
+ * Confirming hands the text to @submit and holds the dialog up, the text no
+ * longer editable, until the caller says how the call it made went
+ * (g_paste_gtk_util_text_dialog_done ()), as g_paste_gtk_util_form_dialog_hold ()
+ * says.
+ *
+ * @destroy is called exactly once whatever happens, which is what lets a caller
  * hand its state over to @user_data and free it there, holding nothing else, its
- * window above all (/ui/edit_item/closed_with_dialog_up).
- *
- * Answered from the window's "destroy", and from the dialog's own for a dialog
- * that goes any other way; never from this being freed with the dialog's data,
- * which happens at finalize. Nor is the dialog's "destroy" alone enough: a
- * dialog something else still holds -- an accessible, a pending animation, the
- * inspector -- is only unparented when its window goes, not disposed, and emits
- * nothing until that reference is dropped, the caller's state waiting on it. The
- * first answer sets @answered, whichever route gives it, and every later one is
- * a no-op. A callback answered from either must not reach back for the dialog. */
+ * window above all (/ui/edit_item/closed_with_dialog_up). From "closed", which
+ * every way out the user can take goes through; but a dialog whose window is
+ * destroyed under it goes without emitting "closed", so from the window's
+ * "destroy" as well, and from the dialog's own for a dialog that goes any other
+ * way; never from this being freed with the dialog's data, which happens at
+ * finalize. Nor is the dialog's "destroy" alone enough: a dialog something else
+ * still holds -- an accessible, a pending animation, the inspector -- is only
+ * unparented when its window goes, not disposed, and emits nothing until that
+ * reference is dropped, the caller's state waiting on it. The first route sets
+ * @released, and every later one is a no-op. */
 typedef struct
 {
-    GPasteGtkTextDialogCallback callback;
-    gpointer                    user_data;
-    GtkTextBuffer              *buffer;
-    gchar                      *answer;
-    gboolean                    answered;
+    GPasteGtkTextDialogSubmit submit;
+    gpointer                  user_data;
+    GDestroyNotify            destroy;
+    GtkTextBuffer            *buffer;
+    GtkWidget                *view;
+    gboolean                  released;
 } GPasteGtkTextDialogData;
 
-static void
-g_paste_gtk_text_dialog_data_free (gpointer user_data)
-{
-    GPasteGtkTextDialogData *data = user_data;
-
-    g_free (data->answer);
-    g_free (data);
-}
+#define TEXT_DIALOG_KEY "text-dialog-data"
 
 /* Exactly once: see the struct. */
 static void
-g_paste_gtk_text_dialog_answer (AdwDialog *dialog,
-                                gboolean   cancelled)
+g_paste_gtk_text_dialog_release (AdwDialog *dialog)
 {
-    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), "text-dialog-data");
+    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), TEXT_DIALOG_KEY);
 
-    if (!data || data->answered)
+    if (!data || data->released)
         return;
 
-    data->answered = TRUE;
-    data->callback ((cancelled) ? NULL : data->answer, data->user_data);
-}
-
-/* Connected straight to the dialog's "destroy" and, swapped, to its parent's:
- * both hand it the dialog first and something it ignores after. */
-static void
-g_paste_gtk_text_dialog_cancel (AdwDialog *dialog)
-{
-    g_paste_gtk_text_dialog_answer (dialog, TRUE);
-}
-
-static void
-on_text_dialog_closed (AdwDialog *dialog,
-                       gpointer   user_data G_GNUC_UNUSED)
-{
-    g_paste_gtk_text_dialog_answer (dialog, FALSE);
+    data->released = TRUE;
+    if (data->destroy)
+        data->destroy (data->user_data);
 }
 
 /* An empty text is no item: nothing to add, and an edit emptying one would be a
@@ -604,7 +757,7 @@ static void
 on_text_dialog_changed (GtkTextBuffer *buffer,
                         gpointer       user_data)
 {
-    gtk_widget_set_sensitive (user_data, gtk_text_buffer_get_char_count (buffer) > 0);
+    g_paste_gtk_util_form_dialog_set_complete (user_data, gtk_text_buffer_get_char_count (buffer) > 0);
 }
 
 static void
@@ -612,17 +765,47 @@ on_text_dialog_confirm (GtkButton *button,
                         gpointer   user_data G_GNUC_UNUSED)
 {
     AdwDialog *dialog = ADW_DIALOG (gtk_widget_get_ancestor (GTK_WIDGET (button), ADW_TYPE_DIALOG));
-    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), "text-dialog-data");
+    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), TEXT_DIALOG_KEY);
     GtkTextIter start, end;
 
-    gtk_text_buffer_get_bounds (data->buffer, &start, &end);
-    /* Closing is what delivers the answer, and the close below is asynchronous:
-     * the button is still live until it happens, so a second press would drop
-     * the first answer on the floor. */
-    g_free (data->answer);
-    data->answer = gtk_text_buffer_get_text (data->buffer, &start, &end, FALSE);
+    if (data->released || !g_paste_gtk_util_form_dialog_hold (dialog))
+        return;
 
-    adw_dialog_close (dialog);
+    gtk_text_buffer_get_bounds (data->buffer, &start, &end);
+
+    g_autofree gchar *text = gtk_text_buffer_get_text (data->buffer, &start, &end, FALSE);
+
+    /* Not insensitive: what was written stays readable, and can be copied. */
+    gtk_text_view_set_editable (GTK_TEXT_VIEW (data->view), FALSE);
+    data->submit (dialog, text, data->user_data);
+}
+
+/**
+ * g_paste_gtk_util_text_dialog_done:
+ * @dialog: a dialog g_paste_gtk_util_text_dialog () put up, handed to its
+ *          @submit
+ * @failure: (nullable): what to say should the call made of what was submitted
+ *           have failed, or %NULL if it went through
+ *
+ * Let the dialog go, as g_paste_gtk_util_form_dialog_done () does: closed when
+ * what was submitted went through, or back to the user with @failure said above
+ * the text they wrote, which they can then change and submit again, or cancel.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_text_dialog_done (AdwDialog   *dialog,
+                                   const gchar *failure)
+{
+    g_return_if_fail (ADW_IS_DIALOG (dialog));
+
+    GPasteGtkTextDialogData *data = g_object_get_data (G_OBJECT (dialog), TEXT_DIALOG_KEY);
+
+    g_return_if_fail (data);
+
+    if (!g_paste_gtk_util_form_dialog_done (dialog, failure))
+        return;
+
+    gtk_text_view_set_editable (GTK_TEXT_VIEW (data->view), TRUE);
+    gtk_widget_grab_focus (data->view);
 }
 
 /**
@@ -647,24 +830,32 @@ g_paste_gtk_util_can_host_dialog (GtkWindow *window)
  * @heading: what the dialog is for
  * @confirm_label: the label of the confirm button
  * @text: (nullable): what the text view starts with
- * @callback: (closure user_data) (scope async): handed what the user wrote,
- *            never empty, or %NULL if they cancelled -- called exactly once, a
- *            dialog whose window is destroyed under it and a call that is
- *            refused both answering %NULL
+ * @submit: (closure user_data) (scope notified): handed what the user wrote,
+ *          never empty, each time they confirm
+ * @destroy: (nullable): frees @user_data -- called exactly once, when the
+ *           dialog goes however it goes, its window being destroyed under it
+ *           included, or at once when the call is refused
  *
  * The dialog for composing an item: a wrapping, scrollable text view in the shell
  * g_paste_gtk_util_form_dialog () puts up. Both adding a new item and editing an
  * existing one put up the same one.
+ *
+ * Confirming does not close it: @submit makes its call of what was written, and
+ * the dialog is held up until g_paste_gtk_util_text_dialog_done () says how that
+ * went, so that a refusal leaves the user what they wrote. A caller's reply
+ * holds the dialog weakly: one whose window went before the reply has nothing
+ * left to be told.
  */
 G_PASTE_VISIBLE void
-g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
-                              const gchar                *heading,
-                              const gchar                *confirm_label,
-                              const gchar                *text,
-                              GPasteGtkTextDialogCallback callback,
-                              gpointer                    user_data)
+g_paste_gtk_util_text_dialog (GtkWindow                *parent,
+                              const gchar              *heading,
+                              const gchar              *confirm_label,
+                              const gchar              *text,
+                              GPasteGtkTextDialogSubmit submit,
+                              gpointer                  user_data,
+                              GDestroyNotify            destroy)
 {
-    g_return_if_fail (callback);
+    g_return_if_fail (submit);
 
     /* A parent the dialog can live in, and nothing else. A window of its own
      * would have a life of its own: it outlives its parent, goes before it, and
@@ -672,28 +863,29 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
      * down -- each a way to answer twice, not at all, or to use freed memory.
      *
      * Hand-rolled where the check above uses g_return_if_fail (), as in
-     * g_paste_clipboard_provider_sync_text (): the answer is what frees the
-     * caller's state, so a refused call still gives it
+     * g_paste_clipboard_provider_sync_text (): @destroy is what frees the
+     * caller's state, so a refused call still calls it
      * (/ui/text_dialog_answer/foreign_parent_refused,
      * /ui/text_dialog_answer/fixed_size_parent_refused). */
     if (!g_paste_gtk_util_can_host_dialog (parent) || !heading || !confirm_label)
     {
         g_critical ("%s: assertion failed: a @parent g_paste_gtk_util_can_host_dialog () accepts, a @heading and a @confirm_label", G_STRFUNC);
 
-        callback (NULL, user_data);
+        if (destroy)
+            destroy (user_data);
 
         return;
     }
 
     /* Never opened over a line the view cannot lay out at typing speed (see
      * MAX_COMPOSABLE_LINE): showing it is already seconds of frozen window, and
-     * every edit after that is another one. Answered like a cancellation, which
-     * is what the caller is built for. */
+     * every edit after that is another one. */
     if (text && text_has_uncomposable_line (text))
     {
         g_paste_gtk_util_toast (GTK_WIDGET (parent), _("This item has a line too long to edit"));
 
-        callback (NULL, user_data);
+        if (destroy)
+            destroy (user_data);
 
         return;
     }
@@ -721,22 +913,24 @@ g_paste_gtk_util_text_dialog (GtkWindow                  *parent,
 
     GtkWidget *confirm;
     AdwDialog *dialog = g_paste_gtk_util_form_dialog (heading, confirm_label, scroll, 600, 400, &confirm);
-
-    g_signal_connect (confirm, "clicked", G_CALLBACK (on_text_dialog_confirm), NULL);
-    g_signal_connect_object (buffer, "changed", G_CALLBACK (on_text_dialog_changed), confirm, 0);
-    on_text_dialog_changed (buffer, confirm);
-
     GPasteGtkTextDialogData *data = g_new0 (GPasteGtkTextDialogData, 1);
 
-    data->callback = callback;
+    data->submit = submit;
     data->user_data = user_data;
+    data->destroy = destroy;
     data->buffer = buffer;
+    data->view = view;
 
-    g_object_set_data_full (G_OBJECT (dialog), "text-dialog-data", data, g_paste_gtk_text_dialog_data_free);
-    g_signal_connect (dialog, "closed", G_CALLBACK (on_text_dialog_closed), NULL);
-    g_signal_connect (dialog, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_cancel), NULL);
+    g_object_set_data_full (G_OBJECT (dialog), TEXT_DIALOG_KEY, data, g_free);
+    on_text_dialog_changed (buffer, dialog);
+
+    g_signal_connect (confirm, "clicked", G_CALLBACK (on_text_dialog_confirm), NULL);
+    g_signal_connect_object (buffer, "changed", G_CALLBACK (on_text_dialog_changed), dialog, 0);
+    /* All three hand it the dialog first and anything after is ignored. */
+    g_signal_connect (dialog, "closed", G_CALLBACK (g_paste_gtk_text_dialog_release), NULL);
+    g_signal_connect (dialog, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_release), NULL);
     /* Gone with the dialog, g_signal_connect_object () disconnecting it then. */
-    g_signal_connect_object (parent, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_cancel), dialog, G_CONNECT_SWAPPED);
+    g_signal_connect_object (parent, "destroy", G_CALLBACK (g_paste_gtk_text_dialog_release), dialog, G_CONNECT_SWAPPED);
 
     adw_dialog_present (dialog, GTK_WIDGET (parent));
     gtk_widget_grab_focus (view);

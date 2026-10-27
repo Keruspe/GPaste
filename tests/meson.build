@@ -37,6 +37,19 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
+# The widget lookups, dialog waits and stand-in saves the graphical tool's suites share.
+gpaste_test_gtk_lib = static_library(
+  'gpaste-test-gtk',
+  sources: 'gpaste-test-gtk.c',
+  dependencies: [ gtk4_dep, gpaste_test_bus_dep, libadwaita_dep, libgpaste_internal_dep ],
+)
+
+gpaste_test_gtk_dep = declare_dependency(
+  link_with: gpaste_test_gtk_lib,
+  include_directories: include_directories('.'),
+  dependencies: [ gtk4_dep, gpaste_test_bus_dep, libadwaita_dep ],
+)
+
 # A few suites replace a function of one of our libraries from the executable,
 # which reaches the library's own calls only while those go through the PLT:
 # -Bsymbolic-functions, in Ubuntu's default LDFLAGS for one, binds them inside

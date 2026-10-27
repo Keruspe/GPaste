@@ -3,8 +3,8 @@
 
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 
+#include <gpaste-ui-composer.h>
 #include <gpaste-ui-edit-item.h>
-#include <gpaste-ui-window.h>
 
 /* One edit's state, from the read of the item to the answer of its dialog.
  *
@@ -13,9 +13,9 @@
  * the dialog's stretch too: the dialog lives in the window, and a reference kept
  * for as long as it is up would keep a window the user closed from ever being
  * disposed, the dialog and the text being edited with it
- * (/ui/edit_item/closed_with_dialog_up). The dialog always answers, a window gone
- * under it included (g_paste_gtk_util_text_dialog ()),
- * which is what frees this. */
+ * (/ui/edit_item/closed_with_dialog_up). The dialog always lets this go, a
+ * window gone under it included (g_paste_gtk_util_text_dialog ()). @original is
+ * the text as it was read. */
 typedef struct
 {
     GPasteClient *client;
@@ -26,8 +26,10 @@ typedef struct
 } EditData;
 
 static void
-edit_data_free (EditData *data)
+edit_data_free (gpointer user_data)
 {
+    EditData *data = user_data;
+
     g_clear_object (&data->client);
     g_free (data->uuid);
     g_free (data->original);
@@ -39,24 +41,26 @@ edit_data_free (EditData *data)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EditData, edit_data_free)
 
 static void
-on_edit_response (const gchar *text,
-                  gpointer     user_data)
+on_edit_submit (AdwDialog   *dialog,
+                const gchar *text,
+                gpointer     user_data)
 {
-    g_autoptr (EditData) data = user_data;
-    g_autoptr (GtkWindow) rootwin = g_weak_ref_get (&data->rootwin);
+    EditData *data = user_data;
 
-    /* %NULL means cancelled, and a window gone took the dialog with it, which
-     * answers as a cancellation. The text left as it was read is no edit:
-     * Replace would still make a new item of it, dropping its rich text, and
-     * put it back on the clipboard as plain text were it the head. */
-    if (!text || !rootwin || g_paste_str_equal (text, data->original))
+    /* The text left as it was read is no edit: Replace would still make a new
+     * item of it, dropping its rich text, and put it back on the clipboard as
+     * plain text were it the head. */
+    if (g_paste_str_equal (text, data->original))
+    {
+        g_paste_gtk_util_text_dialog_done (dialog, NULL);
         return;
+    }
 
     g_paste_client_replace (data->client, data->uuid, text,
                             NULL /* cancellable */,
-                            g_paste_ui_report_string_cb,
-                            g_paste_ui_report_string (GTK_WIDGET (rootwin), g_paste_client_replace_finish,
-                                                      _("Could not save the edited item")));
+                            g_paste_ui_composer_reply_cb,
+                            g_paste_ui_composer_reply (dialog, g_paste_client_replace_finish,
+                                                       _("Could not save the edited item")));
 }
 
 static void
@@ -90,7 +94,7 @@ on_item_ready (GObject      *source_object,
     const gchar *value = g_paste_client_item_get_value (item);
 
     data->original = g_strdup (value);
-    g_paste_gtk_util_text_dialog (rootwin, _("Edit Item"), _("Save"), value, on_edit_response, g_steal_pointer (&data));
+    g_paste_gtk_util_text_dialog (rootwin, _("Edit Item"), _("Save"), value, on_edit_submit, g_steal_pointer (&data), edit_data_free);
 }
 
 /**
