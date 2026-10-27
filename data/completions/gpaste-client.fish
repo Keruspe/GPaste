@@ -61,8 +61,10 @@ end
 function __gpaste_items
     __gpaste_daemon_running; or return
 
-    # A control character as U+FFFD, as the zsh completion shows one.
+    # Each line cut to what a description shows first, as the zsh completion
+    # cuts it, and a control character as U+FFFD, as it shows one.
     gpaste-client history --oneline $argv </dev/null 2>/dev/null \
+        | string sub -l 256 \
         | string replace -ra '\p{Cc}' '�' \
         | string replace -r '^([^:]+): ' '$1\t'
 end
@@ -123,6 +125,12 @@ function __gpaste_verb_and_position
     test -n "$verb"; and printf '%s\n%s\n' $verb $position
 end
 
+# Whether no verb is on the line yet, for the verbs to be offered.
+function __gpaste_no_verb
+    set -l found (__gpaste_verb_and_position)
+    test (count $found) -eq 0
+end
+
 # Whether the verb on the line is one of $argv -- the word an argument spells
 # being no verb -- and, with --first, the word being completed its first
 # argument.
@@ -158,7 +166,7 @@ function __gpaste_subcommand
     set -l description $argv[-1]
 
     for name in $argv[1..-2]
-        complete -c gpaste-client -n __fish_use_subcommand -a $name -d $description
+        complete -c gpaste-client -n __gpaste_no_verb -a $name -d $description
     end
 end
 
@@ -205,12 +213,11 @@ __gpaste_subcommand version v                          'Display the version'
 complete -c gpaste-client -n '__gpaste_verb_is --first empty e delete-history dh switch-history sh backup-history bh' \
     -a '(__gpaste_histories)' -d History
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
+complete -c gpaste-client -n '__gpaste_verb_is --first file f' -F
 
-# Every argument of these verbs is offered items, where merge alone takes one
-# in each: the contents of replace and the name of make-password are offered
-# them too, unlike in bash and zsh. Telling the first argument from the next
-# would mean counting the words before the cursor, less the options and the
-# values -d, -s and -t take, for a completion the user only has to type past.
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
+# The item an item verb acts on is its first argument, the contents of replace
+# and the name of make-password coming after it, as in bash and zsh; merge
+# takes an item in every position.
+complete -c gpaste-client -n '__gpaste_verb_is --first get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'
+complete -c gpaste-client -n '__gpaste_verb_is merge m' -a '(__gpaste_uuids_or_indexes)'

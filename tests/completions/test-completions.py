@@ -76,11 +76,15 @@ def read_table(name, pattern, shape):
     return matches
 
 
+def option_rows():
+    return read_table('static const Option options', OPTION,
+                      '{ "name", \'letter\', has_arg, NULL or N_ ("arg"), group, ... }')
+
+
 def options():
     """Each option's long and short names, by its letter, and the letters of
     the general ones."""
-    matches = read_table('static const Option options', OPTION,
-                         '{ "name", \'letter\', has_arg, NULL or N_ ("arg"), group, ... }')
+    matches = option_rows()
     names = {m['letter']: (f'--{m["name"]}', f'-{m["letter"]}') for m in matches}
     return names, {m['letter'] for m in matches if m['group'] == 'OPTION_GROUP_GENERAL'}
 
@@ -128,10 +132,11 @@ def bash_options(names):
 
 
 def fake_client(scratch):
-    """A gpaste-client whose history holds one item, with an escape sequence and
-    a bell in it, and the environment that puts it first on PATH."""
+    """A gpaste-client whose history holds two items, one with an escape
+    sequence and a bell in it, one a long text, and the environment that puts
+    it first on PATH."""
     fake = scratch / 'gpaste-client'
-    fake.write_text("#!/bin/sh\nprintf '1: a\\033]0;title\\007b\\n'\n")
+    fake.write_text("#!/bin/sh\nprintf '1: a\\033]0;title\\007b\\n'\nprintf '2: %s\\n' '" + 'x' * 4000 + "'\n")
     fake.chmod(0o755)
     return dict(os.environ, PATH=f'{scratch}{os.pathsep}{os.environ.get("PATH", "")}')
 
@@ -262,12 +267,22 @@ def bash_behaviour():
             if sorted(out.split()) != ['2024', '2025']:
                 failures.append(f'work:202 completed as {out.split()}')
 
-    # A path holding a space is one candidate.
+    # A path holding a space is one candidate, and file takes one path alone.
     with tempfile.TemporaryDirectory() as cwd:
         (Path(cwd) / 'my notes.txt').touch()
         offered = bash_complete(['gpaste-client', 'file', 'my'], cwd=cwd)
         if offered != ['my notes.txt']:
             failures.append(f'a path with a space offered as {offered}')
+        offered = bash_complete(['gpaste-client', 'file', 'my notes.txt', ''], cwd=cwd)
+        if offered:
+            failures.append(f'a second path offered as {offered}')
+
+    # The value a bundle's last letter takes is no argument: nothing is offered
+    # for it, as for the bare option's.
+    for words in (['gpaste-client', 'make-password', '-ot', ''], ['gpaste-client', '-ot', '']):
+        offered = bash_complete(words)
+        if offered:
+            failures.append(f'{" ".join(words)} offered {offered} for the value')
 
     # A word typed of a name matches it however the shell has to quote the rest:
     # a control character makes all of it $'...', which no letter of the name
@@ -332,6 +347,11 @@ def zsh_behaviour(every):
         if sorted(offered) != sorted(['.dot', 'work\\:2024', 'ab\\\\cd', 'a\\\\\\:b']):
             failures.append(f'history names offered as {offered}')
 
+    # file takes one path alone.
+    specs = zsh_run("words=('file' 'notes' ''); CURRENT=3; typeset -A opt_args; _gpaste-client_arguments")
+    if '1:file:_files' not in specs:
+        failures.append(f'file completed by {specs[-1:]}, not its one path')
+
     # The options after the verb are its own as much as before it, and
     # --use-index there too makes the item arguments indexes.
     for words, current, expected in ((['delete', '-i', ''], 3, '1:item:_gpaste-client_indexes'),
@@ -357,14 +377,16 @@ def fish_behaviour():
     """What the fish completion has to get right beyond the verbs it offers: a
     history offered for the first argument alone, the verb read as getopt_long
     reads the line -- past an option's value, a bundle's included, and never an
-    argument spelled like a verb -- and a name holding a line break or a tab
-    left out rather than offered in pieces."""
+    argument spelled like a verb -- a name holding a line break or a tab left
+    out rather than offered in pieces, and one path alone for file."""
     failures = []
 
     def complete(line, env=None, cwd=None):
-        return subprocess.run(['fish', '--no-config', '-c', 'source $argv[1]; complete -C $argv[2]',
-                               str(ROOT / 'data/completions/gpaste-client.fish'), line],
-                              capture_output=True, text=True, check=True, env=env, cwd=cwd).stdout
+        """The candidates fish offers for @line, without their descriptions."""
+        out = subprocess.run(['fish', '--no-config', '-c', 'source $argv[1]; complete -C $argv[2]',
+                              str(ROOT / 'data/completions/gpaste-client.fish'), line],
+                             capture_output=True, text=True, check=True, env=env, cwd=cwd).stdout
+        return [c.split('\t')[0] for c in out.splitlines()]
 
     with tempfile.TemporaryDirectory() as data:
         (Path(data) / 'gpaste').mkdir()
@@ -375,12 +397,23 @@ def fish_behaviour():
                               ('gpaste-client backup-history work ', False),
                               ('gpaste-client -ft 5 sh ', True),
                               ('gpaste-client add-password sh ', False)):
-            out = complete(line, env)
-            candidates = [c.split('\t')[0] for c in out.splitlines()]
+            candidates = complete(line, env)
             if ('work' in candidates) != offered:
-                failures.append(f'"{line}" offers {out.split()}')
+                failures.append(f'"{line}" offers {candidates}')
             if offered and set(candidates) != {'work'}:
                 failures.append(f'"{line}" offers names in pieces: {candidates}')
+
+        candidates = complete('gpaste-client -t 30 ', env)
+        if 'history' not in candidates:
+            failures.append(f'"gpaste-client -t 30 " offers no verb: {candidates}')
+
+    # file takes one path alone.
+    with tempfile.TemporaryDirectory() as cwd:
+        (Path(cwd) / 'notes.txt').touch()
+        for line, offered in (('gpaste-client file ', True), ('gpaste-client file notes.txt ', False)):
+            candidates = complete(line, cwd=cwd)
+            if ('notes.txt' in candidates) != offered:
+                failures.append(f'"{line}" offers {candidates}')
 
     return failures
 
@@ -415,23 +448,24 @@ def man_verbs():
     return {m.strip('[]') for m in re.findall(r'^\.TP\n\.B gpaste-client (\[?[\w-]+\]?)', body, re.M)}
 
 
-def unnamed_values():
+def unnamed_values(man=None):
     """The options whose value --help and the man page name differently, or
     one of them not at all: --help prints the arg its row gives, and an
-    option taking a value with none there reads as a flag."""
-    man = (ROOT / 'man/1/gpaste-client.1').read_text()
+    option taking a value with none there reads as a flag. @man is the man
+    page's text, the tree's unless given."""
+    man = man if man is not None else (ROOT / 'man/1/gpaste-client.1').read_text()
     man = man[man.index('.SH "OPTIONS"'):]
     failures = []
 
-    for m in read_table('static const Option options', OPTION,
-                        '{ "name", \'letter\', has_arg, NULL or N_ ("arg"), group, ... }'):
+    for m in option_rows():
         takes = m['has_arg'] == 'required_argument'
         if takes != bool(m['arg']):
             failures.append(f'options[] gives --{m["name"]} {"no" if takes else "an"} argument for --help, '
                             f'though it takes {"one" if takes else "none"}')
         entry = re.search(rf'^\.B -{m["letter"]}, --{m["name"]}\b(?P<rest>.*)$', man, re.M)
-        if entry and m['arg'] and entry['rest'] != f' <{m["arg"]}>':
-            failures.append(f'the man page gives --{m["name"]}{entry["rest"]}, where --help gives <{m["arg"]}>')
+        shown = f' <{m["arg"]}>' if m['arg'] else ''
+        if entry and entry['rest'] != shown:
+            failures.append(f'the man page gives --{m["name"]}{entry["rest"]}, where --help gives --{m["name"]}{shown}')
 
     return failures
 
@@ -450,6 +484,11 @@ def main():
     option_names, general = options()
     canonical, every, wanted = verbs(option_names)
     failures = []
+    # The man page check, on one naming a value for a flag, as no man page of
+    # the tree's does: one reading past it would pass any man page.
+    flag = next(m for m in option_rows() if m['has_arg'] == 'no_argument')
+    if not unnamed_values(f'.SH "OPTIONS"\n.B -{flag["letter"]}, --{flag["name"]} <n>\n'):
+        failures.append(f'the man page check reads past a value given to --{flag["name"]}, which takes none')
     failures += unnamed_values()
 
     offered = {'data/completions/_gpaste-client': zsh_verbs(),
@@ -477,6 +516,9 @@ def main():
             listed = zsh_descriptions(Path(scratch))
         if listed.count(b'1: a') != 2 or controls(listed, b'\n'):
             failures.append(f'data/completions/_gpaste-client lists an item as {listed!r}')
+        # A long item cut to what a description shows, before the shell holds it.
+        if max(len(line) for line in listed.splitlines()) > 256:
+            failures.append('data/completions/_gpaste-client hands _describe a whole long item')
         with tempfile.TemporaryDirectory() as scratch:
             listed = zsh_histories(Path(scratch))
         if listed != ['legacy']:
@@ -488,6 +530,8 @@ def main():
             listed = fish_descriptions(Path(scratch))
         if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):
             failures.append(f'data/completions/gpaste-client.fish lists an item as {listed!r}')
+        if max(len(line) for line in listed.splitlines()) > 256:
+            failures.append('data/completions/gpaste-client.fish offers a whole long item')
         with tempfile.TemporaryDirectory() as scratch:
             listed = fish_histories(Path(scratch))
         if listed != ['legacy']:

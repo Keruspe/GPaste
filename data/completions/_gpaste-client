@@ -59,14 +59,21 @@ _gpaste-client_histories() {
 # zsh lists a description as it is, and gpaste-client writes an item as it is
 # to a pipe: a control character is shown as U+FFFD, as gpaste-client itself
 # shows one on a terminal, rather than sent there -- an escape sequence a page
-# put on the clipboard would otherwise retitle or recolour the terminal.
+# put on the clipboard would otherwise retitle or recolour the terminal. Each
+# line is cut to what a description shows first, by sed, rather than every
+# byte of a history of large texts captured and gone over by the shell.
+(( $+functions[_gpaste-client_lines] )) ||
+_gpaste-client_lines() {
+    gpaste-client history --oneline "$@" </dev/null 2>/dev/null | sed -E 's/^(.{0,256}).*/\1/'
+}
+
 (( $+functions[_gpaste-client_uuids] )) ||
 _gpaste-client_uuids() {
     local -a items
 
     _gpaste-client_daemon_running || return 1
 
-    items=(${${(f)"$(gpaste-client history --oneline </dev/null 2>/dev/null)"}//[[:cntrl:]]/�})
+    items=(${${(f)"$(_gpaste-client_lines)"}//[[:cntrl:]]/�})
 
     _describe -t items 'item' items
 }
@@ -78,7 +85,7 @@ _gpaste-client_indexes() {
 
     _gpaste-client_daemon_running || return 1
 
-    items=(${${(f)"$(gpaste-client history --oneline --use-index </dev/null 2>/dev/null)"}//[[:cntrl:]]/�})
+    items=(${${(f)"$(_gpaste-client_lines --use-index)"}//[[:cntrl:]]/�})
 
     _describe -t indexes 'index' items
 }
@@ -188,7 +195,7 @@ _gpaste-client_arguments() {
             ;;
         (file|f)
             _arguments -s : "${_gpaste_client_options[@]}" \
-                '*:file:_files'
+                '1:file:_files'
             ;;
         (get|g|select|set|s|delete|del|d|remove|rm|upload|u|upload-and-copy|uc|strip-rich-text|srt|favourite|fav|unfavourite|unfav)
             _arguments -s : "${_gpaste_client_options[@]}" \

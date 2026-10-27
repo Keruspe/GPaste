@@ -216,7 +216,12 @@ _gpaste-client()
                             use_index=1
                             ;;
                         d|s|t)
-                            ((j == ${#flags} - 1)) && ((++i))
+                            # The word being completed is then that value,
+                            # which nothing here can guess either.
+                            if ((j == ${#flags} - 1)); then
+                                ((++i))
+                                ((i == cword)) && return
+                            fi
                             break
                             ;;
                     esac
@@ -268,10 +273,13 @@ _gpaste-client()
             ((argpos == 0)) && _gpaste_client_complete_histories
             ;;
         file|f)
-            # One candidate per line, unsplit and unglobbed: a path may hold a
-            # space or a glob character, and readline quotes it (-o filenames).
-            mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
-            compopt -o filenames 2>/dev/null
+            # Its one argument, one candidate per line, unsplit and unglobbed: a
+            # path may hold a space or a glob character, and readline quotes it
+            # (-o filenames).
+            if ((argpos == 0)); then
+                mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
+                compopt -o filenames 2>/dev/null
+            fi
             ;;
         get|g|select|set|s|delete|del|d|remove|rm|upload|u|upload-and-copy|uc|replace|strip-rich-text|srt|make-password|mp|favourite|fav|unfavourite|unfav)
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))
