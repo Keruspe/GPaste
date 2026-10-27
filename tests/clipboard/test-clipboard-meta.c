@@ -13,6 +13,9 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-sensitive-mime.h>
+#include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-uris-item.h>
 
 #include <meta/meta-selection-source-memory.h>
@@ -653,6 +656,153 @@ offered_times (Fixture          *f,
     return times;
 }
 
+/* Whether @type offers @mime. */
+static gboolean
+offers (Fixture          *f,
+        MetaSelectionType type,
+        const gchar      *mime)
+{
+    return offered_times (f, type, mime) > 0;
+}
+
+static void
+pump (guint ms)
+{
+    gint64 deadline = g_get_monotonic_time () + ms * 1000;
+
+    while (g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+}
+
+/* A text put back on the clipboard is offered as a #GdkContentProvider for a
+ * string would offer it, the bare text/plain beside the UTF-8 one; a colour
+ * with its text form; a password with the hint that it is one; and a text
+ * with what rich formats it carries. */
+static void
+publish_offers (Fixture      *f,
+                gconstpointer user_data G_GNUC_UNUSED)
+{
+    {
+        g_autoptr (GPasteItem) text = g_paste_text_item_new ("published");
+
+        g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static ("<b>published</b>", 16)));
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, text, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+        g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+        g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain"));
+        g_assert_true (offers (f, META_SELECTION_CLIPBOARD, g_paste_special_mime_get (G_PASTE_SPECIAL_MIME_TEXT_HTML)));
+        g_assert_false (offers (f, META_SELECTION_CLIPBOARD, g_paste_sensitive_mime_get (G_PASTE_SENSITIVE_MIME_FIRST)));
+    }
+    {
+        g_autoptr (GPasteItem) color = g_paste_color_item_new_from_str ("#ff0000");
+
+        g_assert_nonnull (color);
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, color, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+        g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "application/x-color"));
+        g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+    }
+    {
+        g_autoptr (GPasteItem) password = g_paste_password_item_new ("name", "secret", 0);
+
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (f->clipboard, password, TRUE), !=, G_PASTE_CLIPBOARD_PUBLICATION_INVALID);
+        for (GPasteSensitiveMime mime = G_PASTE_SENSITIVE_MIME_FIRST; mime < G_PASTE_SENSITIVE_MIME_LAST; ++mime)
+            g_assert_true (offers (f, META_SELECTION_CLIPBOARD, g_paste_sensitive_mime_get (mime)));
+    }
+}
+
+/* What the selection's owner offers: kept for the case to release. */
+static MetaSelectionSource *
+own (Fixture     *f,
+     const gchar *mimetype,
+     GBytes      *bytes)
+{
+    g_autoptr (GError) error = NULL;
+    MetaSelectionSource *source = meta_selection_source_memory_new (mimetype, bytes, &error);
+
+    g_assert_no_error (error);
+    meta_selection_set_owner (f->selection, META_SELECTION_CLIPBOARD, source);
+
+    return source;
+}
+
+/* A selection its owner lets go of is empty to GPaste, which puts the history's
+ * head back on it. */
+static void
+release_puts_head_back (Fixture      *f,
+                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) text = g_bytes_new_static ("copied", 6);
+    g_autoptr (MetaSelectionSource) source = own (f, "text/plain;charset=utf-8", text);
+
+    pump_until_head (f, G_PASTE_ITEM_KIND_TEXT);
+    meta_selection_unset_owner (f->selection, META_SELECTION_CLIPBOARD, source);
+    pump (200);
+    g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+
+    g_autoptr (GBytes) served = transfer (f, "text/plain;charset=utf-8");
+
+    g_assert_true (g_bytes_equal (served, text));
+}
+
+/* An empty transfer is the empty text, which is what a password manager
+ * clearing its copy writes -- not a read that failed. */
+static void
+read_empty_text (Fixture      *f,
+                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) empty = g_bytes_new_static ("", 0);
+
+    offer (f, "text/plain;charset=utf-8", empty);
+    pump_until_read (f);
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (f->clipboard), ==, "");
+}
+
+/* An owner offering only what GPaste does not handle keeps the selection: it
+ * is no empty one to put the history's head back on. */
+static void
+read_unhandled_kept (Fixture      *f,
+                     gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) head = g_bytes_new_static ("head", 4);
+    g_autoptr (GBytes) unhandled = g_bytes_new_static ("whatever", 8);
+
+    offer (f, "text/plain;charset=utf-8", head);
+    pump_until_head (f, G_PASTE_ITEM_KIND_TEXT);
+    offer (f, "application/x-gpaste-test", unhandled);
+    pump_until_read (f);
+    pump (200);
+    g_assert_false (g_paste_clipboard_provider_is_empty (f->clipboard));
+    g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "application/x-gpaste-test"));
+    g_assert_false (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+}
+
+/* Syncing the clipboard to the primary selection hands the primary the text
+ * the clipboard holds. */
+static void
+sync_delivers (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteClipboardProvider) primary = g_paste_clipboard_meta_new_primary (f->selection, f->settings);
+    g_autoptr (GBytes) text = g_bytes_new_static ("synced", 6);
+
+    g_paste_clipboards_manager_add_clipboard (f->manager, primary);
+    offer (f, "text/plain;charset=utf-8", text);
+    pump_until_head (f, G_PASTE_ITEM_KIND_TEXT);
+    g_paste_clipboards_manager_sync_from_to (f->manager, TRUE);
+
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+
+    while (!offers (f, META_SELECTION_PRIMARY, "text/plain;charset=utf-8") && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (NULL, FALSE))
+            g_usleep (1000);
+    }
+    g_assert_true (offers (f, META_SELECTION_PRIMARY, "text/plain;charset=utf-8"));
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (primary), ==, "synced");
+}
+
 /* The text form GTK's own serializer writes a file list as, which a host that
  * initialised GTK has GDK know: each file's path, or its uri, a line each. */
 static void
@@ -783,6 +933,7 @@ publish_image_holds_no_texture (Fixture      *f,
     }
 
     g_assert_null (texture);
+    g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "image/png"));
 }
 
 int
@@ -800,6 +951,11 @@ main (int argc, char *argv[])
     g_test_add ("/meta/publish/uris", Fixture, NULL, fixture_setup, publish_uris, fixture_teardown);
     g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
     g_test_add ("/meta/serialize/empty-file-list", Fixture, NULL, fixture_setup, serialize_empty_file_list, fixture_teardown);
+    g_test_add ("/meta/publish/offers", Fixture, NULL, fixture_setup, publish_offers, fixture_teardown);
+    g_test_add ("/meta/release/head-back", Fixture, NULL, fixture_setup, release_puts_head_back, fixture_teardown);
+    g_test_add ("/meta/read/empty-text", Fixture, NULL, fixture_setup, read_empty_text, fixture_teardown);
+    g_test_add ("/meta/read/unhandled-kept", Fixture, NULL, fixture_setup, read_unhandled_kept, fixture_teardown);
+    g_test_add ("/meta/sync/delivers", Fixture, NULL, fixture_setup, sync_delivers, fixture_teardown);
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
     g_test_add ("/meta/read/secret-bounded", Fixture, NULL, fixture_setup, secret_bounded, fixture_teardown);
