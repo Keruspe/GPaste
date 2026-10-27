@@ -33,8 +33,9 @@
  * front of the history, so adds and selects never renumber anything), with
  * their extra MIME payloads in a `special_values` child table. The schema is
  * versioned through PRAGMA user_version so it can evolve: older databases are
- * migrated stepwise on open, newer ones are refused (every operation then
- * no-ops) rather than corrupted.
+ * migrated stepwise on open, newer ones are refused rather than corrupted:
+ * every read and write leaves one as it is, while emptying the history
+ * replaces it with an empty database, and deleting the history removes it.
  *
  * Like the plain XML backend, password items are never persisted (the file is
  * user-readable). Images are stored as blobs in the `items.image` column, which
@@ -72,9 +73,9 @@ struct _GPasteSqliteBackend
     /* The one open connection, lazily (re)opened for the last used database.
      * The lock serializes the vfuncs: the saver runs writes one at a time, but
      * a background load can overlap an in-flight write. */
-    sqlite3    *db;
-    gchar      *db_path;
-    GMutex      lock;
+    sqlite3          *db;
+    gchar            *db_path;
+    GMutex            lock;
     /* The histories a write failed for since their last full one that landed:
      * nothing retries a write, and the next add's reconciliation only drops
      * rows, so the store would lag the model for good. The next add, which
@@ -82,13 +83,13 @@ struct _GPasteSqliteBackend
      * asks for one sooner (g_paste_storage_backend_has_diverged ()). Under
      * @diverged_lock rather than @lock, which a load may hold for as long as
      * its read takes: the main thread asks after every write. */
-    GHashTable *diverged;
-    GMutex      diverged_lock;
+    GHashTable       *diverged;
+    GMutex            diverged_lock;
     /* A database deleted while @lock was taken (delete_history ()), which
      * the cached connection must not answer for again: under @forgotten_lock,
      * for the same reason. */
-    gchar      *forgotten;
-    GMutex      forgotten_lock;
+    gchar            *forgotten;
+    GMutex            forgotten_lock;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* When set, the content columns are encrypted, the ".dbs" extension is used,
@@ -699,8 +700,9 @@ g_paste_sqlite_backend_schema_version (sqlite3     *db,
 
 /* Get the (cached) connection for @db_path, opening and preparing the database
  * as needed. Returns NULL (and warns) when the database cannot be used, e.g.
- * when it was created by a newer GPaste: every operation then no-ops instead
- * of risking the data. Must be called with the backend lock held. */
+ * when it was created by a newer GPaste: a read or a write then leaves it as
+ * it is, where emptying the history replaces it (clear_history ()). Must be
+ * called with the backend lock held. */
 static sqlite3 *
 g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                              const gchar          *db_path)

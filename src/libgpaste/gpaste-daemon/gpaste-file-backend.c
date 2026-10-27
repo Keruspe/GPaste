@@ -1081,6 +1081,12 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         success = FALSE;
     }
 
+    /* After every write that went in, whether or not its snapshot dropped an
+     * image: a listing of one directory, beside the document rewritten and
+     * synced before it. Skipping it when the last write referenced no more
+     * would take a record of what that write referenced, which a crash, a
+     * migration or another process's write leaves stale -- and a stale one
+     * leaves a screenshot on the disk past the item it was. */
     if (success)
         _g_paste_file_backend_sweep_images (history_name, encrypted, referenced);
     else
