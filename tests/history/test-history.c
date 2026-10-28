@@ -3434,11 +3434,18 @@ test_search_queries (void)
     g_assert_cmpuint (g_strv_length (literal), ==, 1);
 
     /* Nor by the placeholder its value is: an asterisk typed, escaped, finds
-     * no password named otherwise. */
+     * no password named otherwise -- nor a nameless one, whose name is that
+     * placeholder, found by its uuid alone. */
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "nameless secret", 0));
+
+    g_autofree gchar *nameless = dup_uuid_at (history, 0);
     g_autofree gchar *asterisk = g_regex_escape_string ("*", -1);
     g_auto (GStrv) by_placeholder = g_paste_history_search (history, asterisk);
+    g_auto (GStrv) by_uuid = g_paste_history_search (history, nameless);
 
     g_assert_cmpuint (g_strv_length (by_placeholder), ==, 0);
+    g_assert_cmpuint (g_strv_length (by_uuid), ==, 1);
+    g_assert_cmpstr (by_uuid[0], ==, nameless);
 
     g_assert_null (g_paste_daemon_methods_search (&methods, "c++ (gcc", &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);

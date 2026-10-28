@@ -7,7 +7,9 @@ Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
 leaving it) against an in-memory `GSettings` and a
 throwaway `XDG_DATA_HOME`; its `add_file_swapped` has AddFile refuse a path
 swapped, once looked at, for a FIFO it would wait on, a directory or a file past
-the memory cap (`g_file_query_info()` interposed). Every case ends with each
+the memory cap (`g_file_query_info()` interposed). Its
+`search_queries` finds a password by its name, and a nameless one, its name the
+placeholder, by its uuid alone. Every case ends with each
 history it built flushed and gone (`drain_case_histories()` says why). The
 `eslint`
 test lints the GNOME Shell extension JS, `eslint-launcher` runs

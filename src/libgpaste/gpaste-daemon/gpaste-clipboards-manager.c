@@ -6,7 +6,7 @@
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-history-private.h>
-#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-password-item-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
 /* Here and not in gpaste-macros.h beside g_paste_weak_ref_free (), which is an
@@ -602,7 +602,7 @@ g_paste_clipboards_manager_entry_of (_Clipboard *clip,
     if (listed)
         return (g_paste_str_equal (g_paste_item_get_real_value (listed), g_paste_item_get_real_value (entry))) ? listed : NULL;
 
-    return (g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (entry)), G_PASTE_PASSWORD_ITEM_NO_NAME)) ? entry : NULL;
+    return (g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (entry))) ? entry : NULL;
 }
 
 /* @item, read off a selection carrying the value of another history's entry
@@ -1497,7 +1497,7 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
      * load brings this one back if it is one of them, where an add would stand
      * beside it under the same uuid, and has no place for it if it is another
      * history's. */
-    if (password && !g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), G_PASTE_PASSWORD_ITEM_NO_NAME) &&
+    if (password && !g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (password)) &&
         g_paste_history_is_loading (clip->manager->history))
         g_clear_object (&item);
 

@@ -10,7 +10,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
-#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-password-item-private.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -3027,11 +3027,18 @@ g_paste_history_search_items (GPasteHistory *self,
 
         /* A password's value is not what it is known by, its name is: matched
          * as the value would be, whatever its case, and the placeholder its
-         * value is not at all -- an asterisk typed would list every one. */
+         * value is not at all -- an asterisk typed would list every one. A
+         * nameless one's name is that same placeholder: it has no name to be
+         * found by, its uuid alone finding it. */
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
         else if (G_PASTE_IS_PASSWORD_ITEM (item))
-            match = g_regex_match (regex, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
+        {
+            GPastePasswordItem *password = G_PASTE_PASSWORD_ITEM (item);
+
+            match = !g_paste_password_item_is_nameless (password) &&
+                    g_regex_match (regex, g_paste_password_item_get_name (password), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
+        }
         else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL) ||
                  (shown && g_regex_match (regex, shown, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL)))
             match = TRUE;
