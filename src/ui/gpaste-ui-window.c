@@ -1709,13 +1709,14 @@ g_paste_ui_window_init (GPasteUiWindow *self)
      * layout, 460px with minimize and maximize too (Ubuntu's, or a Tweaks
      * toggle), and 500px with the window's icon before them as well (KDE
      * Plasma's, "icon:minimize,maximize,close", which is also what GNOME's
-     * settings daemon makes of a layout naming the window menu). The window
-     * icon grows with the text scale, to about 520px at 1.5, past Large Text's
-     * 1.25; 520 fits each layout up to there. Hiding the title below some
-     * width instead would hide the selection count along with it. The height
-     * is the HIG's: nothing needs more, and a short landscape screen still fits
-     * the window. /ui/daemon-presence/minimum-width holds it to this. */
-    gtk_widget_set_size_request (GTK_WIDGET (self), 520, 294);
+     * settings daemon makes of a layout naming the window menu). That header
+     * grows with the text scale, to about 528px at 1.5, past Large Text's
+     * 1.25; with 10px of window frame (client-side decorations), 538 fits each
+     * layout up to there. Hiding the title below some width instead would hide
+     * the selection count along with it. The height is the HIG's: nothing
+     * needs more, and a short landscape screen still fits the window.
+     * /ui/daemon-presence/minimum-width holds it to this. */
+    gtk_widget_set_size_request (GTK_WIDGET (self), 538, 294);
 }
 
 /* Everything the window shows of a history, built once there is a proxy to
