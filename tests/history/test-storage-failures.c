@@ -4118,6 +4118,17 @@ test_passphrase_verify_cost (void)
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
+/* The process passphrase set again to its own cleartext, as
+ * g_paste_storage_backend_get_passphrase () hands it out, stays what it was. */
+static void
+test_passphrase_set_again (void)
+{
+    g_paste_storage_backend_set_passphrase ("passphrase");
+    g_paste_storage_backend_set_passphrase (g_paste_storage_backend_get_passphrase ());
+    g_assert_cmpstr (g_paste_storage_backend_get_passphrase (), ==, "passphrase");
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
 /* A passphrase whose key cannot be derived -- its memory refused -- is not
  * checked, and is refused rather than taken for right: whichever history
  * holds the data, and whichever flavour. */
@@ -7690,6 +7701,7 @@ main (int    argc,
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase/verify-underived", test_passphrase_verify_underived);
+    g_test_add_func ("/storage/passphrase/set-again", test_passphrase_set_again);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
     g_test_add_func ("/storage/new-history-name-fits", test_new_history_name_fits);
     g_test_add_data_func ("/storage/secure-memory-wiped/file", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_secure_memory_wiped);

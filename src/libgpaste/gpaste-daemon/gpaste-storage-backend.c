@@ -45,7 +45,11 @@ static GPastePassphrase *g_paste_storage_passphrase = NULL;
 G_PASTE_VISIBLE void
 g_paste_storage_backend_set_passphrase (const gchar *passphrase)
 {
-    g_paste_passphrase_free (g_paste_storage_passphrase);
+    /* Copied before the one it replaces goes: @passphrase may be that one's
+     * own cleartext, which g_paste_storage_backend_get_passphrase () hands
+     * out, and freeing it wipes it. */
+    g_autoptr (GPastePassphrase) replaced = g_steal_pointer (&g_paste_storage_passphrase);
+
     g_paste_storage_passphrase = g_paste_passphrase_new (passphrase);
 }
 
