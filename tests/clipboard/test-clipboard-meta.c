@@ -100,6 +100,11 @@ fixture_teardown (Fixture      *f,
     g_clear_object (&f->selection);
     g_clear_object (&f->history);
     g_clear_object (&f->settings);
+
+    /* What the case left to conclude, a read given up on concluding on the
+     * next turn, holds the manager and everything behind it: run here, so that
+     * nothing of this case reaches the next. */
+    while (g_main_context_iteration (NULL, FALSE));
 }
 
 static void
@@ -148,8 +153,12 @@ struct _MultiSource
 {
     MetaSelectionSource parent_instance;
 
-    GList      *mimetypes;
-    GHashTable *contents;
+    GList       *mimetypes;
+    GHashTable  *contents;
+    /* A mimetype whose read is held rather than answered, and the read it
+     * holds, for the case to answer. */
+    const gchar *held_mime;
+    GTask       *held;
 };
 
 G_DEFINE_FINAL_TYPE (MultiSource, multi_source, META_TYPE_SELECTION_SOURCE)
@@ -174,10 +183,16 @@ multi_source_read_async (MetaSelectionSource *source,
                          GAsyncReadyCallback  callback,
                          gpointer             user_data)
 {
+    MultiSource *self = MULTI_SOURCE (source);
     g_autoptr (GTask) task = g_task_new (source, cancellable, callback, user_data);
-    GBytes *bytes = g_hash_table_lookup (MULTI_SOURCE (source)->contents, mimetype);
+    GBytes *bytes = g_hash_table_lookup (self->contents, mimetype);
 
-    if (bytes)
+    if (self->held_mime && g_str_equal (mimetype, self->held_mime))
+    {
+        g_assert_null (self->held);
+        self->held = g_steal_pointer (&task);
+    }
+    else if (bytes)
         g_task_return_pointer (task, g_memory_input_stream_new_from_bytes (bytes), g_object_unref);
     else
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_FOUND, "%s is not offered", mimetype);
@@ -226,18 +241,29 @@ multi_source_init (MultiSource *self)
 
 /* One copy offering each of @mimetypes, %NULL-terminated, with the matching
  * one of @contents, in that order. */
-static void
-offer_formats (Fixture            *f,
-               const gchar * const *mimetypes,
-               GBytes             **contents)
+static MultiSource *
+multi_source_new (const gchar * const *mimetypes,
+                  GBytes             **contents)
 {
-    g_autoptr (MultiSource) source = g_object_new (multi_source_get_type (), NULL);
+    MultiSource *source = g_object_new (multi_source_get_type (), NULL);
 
     for (guint i = 0; mimetypes[i]; ++i)
     {
         source->mimetypes = g_list_append (source->mimetypes, g_strdup (mimetypes[i]));
         g_hash_table_insert (source->contents, g_strdup (mimetypes[i]), g_bytes_ref (contents[i]));
     }
+
+    return source;
+}
+
+/* That copy, as the selection's owner. */
+static void
+offer_formats (Fixture            *f,
+               const gchar * const *mimetypes,
+               GBytes             **contents)
+{
+    g_autoptr (MultiSource) source = multi_source_new (mimetypes, contents);
+
     meta_selection_set_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
 }
 
@@ -791,6 +817,97 @@ release_puts_head_back (Fixture      *f,
     g_assert_true (g_bytes_equal (served, text));
 }
 
+/* The owners an owner-changed handler of the clipboard is told of, in order:
+ * N for none, S for a source. */
+static void
+on_clipboard_owner (MetaSelection       *selection G_GNUC_UNUSED,
+                    guint                selection_type,
+                    MetaSelectionSource *owner,
+                    gpointer             user_data)
+{
+    if ((MetaSelectionType) selection_type == META_SELECTION_CLIPBOARD)
+        g_string_append_c (user_data, (owner) ? 'S' : 'N');
+}
+
+/* A handler connected after GPaste's is told of a release before the head
+ * GPaste puts back on the selection, as one connected before it is: told the
+ * other way round, it would end up taking for empty a selection GPaste owns. */
+static void
+release_emission_order (Fixture      *f,
+                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GBytes) text = g_bytes_new_static ("copied", 6);
+    g_autoptr (MetaSelectionSource) source = own (f, "text/plain;charset=utf-8", text);
+    g_autoptr (GString) owners = g_string_new (NULL);
+
+    pump_until_head (f, G_PASTE_ITEM_KIND_TEXT);
+
+    gulong handler = g_signal_connect (f->selection, "owner-changed", G_CALLBACK (on_clipboard_owner), owners);
+
+    meta_selection_unset_owner (f->selection, META_SELECTION_CLIPBOARD, source);
+    pump_until_read (f);
+    g_signal_handler_disconnect (f->selection, handler);
+
+    g_assert_cmpstr (owners->str, ==, "NS");
+    g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+}
+
+/* An owner serving its text and leaving before a second read answers -- the
+ * hint, here -- has its copy recorded all the same, and put back on the
+ * selection it left empty, the release being answered only once the read it
+ * ended is in (g_paste_clipboard_meta_answer_release ()). With @user_data, the
+ * copy also reaches the primary selection, as one whose owner stayed does. */
+static void
+release_after_text (Fixture      *f,
+                    gconstpointer user_data)
+{
+    gboolean synced = GPOINTER_TO_INT (user_data);
+    const gchar *mimetypes[] = { "text/plain;charset=utf-8", "x-kde-passwordManagerHint", NULL };
+    g_autoptr (GBytes) text = g_bytes_new_static ("served then gone", 16);
+    g_autoptr (GBytes) hint = g_bytes_new_static ("secret", 6);
+    GBytes *contents[] = { text, hint };
+    g_autoptr (MultiSource) source = multi_source_new (mimetypes, contents);
+    g_autoptr (GPasteClipboardProvider) primary = NULL;
+
+    if (synced)
+    {
+        primary = g_paste_clipboard_meta_new_primary (f->selection, f->settings);
+        g_paste_clipboards_manager_add_clipboard (f->manager, primary);
+        g_paste_settings_set_synchronize_clipboards (f->settings, TRUE);
+    }
+
+    source->held_mime = "x-kde-passwordManagerHint";
+    meta_selection_set_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
+
+    /* Every step of the text's transfer runs on this main context, the streams
+     * it goes through being memory ones: once nothing is left to dispatch, the
+     * text is in and the hint alone is out. */
+    while (g_main_context_iteration (NULL, FALSE));
+    g_assert_nonnull (source->held);
+    g_assert_true (g_paste_clipboard_provider_is_reading (f->clipboard));
+
+    meta_selection_unset_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
+    pump_until_read (f);
+
+    g_assert_cmpuint (g_paste_history_get_length (f->history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+    g_assert_true (offers (f, META_SELECTION_CLIPBOARD, "text/plain;charset=utf-8"));
+
+    g_autoptr (GBytes) served = transfer (f, "text/plain;charset=utf-8");
+
+    g_assert_true (g_bytes_equal (served, text));
+    if (synced)
+    {
+        g_assert_true (offers (f, META_SELECTION_PRIMARY, "text/plain;charset=utf-8"));
+        g_assert_cmpstr (g_paste_clipboard_provider_get_text (primary), ==, "served then gone");
+    }
+
+    /* What the gone owner never answered, for the read to report and go. */
+    g_autoptr (GTask) held = g_steal_pointer (&source->held);
+
+    g_task_return_new_error (held, G_IO_ERROR, G_IO_ERROR_CLOSED, "The owner is gone");
+}
+
 /* An empty transfer is the empty text, which is what a password manager
  * clearing its copy writes -- not a read that failed. */
 static void
@@ -918,6 +1035,37 @@ publish_outlives_clipboard (Fixture      *f,
     assert_serves_image (f);
 }
 
+/* A provider disposed with a read out -- which only an explicit
+ * g_object_run_dispose () can find, the read holding the provider until it
+ * concludes -- gives that read up: concluding, it would re-own the selection
+ * for a trimmed text through a provider left with no selection. */
+static void
+dispose_mid_read (Fixture      *f,
+                  gconstpointer user_data G_GNUC_UNUSED)
+{
+    const gchar *mimetypes[] = { "text/plain;charset=utf-8", "text/html", NULL };
+    g_autoptr (GBytes) text = g_bytes_new_static ("  padded  ", 10);
+    g_autoptr (GBytes) html = g_bytes_new_static ("<b>padded</b>", 13);
+    GBytes *contents[] = { text, html };
+    g_autoptr (MultiSource) source = multi_source_new (mimetypes, contents);
+
+    g_paste_settings_set_trim_items (f->settings, TRUE);
+    source->held_mime = "text/html";
+    meta_selection_set_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
+    while (g_main_context_iteration (NULL, FALSE));
+    g_assert_nonnull (source->held);
+
+    g_object_run_dispose (G_OBJECT (f->clipboard));
+
+    g_autoptr (GTask) held = g_steal_pointer (&source->held);
+
+    g_task_return_pointer (held, g_memory_input_stream_new_from_bytes (html), g_object_unref);
+    while (g_main_context_iteration (NULL, FALSE));
+
+    g_assert_cmpuint (g_paste_history_get_length (f->history), ==, 0);
+    g_assert_false (offers (f, META_SELECTION_CLIPBOARD, "text/plain"));
+}
+
 /* Another owner taking the selection over leaves nothing of what GPaste
  * published alive in gnome-shell: the texture an image went out with -- one
  * read off its file, with no PNG of its own to serve -- goes with mutter's
@@ -992,6 +1140,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/capture/uris", Fixture, GINT_TO_POINTER (G_PASTE_ITEM_KIND_URIS), fixture_setup, capture, fixture_teardown);
     g_test_add ("/meta/publish/image", Fixture, NULL, fixture_setup, publish_image, fixture_teardown);
     g_test_add ("/meta/publish/outlives-clipboard", Fixture, NULL, fixture_setup, publish_outlives_clipboard, fixture_teardown);
+    g_test_add ("/meta/read/disposed", Fixture, NULL, fixture_setup, dispose_mid_read, fixture_teardown);
     g_test_add ("/meta/publish/let-go", Fixture, NULL, fixture_setup, publish_let_go, fixture_teardown);
     g_test_add ("/meta/publish/uris", Fixture, NULL, fixture_setup, publish_uris, fixture_teardown);
     g_test_add ("/meta/publish/image-holds-no-texture", Fixture, NULL, fixture_setup, publish_image_holds_no_texture, fixture_teardown);
@@ -999,6 +1148,9 @@ main (int argc, char *argv[])
     g_test_add ("/meta/publish/offers", Fixture, NULL, fixture_setup, publish_offers, fixture_teardown);
     g_test_add ("/meta/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/meta/release/head-back", Fixture, NULL, fixture_setup, release_puts_head_back, fixture_teardown);
+    g_test_add ("/meta/release/emission-order", Fixture, NULL, fixture_setup, release_emission_order, fixture_teardown);
+    g_test_add ("/meta/release/after-text", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, release_after_text, fixture_teardown);
+    g_test_add ("/meta/release/after-text-synced", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/meta/read/empty-text", Fixture, NULL, fixture_setup, read_empty_text, fixture_teardown);
     g_test_add ("/meta/read/unhandled-kept", Fixture, NULL, fixture_setup, read_unhandled_kept, fixture_teardown);
     g_test_add ("/meta/sync/delivers", Fixture, NULL, fixture_setup, sync_delivers, fixture_teardown);

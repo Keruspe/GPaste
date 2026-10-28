@@ -47,28 +47,183 @@
 #define META_MIME_IMAGE      "image/png"
 #define META_MIME_URIS       "text/uri-list"
 
+typedef struct _GPasteClipboardMetaRelease GPasteClipboardMetaRelease;
+
 struct _GPasteClipboardMeta
 {
     GObject parent_instance;
 
-    MetaSelection         *selection;
-    MetaSelectionType      type;
-    gboolean               is_clipboard;
-    GPasteSettings        *settings;
-    MetaSelectionSource   *owned_source;
-    gulong                 owner_changed_id;
+    MetaSelection              *selection;
+    MetaSelectionType           type;
+    gboolean                    is_clipboard;
+    GPasteSettings             *settings;
+    MetaSelectionSource        *owned_source;
+    gulong                      owner_changed_id;
 
-    GPasteClipboardContent content;
+    GPasteClipboardContent      content;
 
     /* The update in flight on this selection, cleared when it concludes: see
      * @slot on #GPasteClipboardUpdate. */
-    GPasteClipboardUpdate *update;
+    GPasteClipboardUpdate      *update;
+    /* A release not answered yet: see
+     * g_paste_clipboard_meta_answer_release (). */
+    GPasteClipboardMetaRelease *release;
 };
 
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
                                     G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
+
+/* A release, answered once the read it ended has handed over its copy, or on
+ * the next turn of the main loop when there is none: see
+ * g_paste_clipboard_meta_answer_release (). That read holds it, and the
+ * provider with it, until it concludes; the turn's source holds it otherwise,
+ * and the provider weakly, dispose () being what supersedes it (see AGENTS.md
+ * on what an object tracks so that its own dispose() can end it). */
+struct _GPasteClipboardMetaRelease
+{
+    GWeakRef                              self;
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    /* The read's own callback, called first. */
+    GPasteClipboardProviderUpdateCallback read_callback;
+    gpointer                              read_user_data;
+    /* While that callback runs, the cache answers for the copy: see
+     * is_reading (). */
+    gboolean                              handing_over;
+    /* Answered as superseded, when the read concludes or the turn comes. */
+    gboolean                              superseded;
+};
+
+static void
+g_paste_clipboard_meta_release_free (GPasteClipboardMetaRelease *release)
+{
+    g_weak_ref_clear (&release->self);
+    g_free (release);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardMetaRelease, g_paste_clipboard_meta_release_free)
+
+static void
+g_paste_clipboard_meta_supersede_release (GPasteClipboardMeta *self)
+{
+    GPasteClipboardMetaRelease *release = g_steal_pointer (&self->release);
+
+    if (release)
+        release->superseded = TRUE;
+}
+
+/* Every write and every change makes both the read and the release in flight
+ * stale. */
+static void
+g_paste_clipboard_meta_supersede (GPasteClipboardMeta *self)
+{
+    g_paste_clipboard_update_supersede (&self->update);
+    g_paste_clipboard_meta_supersede_release (self);
+}
+
+/* A superseded release says nothing about the selection, and the change that
+ * took over answers for the cache. A provider gone by now was disposed, which
+ * superseded it: the callback only releases its state then. */
+static void
+g_paste_clipboard_meta_release_answer (GPasteClipboardMetaRelease *release,
+                                       gboolean                    superseded)
+{
+    g_autoptr (GPasteClipboardMeta) self = g_weak_ref_get (&release->self);
+
+    if (self && self->release == release)
+        self->release = NULL;
+    superseded |= release->superseded || !self;
+
+    if (!superseded)
+        g_paste_clipboard_content_clear (&self->content);
+
+    if (release->callback)
+    {
+        release->callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded,
+                           (superseded) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN : G_PASTE_CLIPBOARD_SECRET_NO,
+                           release->user_data);
+    }
+}
+
+/* The read a release ended concluding: see
+ * g_paste_clipboard_meta_answer_release (). */
+static void
+g_paste_clipboard_meta_release_after_read (GPasteClipboardProvider *provider,
+                                           GPasteItem              *item,
+                                           gboolean                 superseded,
+                                           GPasteClipboardSecret    secret,
+                                           gpointer                 user_data)
+{
+    g_autoptr (GPasteClipboardMetaRelease) release = user_data;
+
+    release->handing_over = TRUE;
+    if (release->read_callback)
+        release->read_callback (provider, item, superseded, secret, release->read_user_data);
+    else
+        g_clear_object (&item);
+
+    g_paste_clipboard_meta_release_answer (release, superseded);
+}
+
+static gboolean
+g_paste_clipboard_meta_release_due (gpointer user_data)
+{
+    g_paste_clipboard_meta_release_answer (user_data, FALSE);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Answer a release, once @read -- the update in flight it ended, which
+ * g_paste_clipboard_update_owner_gone () concludes on the next turn of the main
+ * loop -- has handed over its copy, and on the next turn when there is none.
+ *
+ * A selection nobody owns is empty, and its cache is cleared rather than
+ * ignored: that is what has ensure_not_empty () put the history's head back on
+ * it (/meta/release/head-back). The conclusion records what the owner served
+ * before leaving and fills the cache with it, which the manager it calls back
+ * synchronises to the other selection as any copy; so the cache is cleared
+ * after it, and the head put back is that copy. Cleared before, the conclusion
+ * would fill it again for a selection nobody owns, and nothing would ever be
+ * put back on it (/meta/release/after-text, /meta/release/after-text-synced).
+ * Counted by is_reading () until the read hands its copy over, or until it is
+ * answered when there is none, the cache naming content the selection no
+ * longer holds.
+ *
+ * Never at once, even with no read to wait for: a release comes in under
+ * MetaSelection's owner-changed emission, and putting the head back is a
+ * meta_selection_set_owner () whose own emission would reach every handler
+ * connected after GPaste's before the release it answers, leaving them taking
+ * for empty a selection GPaste owns (/meta/release/emission-order). */
+static void
+g_paste_clipboard_meta_answer_release (GPasteClipboardMeta                  *self,
+                                       GPasteClipboardUpdate                *read,
+                                       GPasteClipboardProviderUpdateCallback callback,
+                                       gpointer                              user_data)
+{
+    GPasteClipboardMetaRelease *release = g_new0 (GPasteClipboardMetaRelease, 1);
+
+    g_weak_ref_init (&release->self, self);
+    release->callback = callback;
+    release->user_data = user_data;
+    self->release = release;
+
+    if (read)
+    {
+        release->read_callback = read->callback;
+        release->read_user_data = read->user_data;
+        read->callback = g_paste_clipboard_meta_release_after_read;
+        read->user_data = release;
+    }
+    else
+    {
+        guint source_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, g_paste_clipboard_meta_release_due, release,
+                                           (GDestroyNotify) g_paste_clipboard_meta_release_free);
+
+        g_source_set_name_by_id (source_id, "[GPaste] clipboard release");
+    }
+}
 
 static gboolean
 g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
@@ -79,7 +234,7 @@ g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
 static gboolean
 g_paste_clipboard_meta_is_reading (GPasteClipboardMeta *self)
 {
-    return self->update != NULL;
+    return self->update || (self->release && !self->release->handing_over);
 }
 
 static const gchar *
@@ -755,7 +910,7 @@ static void
 g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
                                        GPasteClipboardMetaSource *source)
 {
-    g_paste_clipboard_update_supersede (&self->update);
+    g_paste_clipboard_meta_supersede (self);
 
     /* Mutter emits owner-changed synchronously; owned_source makes that
      * notification a no-op here. Its set_owner does not cancel transfers;
@@ -1301,13 +1456,13 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
         content_kind = CLIPBOARD_CONTENT_IMAGE;
     else if (!mimetypes)
     {
-        /* The selection was released: clear our cache so callers see an
-         * empty clipboard and act accordingly (e.g. ensure_not_empty).
-         * See g_paste_clipboard_update_supersede () for changes with no read. */
-        g_paste_clipboard_update_supersede (&self->update);
-        g_paste_clipboard_content_clear (&self->content);
-        if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
+        /* The selection was released. The update in flight ends with what it
+         * read, the owner gone having served its content -- what it has left
+         * is the reads riding along with it, a hint among them -- and the
+         * release is answered once that is recorded
+         * (g_paste_clipboard_meta_answer_release ()). */
+        g_paste_clipboard_meta_supersede_release (self);
+        g_paste_clipboard_meta_answer_release (self, g_paste_clipboard_update_owner_gone (&self->update), callback, user_data);
         return;
     }
     else
@@ -1317,12 +1472,14 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
          * clipboard as non-empty so ensure_not_empty doesn't override it --
          * and give up on the update the previous owner was being read for. */
         g_list_free_full (mimetypes, g_free);
-        g_paste_clipboard_update_supersede (&self->update);
+        g_paste_clipboard_meta_supersede (self);
         g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
         return;
     }
+
+    g_paste_clipboard_meta_supersede_release (self);
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
                                                                   self->settings,
@@ -1422,6 +1579,8 @@ g_paste_clipboard_meta_dispose (GObject *object)
      * disconnects, so the instance is the only thing left to check for. */
     if (self->selection)
         g_clear_signal_handler (&self->owner_changed_id, self->selection);
+    /* The read in flight goes too, as in the GDK backend's dispose (). */
+    g_paste_clipboard_meta_supersede (self);
     g_clear_object (&self->owned_source);
     g_clear_object (&self->selection);
     g_clear_object (&self->settings);

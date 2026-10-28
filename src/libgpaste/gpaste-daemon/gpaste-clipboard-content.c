@@ -1373,19 +1373,23 @@ g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
  *
  * An update whose content has not landed has nothing to build an item from,
  * and is superseded (g_paste_clipboard_update_supersede ()).
+ *
+ * Returns: (transfer none) (nullable): the update left to conclude, whose
+ *          callback is the last thing it calls -- what a backend chains the
+ *          answer to the release onto -- or %NULL when there is none
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE GPasteClipboardUpdate *
 g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
 {
-    g_return_if_fail (slot);
+    g_return_val_if_fail (slot, NULL);
 
     if (!*slot)
-        return;
+        return NULL;
 
     if (!(*slot)->produced)
     {
         g_paste_clipboard_update_supersede (slot);
-        return;
+        return NULL;
     }
 
     /* Out of @slot as a superseded one is: the next change starting an update
@@ -1393,6 +1397,8 @@ g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
     GPasteClipboardUpdate *previous = g_steal_pointer (slot);
 
     g_paste_clipboard_read_guard_expire_soon (&previous->guard);
+
+    return previous;
 }
 
 /**
