@@ -349,3 +349,26 @@ g_paste_test_env_run (void)
 
     return result;
 }
+
+/**
+ * g_paste_test_env_reset_settings:
+ * @schema_id: the schema whose keys go back to their defaults
+ *
+ * Start a case from the schema's defaults: the memory backend
+ * g_paste_test_env_setup() puts the settings on is shared by the whole binary,
+ * so a key one case sets would otherwise reach every case after it, and a case
+ * run alone with -p would see different settings.
+ */
+void
+g_paste_test_env_reset_settings (const gchar *schema_id)
+{
+    g_autoptr (GSettings) raw = g_settings_new (schema_id);
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    g_object_get (raw, "settings-schema", &schema, NULL);
+
+    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
+
+    for (GStrv key = keys; *key; ++key)
+        g_settings_reset (raw, *key);
+}

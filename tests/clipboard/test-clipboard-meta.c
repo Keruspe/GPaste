@@ -74,11 +74,21 @@ typedef struct
     GPasteClipboardProvider *clipboard;
 } Fixture;
 
+/* As in test-clipboard-gdk.c. */
+static GPasteSettings *
+make_settings (void)
+{
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
+
+    return g_paste_settings_new ();
+}
+
 static void
 fixture_setup (Fixture      *f,
                gconstpointer user_data G_GNUC_UNUSED)
 {
-    f->settings = g_paste_settings_new ();
+    f->settings = make_settings ();
+    g_assert_cmpint (g_paste_settings_get_storage_backend (f->settings), ==, G_PASTE_STORAGE_FILE);
     g_paste_settings_set_storage_backend (f->settings, G_PASTE_STORAGE_NOOP);
     g_paste_settings_set_images_support (f->settings, TRUE);
     g_paste_settings_set_synchronize_clipboards (f->settings, FALSE);
@@ -321,16 +331,22 @@ capture (Fixture      *f,
 }
 
 /* Spreadsheet cells are offered as a text beside a picture of themselves, and
- * the text is what is recorded, whichever the owner lists first. */
+ * the text is what is recorded, whichever the owner lists first: @user_data
+ * says whether the text is. */
 static void
 text_beside_image (Fixture      *f,
-                   gconstpointer user_data G_GNUC_UNUSED)
+                   gconstpointer user_data)
 {
+    guint text_at = (GPOINTER_TO_INT (user_data)) ? 0 : 1;
     g_autoptr (GBytes) png = png_bytes ();
     g_autoptr (GBytes) text = g_bytes_new_static ("A1\tB1", 5);
-    const gchar *mimetypes[] = { "image/png", "text/plain;charset=utf-8", NULL };
-    GBytes *contents[] = { png, text };
+    const gchar *mimetypes[3] = { NULL };
+    GBytes *contents[2];
 
+    mimetypes[text_at] = "text/plain;charset=utf-8";
+    contents[text_at] = text;
+    mimetypes[1 - text_at] = "image/png";
+    contents[1 - text_at] = png;
     offer_formats (f, mimetypes, contents);
     pump_until_head (f, G_PASTE_ITEM_KIND_TEXT);
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "A1\tB1");
@@ -536,8 +552,11 @@ bounded_read (Fixture      *f,
             g_usleep (1000);
     }
     g_assert_false (g_paste_clipboard_provider_is_reading (f->clipboard));
-    /* One read's worth of slack past the limit, which is what a read may take
-     * before the transfer notices it is done. */
+    /* Read up to the byte past the limit that tells a text too large from one
+     * that just fits, and no further than one read's worth of slack past it,
+     * which is what a read may take before the transfer notices it is done: a
+     * read that never started, or stopped at once, is no bounded one. */
+    g_assert_cmpuint (source->stream->served, >=, limit + 1);
     g_assert_cmpuint (source->stream->served, <=, limit + 1 + 65536);
     g_assert_cmpuint (g_paste_history_get_length (f->history), ==, 0);
 }
@@ -1157,7 +1176,8 @@ main (int argc, char *argv[])
     g_test_add ("/meta/read/nul-terminated", Fixture, NULL, fixture_setup, nul_terminated_text, fixture_teardown);
     g_test_add ("/meta/read/bounded", Fixture, NULL, fixture_setup, bounded_read, fixture_teardown);
     g_test_add ("/meta/read/secret-bounded", Fixture, NULL, fixture_setup, secret_bounded, fixture_teardown);
-    g_test_add ("/meta/capture/text-beside-image", Fixture, NULL, fixture_setup, text_beside_image, fixture_teardown);
+    g_test_add ("/meta/capture/text-beside-image", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, text_beside_image, fixture_teardown);
+    g_test_add ("/meta/capture/text-before-image", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, text_beside_image, fixture_teardown);
     g_test_add ("/meta/capture/file-list-bounded", Fixture, NULL, fixture_setup, file_list_bounded, fixture_teardown);
 
     return g_paste_test_env_run ();

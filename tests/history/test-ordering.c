@@ -268,21 +268,9 @@ fixture_in (GPasteSettings       **settings,
             const gchar           *name,
             GPasteStorage          storage)
 {
+    /* Every case starts from the schema's defaults. */
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
     *settings = g_paste_settings_new ();
-
-    /* The keys the history and its storage read, back to the schema's defaults:
-     * the memory backend is shared by the whole binary, so a key one case set
-     * would otherwise reach every case after it. A key the code under test
-     * comes to read belongs here too. */
-    static const gchar *reset_keys[] = {
-        G_PASTE_GROWING_LINES_SETTING, G_PASTE_HISTORY_NAME_SETTING, G_PASTE_IMAGES_SUPPORT_SETTING,
-        G_PASTE_MAX_HISTORY_SIZE_SETTING, G_PASTE_MAX_MEMORY_USAGE_SETTING, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING,
-        G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING, G_PASTE_PASSWORD_TIMEOUT_SETTING, G_PASTE_RICH_TEXT_SUPPORT_SETTING,
-        G_PASTE_TRIM_ITEMS_SETTING,
-    };
-
-    for (guint i = 0; i < G_N_ELEMENTS (reset_keys); ++i)
-        g_paste_settings_reset (*settings, reset_keys[i]);
     g_paste_settings_set_growing_lines (*settings, FALSE);
     g_paste_settings_set_storage_backend (*settings, storage);
     *backend = g_paste_storage_backend_new (storage, *settings);

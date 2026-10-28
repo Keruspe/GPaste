@@ -247,21 +247,11 @@ make_clipboard (GPasteSettings *settings)
     return self;
 }
 
-/* Every case starts from the schema's defaults. The memory backend is shared by
- * the whole binary, so a key one case sets would otherwise reach every case
- * after it -- and a case run alone with -p would see different settings. */
+/* Every case starts from the schema's defaults. */
 static GPasteSettings *
 make_settings (void)
 {
-    g_autoptr (GSettings) raw = g_settings_new (G_PASTE_SETTINGS_NAME);
-    g_autoptr (GSettingsSchema) schema = NULL;
-
-    g_object_get (raw, "settings-schema", &schema, NULL);
-
-    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
-
-    for (GStrv key = keys; *key; ++key)
-        g_settings_reset (raw, *key);
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
 
     return g_paste_settings_new ();
 }
@@ -478,6 +468,40 @@ assert_superseded (GPasteClipboardUpdate *pending)
     g_assert_true (g_cancellable_is_cancelled (pending->guard.cancellable));
 }
 
+/* What an update hands its callback, counted on the way through. */
+typedef struct
+{
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    guint                                 items;
+} ItemCounter;
+
+static void
+count_item (GPasteClipboardProvider *provider,
+            GPasteItem              *item,
+            gboolean                 superseded,
+            GPasteClipboardSecret    secret,
+            gpointer                 user_data)
+{
+    ItemCounter *counter = user_data;
+
+    if (item)
+        ++counter->items;
+    counter->callback (provider, item, superseded, secret, counter->user_data);
+}
+
+/* Count the items @pending hands its callback into @counter. */
+static void
+count_items (GPasteClipboardUpdate *pending,
+             ItemCounter           *counter)
+{
+    counter->callback = pending->callback;
+    counter->user_data = pending->user_data;
+    counter->items = 0;
+    pending->callback = count_item;
+    pending->user_data = counter;
+}
+
 static void
 test_overlapping_copies (gconstpointer user_data)
 {
@@ -516,12 +540,17 @@ test_overlapping_copies (gconstpointer user_data)
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "copied text");
     g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "copied text");
 
-    /* A completed copy, unlike an abandoned one, still suppresses duplicates. */
+    /* A completed copy, unlike an abandoned one, still suppresses duplicates:
+     * the duplicate makes no item at all, rather than one the history's own
+     * equal-head merge would absorb with the length left as it was. */
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     GPasteClipboardUpdate *duplicate = clipboard->pending;
+    ItemCounter counter;
 
+    count_items (duplicate, &counter);
     text_ready (clipboard, settings, duplicate, "copied text");
     g_paste_clipboard_update_maybe_done (duplicate);
+    g_assert_cmpuint (counter.items, ==, 0);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
 }
 
@@ -1501,12 +1530,17 @@ test_expiry_evicts_pending_edit (void)
 
 /* The record converges on the same-value twin a later publication carries, so a
  * rename of the original during a read changes no duration and keeps the
- * countdown running rather than restarting it. */
+ * countdown running rather than restarting it.
+ *
+ * The countdown is armed as the fixture selects the password, so the time read
+ * once the fixture is built is no earlier than that: 1100 ms past it is past the
+ * countdown's deadline however long the fixture took, and short of a countdown
+ * the rename restarted, 600 ms on. */
 static void
 test_rename_twin_during_read (void)
 {
-    gint64 armed = g_get_monotonic_time ();
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    gint64 armed = g_get_monotonic_time ();
     g_autoptr (GPasteItem) twin = g_paste_password_item_new (NULL, "same secret", 1);
 
     password_read_ready (fixture, "same secret");
@@ -2500,19 +2534,20 @@ test_expiry_skips_padded_twin (void)
 
 /* Another password heads the history, so nothing is moved up and activated
  * first: what goes on the selection is the first item fit to, skipping the
- * cleartext twin and a replacement the provider refuses -- an image below the
- * head, its texture dropped -- rather than settling for the empty string. */
+ * cleartext twin and a replacement the provider refuses -- a text the test
+ * provider turns down by its value, as a backend turns down an image whose
+ * texture is gone -- rather than settling for the empty string. */
 static void
 test_expiry_below_another_password (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
     password_read_ready (fixture, "same secret");
     g_paste_history_add (fixture->history, g_paste_text_item_new ("same secret"));
-    g_paste_history_add (fixture->history, g_paste_text_item_new ("idle image"));
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("refused"));
     g_paste_history_add (fixture->history, g_object_ref (fixture->password));
     g_paste_history_add (fixture->history, g_paste_password_item_new ("other", "other secret", 0));
     g_paste_clipboard_content_set_text (&fixture->clipboard->content, "same secret");
-    fixture->clipboard->refuse_value = "idle image";
+    fixture->clipboard->refuse_value = "refused";
     pump_for (1100);
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }

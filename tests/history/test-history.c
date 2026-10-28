@@ -8373,24 +8373,12 @@ drain_case_histories (void)
     g_clear_pointer (&case_histories, g_ptr_array_unref);
 }
 
-/* Every case starts from the schema's defaults: the memory backend is shared by
- * the whole binary, so a key one case sets (the storage backend, most of all)
- * would otherwise reach every case after it, and a case run alone with -p would
- * see different settings. It ends with what it built drained
- * (drain_case_histories ()). */
+/* Every case starts from the schema's defaults and ends with what it built
+ * drained (drain_case_histories ()). */
 static void
 run_from_defaults (gconstpointer test)
 {
-    g_autoptr (GSettings) raw = g_settings_new (G_PASTE_SETTINGS_NAME);
-    g_autoptr (GSettingsSchema) schema = NULL;
-
-    g_object_get (raw, "settings-schema", &schema, NULL);
-
-    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
-
-    for (GStrv key = keys; *key; ++key)
-        g_settings_reset (raw, *key);
-
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
     case_histories = g_ptr_array_new_with_free_func (g_paste_weak_ref_free);
     ((GTestFunc) test) ();
     drain_case_histories ();

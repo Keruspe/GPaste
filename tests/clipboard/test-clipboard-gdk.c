@@ -283,11 +283,23 @@ set_hinted_formats (void)
     formats = gdk_content_formats_union (g_steal_pointer (&formats), hint);
 }
 
+/* Every case starts from the schema's defaults. fixture_setup () checks it
+ * does, the fixture before it having left storage-backend away from its
+ * default. */
+static GPasteSettings *
+make_settings (void)
+{
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
+
+    return g_paste_settings_new ();
+}
+
 static void
 fixture_setup (Fixture      *f,
                gconstpointer user_data G_GNUC_UNUSED)
 {
-    f->settings = g_paste_settings_new ();
+    f->settings = make_settings ();
+    g_assert_cmpint (g_paste_settings_get_storage_backend (f->settings), ==, G_PASTE_STORAGE_FILE);
     g_paste_settings_set_storage_backend (f->settings, G_PASTE_STORAGE_NOOP);
     g_paste_settings_set_synchronize_clipboards (f->settings, FALSE);
     f->history = g_paste_history_new (f->settings);
@@ -1163,7 +1175,7 @@ on_disposed_wait (GPasteClipboardProvider *provider,
 static void
 formats_wait_dispose (void)
 {
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = make_settings ();
     GPasteClipboardGdk *clipboard = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
     GWeakRef weak;
     gboolean answered = FALSE;
