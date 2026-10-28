@@ -214,6 +214,12 @@ test_delete_key (void)
 static void
 test_drag_activates_nothing (void)
 {
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
 
