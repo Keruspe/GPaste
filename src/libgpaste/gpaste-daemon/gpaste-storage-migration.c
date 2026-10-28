@@ -2026,6 +2026,10 @@ typedef struct
      * for us. It picks which failure the user is told about: "nothing changed"
      * would be a lie here, and the reassuring one. */
     gboolean              split;
+    /* Set by the worker, and read, as @split is, when every history it found
+     * was on another passphrase than the one in use: none failed, and what
+     * the user is told is how to put them all on one. */
+    gboolean              elsewhere;
 } RekeyData;
 
 /* As migration_finish(): the one way out, carrying whatever ended it. */
@@ -2092,8 +2096,10 @@ rekey_histories (RekeyData   *self,
         return FALSE;
     }
 
-    /* The ones re-keyed so far, which are what a failure puts back. */
+    /* The ones re-keyed so far, which are what a failure puts back, and
+     * whether any was passed over as on another passphrase. */
     g_autoptr (GPtrArray) rekeyed = g_ptr_array_new ();
+    gboolean elsewhere = FALSE;
 
     for (GStrv name = names; *name; ++name)
     {
@@ -2128,6 +2134,7 @@ rekey_histories (RekeyData   *self,
             if (!split && g_paste_storage_backend_refutes_passphrase (backend, *name))
             {
                 g_warning ("The history \"%s\" is on another passphrase, which it keeps", *name);
+                elsewhere = TRUE;
                 continue;
             }
 
@@ -2180,6 +2187,18 @@ rekey_histories (RekeyData   *self,
 
     journal_remove ();
 
+    /* None re-keyed and some passed over: every history is on another
+     * passphrase than the one in use -- the history it opened deleted since, a
+     * store split by a change whose rollback failed --, and the store check is
+     * what puts them on it (G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION). */
+    if (!rekeyed->len && elsewhere)
+    {
+        self->elsewhere = TRUE;
+        g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
+                             "Every stored history is on another passphrase than the one in use, which each keeps");
+
+        return FALSE;
+    }
     /* An encrypted backend with nothing stored under it is not something we can
      * meaningfully re-key, and it is also what a flavor this build cannot
      * construct degrades to — adopting a passphrase then, and remembering it,
@@ -2193,6 +2212,19 @@ rekey_histories (RekeyData   *self,
     }
 
     return TRUE;
+}
+
+/* What a change of passphrase that failed is reported with, ahead of what
+ * failed. */
+static GPastePromptText
+rekey_failure_description (RekeyData *self)
+{
+    if (self->split)
+        return G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION;
+    if (self->elsewhere)
+        return G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION;
+
+    return G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION;
 }
 
 static void
@@ -2243,13 +2275,13 @@ on_rekey_done (GObject      *source G_GNUC_UNUSED,
          * worker never fails without saying why (see rekey_work_run), so there
          * is always a reason to show.
          *
-         * Which of the two failures it was matters more than the reason: a
-         * re-key that could not be undone leaves histories on both passphrases,
-         * and telling that user "nothing changed" would send them off with the
-         * one passphrase that no longer opens everything. */
-        g_autofree gchar *message = g_strconcat (g_paste_prompt_text (self->split
-                                                                      ? G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION
-                                                                      : G_PASTE_PROMPT_TEXT_REKEY_FAILED_DESCRIPTION),
+         * Which failure it was matters more than the reason
+         * (rekey_failure_description ()): a re-key that could not be undone
+         * leaves histories on both passphrases, and telling that user "nothing
+         * changed" would send them off with the one passphrase that no longer
+         * opens everything; one finding every history on another passphrase
+         * changed none, and what that user needs is how to put them on one. */
+        g_autofree gchar *message = g_strconcat (g_paste_prompt_text (rekey_failure_description (self)),
                                                  "\n\n", error->message, NULL);
 
         g_paste_prompt_report (self->prompt,

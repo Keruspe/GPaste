@@ -1041,7 +1041,8 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,    "other-passphrase-description"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,         "rekey-cut-short-changed"),
-                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,       "rekey-cut-short-under-way"))
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,       "rekey-cut-short-under-way"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION,     "rekey-elsewhere-description"))
 
 /**
  * g_paste_prompt_text:
@@ -1135,6 +1136,9 @@ g_paste_prompt_text (GPastePromptText text)
     case G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY:
         /* Translators: %s is the quoted name of a history. */
         return _("%s was being changed, and may be on either passphrase.");
+    case G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION:
+        /* Translators: the quoted words are a command to type, not to translate. */
+        return _("None of your histories is encrypted with the passphrase in use, so none was changed. Run “gpaste-client doctor” to encrypt them all with it.");
     default:
         return "";
     }

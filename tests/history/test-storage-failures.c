@@ -6716,6 +6716,17 @@ test_rekey_busy (void)
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
+static void
+write_under (GPasteSettings *settings,
+             const gchar    *passphrase,
+             const gchar    *name)
+{
+    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (name));
+
+    g_paste_storage_backend_write_history (backend, name, items);
+}
+
 /* A change of passphrase a process did not live to finish between two
  * histories is told at the next start, with the ones on the new passphrase,
  * through the prompt -- once, and whether or not a passphrase is then asked
@@ -6736,14 +6747,8 @@ test_rekey_cut_short (void)
     g_autofree gchar *journal = journal_path ();
     g_autoptr (GPtrArray) journaled = g_ptr_array_new ();
 
-    {
-        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
-        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
-
-        g_paste_storage_backend_write_history (one, name, items);
-        g_paste_storage_backend_write_history (one, "other", items);
-    }
-
+    write_under (settings, "one", name);
+    write_under (settings, "one", "other");
     g_ptr_array_add (journaled, "other");
     g_assert_true (journal_write (JOURNAL_REKEY, G_PASTE_STORAGE_ENCRYPTED_FILE, journaled, NULL, NULL));
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
@@ -6813,12 +6818,7 @@ test_rekey_cut_short_under_way (void)
     const gchar *name = g_paste_settings_get_history_name (settings);
     g_autoptr (GPtrArray) none = g_ptr_array_new ();
 
-    {
-        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
-        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
-
-        g_paste_storage_backend_write_history (one, name, items);
-    }
+    write_under (settings, "one", name);
 
     g_assert_true (journal_write (JOURNAL_REKEY, G_PASTE_STORAGE_ENCRYPTED_FILE, none, name, NULL));
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
@@ -6858,12 +6858,7 @@ test_rekey_cut_short_then_import (void)
     g_autoptr (GPtrArray) none = g_ptr_array_new ();
     g_autofree gchar *journal = journal_path ();
 
-    {
-        g_autoptr (GPasteStorageBackend) one = g_paste_file_backend_new_encrypted (settings, "one");
-        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
-
-        g_paste_storage_backend_write_history (one, name, items);
-    }
+    write_under (settings, "one", name);
 
     g_assert_true (journal_write (JOURNAL_REKEY, G_PASTE_STORAGE_ENCRYPTED_FILE, none, name, NULL));
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
@@ -7024,6 +7019,47 @@ test_rekey_split_passphrases (void)
     g_assert_true (g_paste_storage_backend_read_history (two, "other", NULL, &other, &size));
     g_assert_cmpuint (g_list_length (other), ==, 1);
     g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A change of passphrase finding every history on another passphrase than the
+ * one in use -- the history it opened deleted since -- says so, rather than
+ * that there is no history to change, and changes none: the user is told how
+ * to put them all on one, not that the history keeps the one it had. */
+static void
+test_rekey_all_elsewhere (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*is on another passphrase, which it keeps*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    write_under (settings, "two", "elsewhere");
+
+    g_autoptr (GPastePassphrase) current = g_paste_passphrase_new ("one");
+    RekeyData self = {
+        .settings = settings,
+        .storage_kind = G_PASTE_STORAGE_ENCRYPTED_FILE,
+        .current_passphrase = current,
+    };
+    g_autoptr (GError) error = NULL;
+
+    g_assert_false (rekey_histories (&self, "three", &error));
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_nonnull (strstr (error->message, "another passphrase"));
+    g_assert_false (self.split);
+    g_assert_cmpint (rekey_failure_description (&self), ==, G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION);
+
+    g_autoptr (GPasteStorageBackend) two = g_paste_file_backend_new_encrypted (settings, "two");
+    g_autolist (GPasteItem) kept = NULL;
+    gsize size;
+
+    g_assert_true (g_paste_storage_backend_read_history (two, "elsewhere", NULL, &kept, &size));
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
 }
 
 /* What the user is told about a re-key that left the history split is that it
@@ -7416,17 +7452,6 @@ test_doctor_unreadable (void)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-static void
-write_under (GPasteSettings *settings,
-             const gchar    *passphrase,
-             const gchar    *name)
-{
-    g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, passphrase);
-    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (name));
-
-    g_paste_storage_backend_write_history (backend, name, items);
-}
-
 static gboolean
 opens_under (GPasteSettings *settings,
              const gchar    *passphrase,
@@ -7841,6 +7866,7 @@ main (int    argc,
     g_test_add_func ("/storage/encrypted-read-oversized", test_encrypted_read_oversized);
     g_test_add_func ("/storage/rekey/settled-without-history", test_rekey_settled_without_history);
     g_test_add_func ("/storage/rekey/split-passphrases", test_rekey_split_passphrases);
+    g_test_add_func ("/storage/rekey/all-elsewhere", test_rekey_all_elsewhere);
     g_test_add_func ("/storage/rekey/cost", test_rekey_cost);
     g_test_add_func ("/storage/rekey/cut-short", test_rekey_cut_short);
     g_test_add_func ("/storage/rekey/failed-leaves-no-journal", test_rekey_failed_leaves_no_journal);

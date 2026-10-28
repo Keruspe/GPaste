@@ -234,6 +234,10 @@ typedef enum
      * changing, so only C reads them. */
     G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,
     G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,
+    /* REKEY_FAILED_DESCRIPTION for a change of passphrase finding every
+     * history on another passphrase than the one in use. After the others,
+     * out of its group, as MIGRATION_DESCRIPTION_UNKEPT is. */
+    G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION,
 } GPastePromptText;
 
 #define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())
