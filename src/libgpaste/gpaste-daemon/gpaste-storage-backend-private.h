@@ -54,8 +54,8 @@ gboolean g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
 /* What a backend with incremental writes records of them, for
  * g_paste_storage_backend_has_diverged () to answer from as it answers from
  * the full writes it sees: that a write of the history called @name failed,
- * the store lagging the history until a full write of it lands, or that a
- * full one did. */
+ * the store lagging the history until a full write or an emptying of it
+ * lands, or that one did. */
 void g_paste_storage_backend_diverge  (GPasteStorageBackend *self,
                                        const gchar          *name);
 void g_paste_storage_backend_converge (GPasteStorageBackend *self,

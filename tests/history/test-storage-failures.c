@@ -2728,6 +2728,47 @@ test_sqlite_incremental_failed (gconstpointer data)
     g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
 }
 
+/* An emptying that goes through leaves the store level with the history, as a
+ * full write does, whatever failed before it -- the database emptied, or one
+ * that would not open replaced: the next add then needs no full write. */
+static void
+test_sqlite_emptied_converges (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autoptr (GPasteItem) a = g_paste_text_item_new ("a");
+    g_autoptr (GList) history = g_list_prepend (NULL, a);
+    const gchar *name = "emptied-converges";
+    g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, name);
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, history));
+    failed_prepare_sql = "DELETE FROM items WHERE uuid = ?;";
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (a), NULL);
+    g_assert_null (failed_prepare_sql);
+    g_assert_true (g_paste_storage_backend_has_diverged (backend, name));
+    g_paste_storage_backend_clear_history (backend, name, NULL);
+    g_assert_false (g_paste_storage_backend_has_diverged (backend, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 0);
+
+    g_autoptr (GPasteStorageBackend) other = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+    g_assert_true (g_file_set_contents (path, "no database", -1, NULL));
+    g_paste_storage_backend_remove_item (other, name, g_paste_item_get_uuid (a), NULL);
+    g_assert_true (g_paste_storage_backend_has_diverged (other, name));
+    g_paste_storage_backend_clear_history (other, name, NULL);
+    g_assert_false (g_paste_storage_backend_has_diverged (other, name));
+    g_assert_cmpint (sqlite_query_int (path, "SELECT COUNT (*) FROM items;"), ==, 0);
+}
+
 /* An add whose read of the top rank fails is a failed add: ranked as if the
  * store were empty, the newest item would be committed at its bottom -- the
  * rank the item removed here leaves free. */
@@ -7892,6 +7933,7 @@ main (int    argc,
     }
     g_test_add_func ("/storage/sqlite/diverged-add-converges", test_sqlite_diverged_add_converges);
     g_test_add_func ("/storage/sqlite/unranked-add", test_sqlite_unranked_add);
+    g_test_add_func ("/storage/sqlite/emptied-converges", test_sqlite_emptied_converges);
     g_test_add_func ("/storage/sqlite/item-too-large", test_sqlite_item_too_large);
 #endif
 

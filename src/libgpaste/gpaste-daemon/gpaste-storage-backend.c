@@ -311,12 +311,12 @@ typedef struct
     gboolean        read_whole;
     gboolean        unverifiable;
 
-    /* The histories a write failed for since the last full one of them that
-     * landed, for a backend with no has_diverged of its own: the full writes
-     * g_paste_storage_backend_write_history () sees, and those an incremental
-     * backend records itself (g_paste_storage_backend_diverge ()). And the
-     * items, by uuid, a write left out of the store as too large for it
-     * (g_paste_storage_backend_leave_out ()). Guarded by @records_lock rather
+    /* The histories a write failed for since the last full write or emptying
+     * of them that landed, for a backend with no has_diverged of its own: the
+     * full writes g_paste_storage_backend_write_history () sees, and those an
+     * incremental backend records itself (g_paste_storage_backend_diverge ()).
+     * And the items, by uuid, a write left out of the store as too large for
+     * it (g_paste_storage_backend_leave_out ()). Guarded by @records_lock rather
      * than by a backend's own lock, which a load may hold for as long as its
      * read takes: the writes record into them on storage workers, a backend's
      * lock held, and the main thread asks after every write. Nothing else is
@@ -1065,9 +1065,9 @@ g_paste_storage_backend_is_incremental (GPasteStorageBackend *self)
  * @self: a #GPasteStorageBackend instance
  * @name: the name of a history
  *
- * Whether a write of @name failed since the last full write of it that landed,
- * the store holding what the history no longer does, or missing what it does,
- * until one lands. Never waits on a read or a write in flight.
+ * Whether a write of @name failed since the last full write or emptying of it
+ * that landed, the store holding what the history no longer does, or missing
+ * what it does, until one lands. Never waits on a read or a write in flight.
  *
  * Returns: whether the next write of @name has to be a full one
  */

@@ -112,14 +112,14 @@ struct _GPasteStorageBackendClass
                                       GPasteItem           *item);
     void     (*clear_history)        (GPasteStorageBackend *self,
                                       const gchar          *name);
-    /* Whether a write of @name failed since the last full one that landed,
-     * the store lagging the history until one does. Asked on the main thread
-     * after every write, so it must not wait on a read in flight. Unset, the
-     * base class answers it from the full writes it sees, which is all a
-     * backend without the incremental vfuncs makes, and, for the backends of
-     * this library, from what their incremental writes record of themselves.
-     * A backend from outside it implementing those has no way to record them,
-     * and answers this itself. */
+    /* Whether a write of @name failed since the last full one or emptying
+     * that landed, the store lagging the history until one does. Asked on
+     * the main thread after every write, so it must not wait on a read in
+     * flight. Unset, the base class answers it from the full writes it sees,
+     * which is all a backend without the incremental vfuncs makes, and, for
+     * the backends of this library, from what their incremental writes record
+     * of themselves. A backend from outside it implementing those has no way
+     * to record them, and answers this itself. */
     gboolean (*has_diverged)         (GPasteStorageBackend *self,
                                       const gchar          *name);
 };

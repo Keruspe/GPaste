@@ -2255,10 +2255,13 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    /* Keep the (now empty) database so the history is still listed. */
+    /* Keep the (now empty) database so the history is still listed. Level
+     * with the history once emptied, as a full write leaves it, whatever
+     * failed before: the next add needs no full write to catch up. */
     if (db && g_paste_sqlite_backend_exec (db, "DELETE FROM items;"))
     {
         g_paste_sqlite_backend_forget_deleted (db);
+        g_paste_storage_backend_converge (self, name);
         return;
     }
 
@@ -2273,7 +2276,10 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
         g_paste_sqlite_backend_unlink (backend, db_path, &error);
 
         if (!error && g_paste_sqlite_backend_open (self, db_path))
+        {
+            g_paste_storage_backend_converge (self, name);
             return;
+        }
 
         if (error)
             g_warning ("sqlite: could not replace “%s” with an empty history: %s", db_path, error->message);
