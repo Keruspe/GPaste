@@ -73,6 +73,22 @@ crypto_pwhash (unsigned char * const       out,
     return original (out, outlen, passwd, passwdlen, salt, crypto_pwhash_OPSLIMIT_MIN, crypto_pwhash_MEMLIMIT_MIN, alg);
 }
 
+/* How many times the process passphrase was read: a backend keyed with one of
+ * its own, which is what a storage worker builds, reads none. */
+static guint process_passphrase_reads;
+
+const gchar *
+g_paste_storage_backend_get_passphrase (void)
+{
+    typedef const gchar *(*Get) (void);
+    Get original = (Get) dlsym (RTLD_NEXT, "g_paste_storage_backend_get_passphrase");
+
+    g_assert_nonnull (original);
+    g_atomic_int_inc (&process_passphrase_reads);
+
+    return original ();
+}
+
 /* The size of every block gcr_secure_memory_alloc () handed out while
  * @secure_tracked is set, and how many of them went back holding anything:
  * gcr frees ordinary memory, which it falls back to, as it is. */
@@ -977,9 +993,10 @@ pathconf (const char *path,
  * defines again -- which they do only while they go through the PLT:
  * -Bsymbolic binds them inside the library, and a case needing them skips
  * itself then. Asked of the interposer, through a call the library makes. The
- * cases needing them hide a flavour that can be missing, or count a storage
+ * cases needing them hide a flavour that can be missing, count a storage
  * worker in this binary's copy of the counter the library asks
- * g_paste_storage_is_busy () of. Every other case interposes calls the library
+ * g_paste_storage_is_busy () of, or count the reads of the process
+ * passphrase. Every other case interposes calls the library
  * makes into another one, or that the migration makes from its copy, which
  * -Bsymbolic leaves alone. */
 static gboolean
@@ -4126,6 +4143,48 @@ test_passphrase_set_again (void)
     g_paste_storage_backend_set_passphrase ("passphrase");
     g_paste_storage_backend_set_passphrase (g_paste_storage_backend_get_passphrase ());
     g_assert_cmpstr (g_paste_storage_backend_get_passphrase (), ==, "passphrase");
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+
+/* A backend keyed with a passphrase of its own reads nothing of the process's,
+ * which the main thread may be setting while a storage worker builds one --
+ * its plain kind through g_paste_storage_backend_new () included. The read is
+ * made within gpaste-storage-backend.c, which the interposer counts only where
+ * this build leaves such a call to the PLT: one backend keyed with the
+ * process's passphrase shows it counting, the case skipping itself where it
+ * does not. */
+static void
+test_keyed_backend_reads_no_process_passphrase (void)
+{
+    if (!library_calls_interposed ())
+        return;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    const GPasteStorage kinds[] = {
+        G_PASTE_STORAGE_ENCRYPTED_FILE,
+#ifdef G_PASTE_ENABLE_SQLITE
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
+#endif
+    };
+
+    g_paste_storage_backend_set_passphrase ("process");
+    g_atomic_int_set (&process_passphrase_reads, 0);
+    g_object_unref (g_paste_storage_backend_new (G_PASTE_STORAGE_ENCRYPTED_FILE, settings));
+    if (!g_atomic_int_get (&process_passphrase_reads))
+    {
+        g_paste_storage_backend_set_passphrase (NULL);
+        g_test_skip ("libgpaste-daemon binds the calls it makes within one file");
+        return;
+    }
+
+    g_atomic_int_set (&process_passphrase_reads, 0);
+    for (gsize i = 0; i < G_N_ELEMENTS (kinds); ++i)
+    {
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (kinds[i], settings, "own");
+
+        g_assert_cmpint (g_paste_storage_backend_get_kind (backend), ==, kinds[i]);
+    }
+    g_assert_cmpuint (g_atomic_int_get (&process_passphrase_reads), ==, 0);
     g_paste_storage_backend_set_passphrase (NULL);
 }
 
@@ -7702,6 +7761,7 @@ main (int    argc,
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase/verify-underived", test_passphrase_verify_underived);
     g_test_add_func ("/storage/passphrase/set-again", test_passphrase_set_again);
+    g_test_add_func ("/storage/passphrase/keyed-backend-reads-none", test_keyed_backend_reads_no_process_passphrase);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
     g_test_add_func ("/storage/new-history-name-fits", test_new_history_name_fits);
     g_test_add_data_func ("/storage/secure-memory-wiped/file", GUINT_TO_POINTER (G_PASTE_STORAGE_ENCRYPTED_FILE), test_secure_memory_wiped);

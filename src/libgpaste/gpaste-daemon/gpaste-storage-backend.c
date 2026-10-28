@@ -1607,7 +1607,11 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
     const gchar *passphrase = NULL;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    passphrase = g_paste_storage_backend_get_passphrase ();
+    /* Asked for an encrypted kind alone: the encrypted constructors build
+     * their plain kind through here, a storage worker among their callers,
+     * and the main thread may be setting the process passphrase meanwhile. */
+    if (g_paste_storage_is_encrypted (storage_kind))
+        passphrase = g_paste_storage_backend_get_passphrase ();
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
     /* No passphrase set in this process yet (e.g. the in-process daemon in
