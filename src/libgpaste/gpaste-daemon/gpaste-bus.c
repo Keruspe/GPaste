@@ -12,6 +12,9 @@ struct _GPasteBus
     GDBusConnection *connection;
     guint            id_on_bus;
     gboolean         acquired; /* whether the name was ever actually acquired */
+    /* The idle telling "export-failed" for this ownership, which unowning the
+     * name takes away with it: see g_paste_bus_on_bus_acquired (). */
+    guint            export_failed_id;
 
     GPtrArray       *objects; /* GPasteBusObject*, owned, registered on the connection */
 };
@@ -66,7 +69,10 @@ g_paste_bus_export_failed_idle (gpointer user_data)
     g_autoptr (GPasteBus) self = g_weak_ref_get (user_data);
 
     if (self)
+    {
+        self->export_failed_id = 0;
         g_paste_bus_export_failed (self);
+    }
 
     return G_SOURCE_REMOVE;
 }
@@ -87,13 +93,14 @@ g_paste_bus_on_bus_acquired (GDBusConnection *connection,
     /* Once, and from an idle rather than from here: a listener standing down
      * unowns the name, which GDBus cannot take from inside the callback that
      * hands it the connection -- it goes on to use that connection once this
-     * returns. */
+     * returns. The failure is this ownership's, so an unown before the idle
+     * runs takes it away rather than have it told for a name since let go of,
+     * or owned again (/daemon/bus/export-failed-unowned). */
     if (failed)
     {
-        guint id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, g_paste_bus_export_failed_idle,
-                                    g_paste_weak_ref_new (self), g_paste_weak_ref_free);
-
-        g_source_set_name_by_id (id, "[GPaste] export failure");
+        self->export_failed_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, g_paste_bus_export_failed_idle,
+                                                  g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+        g_source_set_name_by_id (self->export_failed_id, "[GPaste] export failure");
     }
 }
 
@@ -205,6 +212,7 @@ g_paste_bus_unown_name (GPasteBus *self)
     g_return_if_fail (G_PASTE_IS_BUS (self));
 
     g_clear_handle_id (&self->id_on_bus, g_bus_unown_name);
+    g_clear_handle_id (&self->export_failed_id, g_source_remove);
 
     for (guint i = 0; self->objects && i < self->objects->len; ++i)
         g_paste_bus_object_unregister_on_connection (g_ptr_array_index (self->objects, i));
@@ -260,7 +268,8 @@ g_paste_bus_class_init (GPasteBusClass *klass)
      * this as a startup failure — a distinct one from "name-lost", which is
      * about another daemon owning the name. Emitted once however many failed,
      * and for the objects re-exported as the connection comes up, from an idle:
-     * a listener can unown the name from its handler either way.
+     * a listener can unown the name from its handler either way. A name unowned
+     * before that idle runs is not told about it.
      */
     signals[EXPORT_FAILED] = g_signal_new ("export-failed",
                                            G_PASTE_TYPE_BUS,

@@ -1288,11 +1288,31 @@ struct _TestBusObject
 {
     GPasteBusObject parent_instance;
 
-    gboolean refuse;
-    guint    registrations;
+    gboolean   refuse;
+    guint      registrations;
+    /* The bus to unown the name of once this refuses, from an idle of a
+     * priority above the one the bus tells "export-failed" from, so that it
+     * runs first -- and the times it did. The case holds the bus for as long
+     * as this. */
+    GPasteBus *unown_bus;
+    guint      unowned;
 };
 
 G_DEFINE_TYPE (TestBusObject, test_bus_object, G_PASTE_TYPE_BUS_OBJECT)
+
+static gboolean
+test_bus_object_unown (gpointer user_data)
+{
+    g_autoptr (TestBusObject) self = g_weak_ref_get (user_data);
+
+    if (self)
+    {
+        g_paste_bus_unown_name (self->unown_bus);
+        ++self->unowned;
+    }
+
+    return G_SOURCE_REMOVE;
+}
 
 static gboolean
 test_bus_object_register (GPasteBusObject *object,
@@ -1304,6 +1324,13 @@ test_bus_object_register (GPasteBusObject *object,
     ++self->registrations;
     if (!self->refuse)
         return TRUE;
+
+    if (self->unown_bus)
+    {
+        guint id = g_idle_add_full (G_PRIORITY_DEFAULT, test_bus_object_unown, g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+
+        g_source_set_name_by_id (id, "[GPaste] test unown on refusal");
+    }
 
     g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_EXISTS, "refused");
     return FALSE;
@@ -1369,6 +1396,50 @@ test_bus_export_failed_told_once (void)
     g_assert_cmpuint (next->registrations, ==, 1);
 }
 
+static gboolean
+mark_drained (gpointer user_data)
+{
+    *(guint *) user_data = 1;
+
+    return G_SOURCE_REMOVE;
+}
+
+/* An export failure is this ownership's: the name unowned before the idle
+ * telling it runs is not told about it, its listener otherwise standing down
+ * a second time -- or standing down the ownership that came after. */
+static void
+test_bus_export_failed_unowned (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to export an object on the bus: refused*");
+        return;
+    }
+
+    /* As in test_bus_export_failed_told_once (). */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteBus) bus = g_paste_bus_new ();
+    g_autoptr (TestBusObject) refused = g_object_new (TEST_TYPE_BUS_OBJECT, NULL);
+    guint failures = 0;
+    guint drained = 0;
+
+    refused->refuse = TRUE;
+    refused->unown_bus = bus;
+    g_paste_bus_add_object (bus, G_PASTE_BUS_OBJECT (refused));
+    g_signal_connect (bus, "export-failed", G_CALLBACK (stand_down), &failures);
+    g_paste_bus_own_name_full (bus, FALSE);
+    g_paste_test_bus_wait_for_count (&refused->unowned, 1);
+
+    /* Behind every idle of the bus's priority, its own included. */
+    g_source_set_name_by_id (g_idle_add_full (G_PRIORITY_LOW, mark_drained, &drained, NULL), "[GPaste] test drained");
+    g_paste_test_bus_wait_for_count (&drained, 1);
+
+    g_assert_cmpuint (failures, ==, 0);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -1402,6 +1473,7 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/change-passphrase/unhosted", Fixture, NULL, fixture_set_up, test_change_passphrase_unhosted, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
     g_test_add_func ("/daemon/bus/export-failed-told-once", test_bus_export_failed_told_once);
+    g_test_add_func ("/daemon/bus/export-failed-unowned", test_bus_export_failed_unowned);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);
     g_test_add ("/daemon/upload/bounds-answer", Fixture, NULL, fixture_set_up, test_upload_bounds_answer, fixture_tear_down);
     g_test_add ("/daemon/upload/unread-input", Fixture, NULL, fixture_set_up, test_upload_unread_input, fixture_tear_down);
