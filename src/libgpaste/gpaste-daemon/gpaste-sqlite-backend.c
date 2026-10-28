@@ -1657,6 +1657,27 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     return NULL;
 }
 
+/* A read-only connection of its own to the database at @path, for what probes
+ * it without the backend's state -- a count, a passphrase check: it creates no
+ * database, opens no special file (g_paste_storage_is_special_file ()), and
+ * waits out another connection busy with the database, as every connection of
+ * the backend's does. Without that wait its reads would fail at once, a
+ * passphrase check's then finding no parameters to refute with and counting
+ * an empty history, either way accepting a passphrase the key check refuses.
+ * %NULL when the database cannot be opened. */
+static sqlite3 *
+g_paste_sqlite_backend_open_readonly (const gchar *path)
+{
+    g_autoptr (sqlite3) db = NULL;
+
+    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+        return NULL;
+
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
+
+    return g_steal_pointer (&db);
+}
+
 /* What read_history_file would have returned, counted in the database rather
  * than carried out of it: same predicate, same cap, same favourites, and the
  * same image rows dropped when images are turned off.
@@ -1689,17 +1710,14 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
-    g_autoptr (sqlite3) db = NULL;
+    /* Nor under the backend's lock, which a load holds across the key
+     * derivation and the decoding of every image -- and this runs on the main
+     * loop, which in gnome-shell is the compositor's. A stall no test
+     * measures. */
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (history_file_path);
 
-    /* A connection of its own, and none of the backend's state: so not the
-     * backend's lock either, which a load holds across the key derivation and
-     * the decoding of every image -- and this runs on the main loop, which in
-     * gnome-shell is the compositor's. A stall no test measures. */
-    if (g_paste_storage_is_special_file (history_file_path) ||
-        sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return 0;
-
-    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
 
@@ -2456,16 +2474,10 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
                                          gboolean             *has_data)
 {
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
-    g_autoptr (sqlite3) db = NULL;
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (path);
 
-    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return FALSE;
-
-    /* As on every other connection: another one busy with the database is
-     * waited out. Without it the reads below fail at once, the meta read
-     * leaving nothing to refute with and the count reading as an empty
-     * history, either way accepting a passphrase the key check refuses. */
-    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
@@ -2522,18 +2534,17 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
 gboolean
 g_paste_sqlite_backend_database_has_items (const gchar *path)
 {
-    g_autoptr (sqlite3) db = NULL;
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (path);
 
-    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return FALSE;
-
-    /* As check_passphrase () does, another connection busy with it is waited
-     * out rather than read as an empty database. */
-    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
     guint64 memlimit = 0;
+    /* Loaded and not read: load_crypto_params () answers for whole parameters
+     * alone, and a database without its key check is no more verifiable than
+     * one without its salt. */
     g_autofree guchar *check = NULL;
     gsize check_length = 0;
 
