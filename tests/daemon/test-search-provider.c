@@ -222,8 +222,7 @@ search_text (GPasteClient *client,
     g_autoptr (GAsyncResult) result = NULL;
 
     g_paste_client_search_text (client, text, NULL, g_paste_test_env_keep_result, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
     return g_paste_client_search_text_finish (client, result, error);
 }

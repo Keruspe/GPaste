@@ -1329,8 +1329,7 @@ activation_disposed (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
             G_VARIANT_TYPE ("(uuu)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
         g_assert_no_error (error);
         g_variant_get (counts, "(uuu)", &creates, &binds, &closes);
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
+        g_paste_test_bus_drain ();
     }
     g_assert_cmpuint (creates, ==, 1);
     g_assert_cmpuint (binds, ==, 0);

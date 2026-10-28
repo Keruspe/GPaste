@@ -1501,8 +1501,8 @@ g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
      * on: a password published there meanwhile would be taken for gone, its
      * countdown with it (/meta/release/publish-before-conclusion,
      * /gdk/formats/release-publish). Superseded, it is recorded and does none
-     * of those; the price is that it lands at the head of the history, above
-     * whatever that change put there. */
+     * of those (/meta/release/trimmed-before-publication); the price is that it
+     * lands at the head of the history, above whatever that change put there. */
     GPasteClipboardUpdate *previous = *slot;
 
     previous->released = TRUE;

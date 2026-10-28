@@ -34,6 +34,10 @@ void             g_paste_test_bus_wait_until     (GPasteTestBusDone           do
                                                   gconstpointer               arg);
 gboolean         g_paste_test_bus_is_set         (gconstpointer               pointer,
                                                   gconstpointer               arg);
+gboolean         g_paste_test_bus_is_unset       (gconstpointer               pointer,
+                                                  gconstpointer               arg);
+gboolean         g_paste_test_bus_is_true        (gconstpointer               flag,
+                                                  gconstpointer               arg);
 void             g_paste_test_bus_wait_for_enum  (gpointer                    object,
                                                   const gchar                *property,
                                                   gint                        value);
@@ -43,6 +47,7 @@ void             g_paste_test_bus_count_emission (guint                      *co
 void             g_paste_test_bus_wait_for_owner (GDBusProxy                 *proxy,
                                                   GDBusConnection            *server);
 void             g_paste_test_bus_pump           (guint                       ms);
+void             g_paste_test_bus_drain          (void);
 void             g_paste_test_bus_round_trip     (GDBusConnection            *connection,
                                                   GDBusConnection            *server);
 

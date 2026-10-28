@@ -143,13 +143,6 @@ stand_in_stop (StandIn *stand_in)
     g_clear_object (&stand_in->server);
 }
 
-static gboolean
-is_true (gconstpointer flag,
-         gconstpointer arg G_GNUC_UNUSED)
-{
-    return *(const gboolean *) flag;
-}
-
 static void
 on_init_ready (GObject      *source_object,
                GAsyncResult *res,
@@ -357,14 +350,6 @@ test_handoff_other_name (void)
     g_bus_unown_name (other_owner);
 }
 
-static void
-on_call_done (GObject      *source G_GNUC_UNUSED,
-              GAsyncResult *result,
-              gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
 /* A call carrying a string that is not UTF-8, which is all D-Bus carries, is
  * refused before it is sent -- whichever front end makes it, and however it
  * waits for the answer: sent, it would reach the daemon as "[Invalid UTF-8]",
@@ -397,8 +382,8 @@ test_invalid_utf8_refused (void)
     {
         g_autoptr (GAsyncResult) result = NULL;
 
-        g_paste_client_backup_history (client, "history", latin1, NULL, on_call_done, &result);
-        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_paste_client_backup_history (client, "history", latin1, NULL, g_paste_test_env_keep_result, &result);
+        g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
         g_paste_client_backup_history_finish (client, result, &error);
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
         g_clear_error (&error);
@@ -407,8 +392,8 @@ test_invalid_utf8_refused (void)
     {
         g_autoptr (GAsyncResult) result = NULL;
 
-        g_paste_client_get_item (client, latin1, NULL, on_call_done, &result);
-        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_paste_client_get_item (client, latin1, NULL, g_paste_test_env_keep_result, &result);
+        g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
         g_assert_null (g_paste_client_get_item_finish (client, result, &error));
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
         g_clear_error (&error);
@@ -427,8 +412,8 @@ test_invalid_utf8_refused (void)
         g_assert_null (g_paste_client_add_file_sync (client, "file", &error));
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
         g_clear_error (&error);
-        g_paste_client_add_file (client, "file", NULL, on_call_done, &result);
-        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+        g_paste_client_add_file (client, "file", NULL, g_paste_test_env_keep_result, &result);
+        g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
         g_assert_null (g_paste_client_add_file_finish (client, result, &error));
         g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
     }
@@ -520,7 +505,7 @@ test_initables (void)
 
     g_signal_connect_swapped (watched, "notify::daemon-presence", G_CALLBACK (g_paste_test_bus_count_emission), &notified);
     g_async_initable_init_async (G_ASYNC_INITABLE (watched), G_PRIORITY_DEFAULT, NULL, on_init_ready, &initialised);
-    g_paste_test_bus_wait_until (is_true, &initialised, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &initialised, NULL);
     g_assert_true (initialised);
     g_assert_cmpint (g_paste_client_get_daemon_presence (G_PASTE_CLIENT (watched)), ==, G_PASTE_DAEMON_PRESENCE_READY);
     g_assert_cmpuint (notified, ==, 1);
@@ -634,7 +619,7 @@ test_seed_announced (void)
 
     g_signal_connect_swapped (watched, "notify::daemon-presence", G_CALLBACK (g_paste_test_bus_count_emission), &notified);
     g_async_initable_init_async (G_ASYNC_INITABLE (watched), G_PRIORITY_DEFAULT, NULL, on_init_ready, &initialised);
-    g_paste_test_bus_wait_until (is_true, &initialised, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &initialised, NULL);
     g_assert_true (initialised);
     g_assert_cmpint (g_paste_client_get_daemon_presence (G_PASTE_CLIENT (watched)), ==, G_PASTE_DAEMON_PRESENCE_STARTING);
     g_assert_cmpuint (notified, ==, 1);
@@ -684,7 +669,7 @@ legacy_asked (GPasteClient *client,
     LegacyAnswer answer = { 0 };
 
     g_paste_util_daemon_is_legacy (client, NULL, on_legacy_answered, &answer);
-    g_paste_test_bus_wait_until (is_true, &answer.done, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &answer.done, NULL);
     /* An answer still out would also land in a frame gone by then. */
     g_assert_true (answer.done);
     if (answer.error)
@@ -862,36 +847,10 @@ test_legacy (void)
     g_dbus_connection_close_sync (server, NULL, NULL);
 }
 
-/* A call's reply, taken once it has come: the stand-in answers from this very
- * main loop, so a synchronous call would wait on itself. */
-typedef struct
-{
-    gboolean      done;
-    GAsyncResult *result;
-} Reply;
-
-static void
-on_replied (GObject      *source_object G_GNUC_UNUSED,
-            GAsyncResult *res,
-            gpointer      user_data)
-{
-    Reply *reply = user_data;
-
-    reply->result = g_object_ref (res);
-    reply->done = TRUE;
-}
-
-/* Transfer full. */
-static GAsyncResult *
-wait_reply (Reply *reply)
-{
-    g_paste_test_bus_wait_until (is_true, &reply->done, NULL);
-    g_assert_true (reply->done);
-    reply->done = FALSE;
-
-    return g_steal_pointer (&reply->result);
-}
-
+/* A client @stand_in serves. A call reaching the stand-in is made
+ * asynchronously, its answer waited for (g_paste_test_env_wait_result_within ()):
+ * the stand-in answers from this very main loop, so a synchronous call would
+ * wait on itself. */
 static GPasteClient *
 ready_client (StandIn *stand_in)
 {
@@ -947,22 +906,25 @@ test_errors_stripped (void)
     StandIn stand_in = { 0 };
     g_autoptr (GPasteClient) client = ready_client (&stand_in);
     g_autoptr (GError) error = NULL;
-    Reply reply = { 0 };
+    g_autoptr (GAsyncResult) backup = NULL;
+    g_autoptr (GAsyncResult) item = NULL;
+    g_autoptr (GAsyncResult) items = NULL;
+    g_autoptr (GAsyncResult) doctor = NULL;
 
     g_signal_connect (stand_in.skeleton, "handle-backup-history", G_CALLBACK (refuse_backup), NULL);
     g_signal_connect (stand_in.skeleton, "handle-get-item", G_CALLBACK (refuse_item), NULL);
     g_signal_connect (stand_in.skeleton, "handle-get-items", G_CALLBACK (refuse_item), NULL);
     g_signal_connect (stand_in.skeleton, "handle-doctor", G_CALLBACK (refuse_doctor), NULL);
 
-    g_paste_client_backup_history (client, "history", "backup", NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) backup = wait_reply (&reply);
+    g_paste_client_backup_history (client, "history", "backup", NULL, g_paste_test_env_keep_result, &backup);
+    g_paste_test_env_wait_result_within (&backup, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_paste_client_backup_history_finish (client, backup, &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
     g_assert_cmpstr (error->message, ==, "no history goes by that name");
     g_clear_error (&error);
 
-    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000001", NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) item = wait_reply (&reply);
+    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000001", NULL, g_paste_test_env_keep_result, &item);
+    g_paste_test_env_wait_result_within (&item, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_null (g_paste_client_get_item_finish (client, item, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
     g_assert_cmpstr (error->message, ==, "no item goes by that uuid");
@@ -970,8 +932,8 @@ test_errors_stripped (void)
 
     const gchar *uuids[] = { "00000000-0000-4000-8000-000000000001", NULL };
 
-    g_paste_client_get_items (client, uuids, NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) items = wait_reply (&reply);
+    g_paste_client_get_items (client, uuids, NULL, g_paste_test_env_keep_result, &items);
+    g_paste_test_env_wait_result_within (&items, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_null (g_paste_client_get_items_finish (client, items, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
     g_assert_cmpstr (error->message, ==, "no item goes by that uuid");
@@ -979,8 +941,8 @@ test_errors_stripped (void)
 
     gboolean healthy = TRUE;
 
-    g_paste_client_doctor (client, NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) doctor = wait_reply (&reply);
+    g_paste_client_doctor (client, NULL, g_paste_test_env_keep_result, &doctor);
+    g_paste_test_env_wait_result_within (&doctor, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_null (g_paste_client_doctor_finish (client, doctor, &healthy, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_cmpstr (error->message, ==, "nothing hosts the check");
@@ -1009,13 +971,13 @@ test_doctor_answers (void)
     StandIn stand_in = { 0 };
     g_autoptr (GPasteClient) client = ready_client (&stand_in);
     g_autoptr (GError) error = NULL;
-    Reply reply = { 0 };
+    g_autoptr (GAsyncResult) result = NULL;
     gboolean healthy = TRUE;
 
     g_signal_connect (stand_in.skeleton, "handle-doctor", G_CALLBACK (serve_doctor), NULL);
-    g_paste_client_doctor (client, NULL, on_replied, &reply);
+    g_paste_client_doctor (client, NULL, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
-    g_autoptr (GAsyncResult) result = wait_reply (&reply);
     g_auto (GStrv) report = g_paste_client_doctor_finish (client, result, &healthy, &error);
 
     g_assert_no_error (error);
@@ -1064,40 +1026,41 @@ test_store_calls_wait (void)
 {
     StandIn stand_in = { 0 };
     g_autoptr (GPasteClient) client = ready_client (&stand_in);
-    Reply reply = { 0 };
 
     g_signal_connect_swapped (stand_in.skeleton, "handle-backup-history", G_CALLBACK (store_call_later), NULL);
     g_signal_connect_swapped (stand_in.skeleton, "handle-empty-history", G_CALLBACK (store_call_later), NULL);
     g_signal_connect_swapped (stand_in.skeleton, "handle-list-histories", G_CALLBACK (store_call_later), NULL);
     g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (client), STORE_ANSWER_MS / 3);
 
+    /* All three out at once, each answered on a timer of its own. */
+    g_autoptr (GAsyncResult) backed_up = NULL;
+    g_autoptr (GAsyncResult) emptied = NULL;
+    g_autoptr (GAsyncResult) listed = NULL;
+
+    g_paste_client_backup_history (client, "history", "backup", NULL, g_paste_test_env_keep_result, &backed_up);
+    g_paste_client_empty_history (client, "other", NULL, g_paste_test_env_keep_result, &emptied);
+    g_paste_client_list_histories (client, NULL, g_paste_test_env_keep_result, &listed);
+
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_client_backup_history (client, "history", "backup", NULL, on_replied, &reply);
-
-        g_autoptr (GAsyncResult) result = wait_reply (&reply);
-
-        g_paste_client_backup_history_finish (client, result, &error);
+        g_paste_test_env_wait_result_within (&backed_up, G_PASTE_TEST_BUS_WAIT_SECONDS);
+        g_paste_client_backup_history_finish (client, backed_up, &error);
         g_assert_no_error (error);
     }
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_client_empty_history (client, "other", NULL, on_replied, &reply);
-
-        g_autoptr (GAsyncResult) result = wait_reply (&reply);
-
-        g_paste_client_empty_history_finish (client, result, &error);
+        g_paste_test_env_wait_result_within (&emptied, G_PASTE_TEST_BUS_WAIT_SECONDS);
+        g_paste_client_empty_history_finish (client, emptied, &error);
         g_assert_no_error (error);
     }
     {
         g_autoptr (GError) error = NULL;
 
-        g_paste_client_list_histories (client, NULL, on_replied, &reply);
+        g_paste_test_env_wait_result_within (&listed, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
-        g_autoptr (GAsyncResult) result = wait_reply (&reply);
-        g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (client, result, &error);
+        g_autolist (GPasteClientHistory) histories = g_paste_client_list_histories_finish (client, listed, &error);
 
         g_assert_no_error (error);
         g_assert_cmpuint (g_list_length (histories), ==, 1);
@@ -1151,7 +1114,6 @@ test_items_read (void)
 {
     StandIn stand_in = { 0 };
     g_autoptr (GPasteClient) client = ready_client (&stand_in);
-    Reply reply = { 0 };
 
     g_signal_connect (stand_in.skeleton, "handle-get-item", G_CALLBACK (serve_item), NULL);
     g_signal_connect (stand_in.skeleton, "handle-get-history", G_CALLBACK (serve_history), NULL);
@@ -1160,11 +1122,12 @@ test_items_read (void)
     for (guint i = 0; i < 2; ++i)
     {
         g_autoptr (GError) error = NULL;
+        g_autoptr (GAsyncResult) result = NULL;
 
         served_kind = (i) ? 99 : G_PASTE_ITEM_KIND_INVALID;
-        g_paste_client_get_item (client, served_uuid, NULL, on_replied, &reply);
+        g_paste_client_get_item (client, served_uuid, NULL, g_paste_test_env_keep_result, &result);
+        g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
-        g_autoptr (GAsyncResult) result = wait_reply (&reply);
         g_autoptr (GPasteClientItem) item = g_paste_client_get_item_finish (client, result, &error);
 
         g_assert_no_error (error);
@@ -1173,16 +1136,18 @@ test_items_read (void)
     }
 
     g_autoptr (GError) error = NULL;
+    g_autoptr (GAsyncResult) invalid = NULL;
+    g_autoptr (GAsyncResult) history = NULL;
 
     served_uuid = "not-a-uuid";
     served_kind = G_PASTE_ITEM_KIND_TEXT;
-    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000002", NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) invalid = wait_reply (&reply);
+    g_paste_client_get_item (client, "00000000-0000-4000-8000-000000000002", NULL, g_paste_test_env_keep_result, &invalid);
+    g_paste_test_env_wait_result_within (&invalid, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_null (g_paste_client_get_item_finish (client, invalid, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
 
-    g_paste_client_get_history (client, NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) history = wait_reply (&reply);
+    g_paste_client_get_history (client, NULL, g_paste_test_env_keep_result, &history);
+    g_paste_test_env_wait_result_within (&history, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_autolist (GPasteClientItem) items = g_paste_client_get_history_finish (client, history, NULL);
 
     g_assert_cmpuint (g_list_length (items), ==, 1);
@@ -1214,7 +1179,8 @@ test_add_file_not_utf8 (void)
     StandIn stand_in = { 0 };
     g_autoptr (GPasteClient) client = ready_client (&stand_in);
     g_autoptr (GError) error = NULL;
-    Reply reply = { 0 };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GAsyncResult) sent = NULL;
 
     files_asked = 0;
     g_signal_connect (stand_in.skeleton, "handle-add-file", G_CALLBACK (count_add_file), NULL);
@@ -1228,11 +1194,10 @@ test_add_file_not_utf8 (void)
 
     g_assert_no_error (error);
     g_assert_cmpint (g_chdir (dir), ==, 0);
-    g_paste_client_add_file (client, "notes.txt", NULL, on_replied, &reply);
+    g_paste_client_add_file (client, "notes.txt", NULL, g_paste_test_env_keep_result, &result);
     g_assert_cmpint (g_chdir (here), ==, 0);
     g_assert_cmpint (g_rmdir (dir), ==, 0);
-
-    g_autoptr (GAsyncResult) result = wait_reply (&reply);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
     g_assert_null (g_paste_client_add_file_finish (client, result, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA);
@@ -1249,8 +1214,8 @@ test_add_file_not_utf8 (void)
     g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
     g_assert_cmpuint (files_asked, ==, 0);
 
-    g_paste_client_add_file (client, "/tmp/notes.txt", NULL, on_replied, &reply);
-    g_autoptr (GAsyncResult) sent = wait_reply (&reply);
+    g_paste_client_add_file (client, "/tmp/notes.txt", NULL, g_paste_test_env_keep_result, &sent);
+    g_paste_test_env_wait_result_within (&sent, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_autofree gchar *uuid = g_paste_client_add_file_finish (client, sent, NULL);
 
     g_assert_nonnull (uuid);
@@ -1308,17 +1273,15 @@ test_reexecute_answers (void)
         StandIn stand_in = { 0 };
         g_autoptr (GPasteClient) client = ready_client (&stand_in);
         g_autoptr (GError) error = NULL;
-        Reply reply = { 0 };
+        g_autoptr (GAsyncResult) result = NULL;
 
         if (i)
             g_signal_connect (stand_in.skeleton, "handle-reexecute", G_CALLBACK (reexecute_refused), NULL);
         else
             g_signal_connect (stand_in.skeleton, "handle-reexecute", G_CALLBACK (reexecute_unanswered), stand_in.server);
 
-        g_paste_client_reexecute (client, NULL, on_replied, &reply);
-
-        g_autoptr (GAsyncResult) result = wait_reply (&reply);
-
+        g_paste_client_reexecute (client, NULL, g_paste_test_env_keep_result, &result);
+        g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
         g_paste_client_reexecute_finish (client, result, &error);
         if (i)
             g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY);
@@ -1544,7 +1507,7 @@ test_wait_for_daemon (void)
     g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (skeleton), server, G_PASTE_DAEMON_OBJECT_PATH, &error);
     g_assert_no_error (error);
     g_paste_daemon3_set_history (skeleton, "history");
-    g_paste_test_bus_wait_until (is_true, &waited.done, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &waited.done, NULL);
     g_assert_true (waited.serving);
     g_assert_no_error (waited.error);
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (skeleton));
@@ -1558,7 +1521,7 @@ test_wait_for_daemon (void)
 
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
     g_paste_util_wait_for_daemon (client, NULL, on_waited, &refused);
-    g_paste_test_bus_wait_until (is_true, &refused.done, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &refused.done, NULL);
     g_assert_false (refused.serving);
     g_assert_error (refused.error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
     g_assert_nonnull (strstr (refused.error->message, "daemon-reexec"));
@@ -1590,7 +1553,7 @@ test_wait_for_daemon_cleanup (void)
     guint refs = G_OBJECT (client)->ref_count;
 
     g_paste_util_wait_for_daemon (client, NULL, on_waited, &refused);
-    g_paste_test_bus_wait_until (is_true, &refused.done, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &refused.done, NULL);
     g_assert_error (refused.error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
     g_clear_error (&refused.error);
     g_paste_test_bus_pump (100);
@@ -1635,7 +1598,7 @@ bash_completion_sees_daemon (void)
 
     g_assert_no_error (error);
     g_subprocess_wait_async (shell, NULL, on_shell_done, &done);
-    g_paste_test_bus_wait_until (is_true, &done, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &done, NULL);
     g_assert_true (done);
 
     return g_subprocess_get_successful (shell);

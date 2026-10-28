@@ -66,23 +66,6 @@ on_released (gpointer user_data)
     *released = TRUE;
 }
 
-static GtkTextView *
-find_text_view (GtkWidget *widget)
-{
-    if (GTK_IS_TEXT_VIEW (widget))
-        return GTK_TEXT_VIEW (widget);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkTextView *view = find_text_view (child);
-
-        if (view)
-            return view;
-    }
-
-    return NULL;
-}
-
 /* @user_data says whether the text handed to the dialog is one it should refuse
  * to open, answering as a cancellation would and putting nothing up. */
 static void
@@ -141,10 +124,7 @@ insert_a_long_line (void)
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
 
-    GtkTextView *view = find_text_view (GTK_WIDGET (dialog));
-    g_assert_nonnull (view);
-
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
+    GtkTextBuffer *buffer = g_paste_test_gtk_dialog_buffer (dialog);
     GtkTextIter iter;
 
     gtk_text_buffer_get_end_iter (buffer, &iter);
@@ -185,10 +165,7 @@ insert_a_long_line_below (void)
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
 
-    GtkTextView *view = find_text_view (GTK_WIDGET (dialog));
-    g_assert_nonnull (view);
-
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
+    GtkTextBuffer *buffer = g_paste_test_gtk_dialog_buffer (dialog);
     GtkTextIter iter;
 
     gtk_text_buffer_get_end_iter (buffer, &iter);
@@ -257,10 +234,7 @@ join_into_a_long_line (void)
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
 
-    GtkTextView *view = find_text_view (GTK_WIDGET (dialog));
-    g_assert_nonnull (view);
-
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
+    GtkTextBuffer *buffer = g_paste_test_gtk_dialog_buffer (dialog);
     gint count = gtk_text_buffer_get_char_count (buffer);
     GtkTextIter start;
     GtkTextIter end;
@@ -311,14 +285,12 @@ paste_over_selection (GtkTextView *view,
                       const gchar *pasted)
 {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
-    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
     gboolean done = FALSE;
     gulong id = g_signal_connect (buffer, "paste-done", G_CALLBACK (on_paste_done), &done);
 
     gdk_clipboard_set_text (gtk_widget_get_clipboard (GTK_WIDGET (view)), pasted);
     g_signal_emit_by_name (view, "paste-clipboard");
-    while (!done && g_get_monotonic_time () < deadline)
-        g_main_context_iteration (NULL, FALSE);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_true, &done, NULL);
     g_signal_handler_disconnect (buffer, id);
     g_assert_true (done);
 }
@@ -345,7 +317,7 @@ replace_into_a_long_line (void)
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
     g_assert_nonnull (dialog);
 
-    GtkTextView *view = find_text_view (GTK_WIDGET (dialog));
+    GtkTextView *view = GTK_TEXT_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), GTK_TYPE_TEXT_VIEW));
     g_assert_nonnull (view);
 
     GtkTextBuffer *buffer = gtk_text_view_get_buffer (view);
@@ -375,32 +347,12 @@ replace_into_a_long_line (void)
     type_over_selection (buffer, "X");
     g_assert_cmpint (gtk_text_buffer_get_char_count (buffer), ==, count);
 
-    g_autofree gchar *all = NULL;
+    g_autofree gchar *all = g_paste_test_gtk_dialog_text (dialog);
 
-    gtk_text_buffer_get_bounds (buffer, &start, &end);
-    all = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
     g_assert_true (g_str_has_suffix (all, "\nshortXshort"));
 
     adw_dialog_force_close (dialog);
     gtk_window_destroy (GTK_WINDOW (window));
-}
-
-static GtkWidget *
-find_button (GtkWidget   *root,
-             const gchar *label)
-{
-    if (GTK_IS_BUTTON (root) && !g_strcmp0 (gtk_button_get_label (GTK_BUTTON (root)), label))
-        return root;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkWidget *found = find_button (child, label);
-
-        if (found)
-            return found;
-    }
-
-    return NULL;
 }
 
 /* An empty text cannot be confirmed, whether the dialog opened on one or the
@@ -420,13 +372,12 @@ empty_not_confirmed (void)
     g_paste_gtk_util_text_dialog (GTK_WINDOW (window), "Add New Item", "Add", NULL, never_submitted, NULL, NULL);
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (window);
-    GtkWidget *confirm = find_button (GTK_WIDGET (dialog), "Add");
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer (find_text_view (GTK_WIDGET (dialog)));
+    GtkWidget *confirm = g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Add");
 
     g_assert_false (gtk_widget_get_sensitive (confirm));
-    gtk_text_buffer_set_text (buffer, "x", -1);
+    g_paste_test_gtk_set_dialog_text (dialog, "x");
     g_assert_true (gtk_widget_get_sensitive (confirm));
-    gtk_text_buffer_set_text (buffer, "", -1);
+    g_paste_test_gtk_set_dialog_text (dialog, "");
     g_assert_false (gtk_widget_get_sensitive (confirm));
 
     adw_dialog_force_close (dialog);
@@ -484,7 +435,7 @@ confirm_answered_once (gconstpointer user_data)
     }
 
     gtk_window_destroy (window);
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
     g_assert_cmpint (answers[0], ==, 1);
     g_assert_cmpint (answers[1], ==, respond);
     g_clear_object (&held);

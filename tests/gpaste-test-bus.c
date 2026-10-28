@@ -117,6 +117,24 @@ g_paste_test_bus_is_set (gconstpointer pointer,
     return *((gconstpointer const *) pointer) != NULL;
 }
 
+/* The same for a pointer that something clears -- a weak pointer, a slot a
+ * teardown empties. */
+gboolean
+g_paste_test_bus_is_unset (gconstpointer pointer,
+                           gconstpointer arg G_GNUC_UNUSED)
+{
+    return *((gconstpointer const *) pointer) == NULL;
+}
+
+/* A GPasteTestBusDone for a gboolean that something sets: @flag is the
+ * address of it, @arg unused. */
+gboolean
+g_paste_test_bus_is_true (gconstpointer flag,
+                          gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const gboolean *) flag;
+}
+
 static gint
 read_enum (gconstpointer object,
            const gchar  *property)
@@ -208,6 +226,15 @@ g_paste_test_bus_pump (guint ms)
         g_main_context_iteration (NULL, TRUE);
 }
 
+/* What is ready on the main context dispatched, until nothing is: waiting for
+ * nothing, it settles what has already happened, a teardown's idles and the
+ * replies a round trip saw in. A state to assert is waited for instead. */
+void
+g_paste_test_bus_drain (void)
+{
+    while (g_main_context_iteration (NULL, FALSE));
+}
+
 /* Every reply @server has sent on @connection is ahead of this one, so once it
  * is back their callbacks are waiting on the main context, and the drain runs
  * them. A Peer.Ping, which every GDBusConnection answers, rather than
@@ -223,8 +250,7 @@ g_paste_test_bus_round_trip (GDBusConnection *connection,
                                                              NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 
     g_assert_no_error (error);
-
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 /* A signal handler counting its emissions into @count, for any signal when

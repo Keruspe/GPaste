@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -252,8 +253,7 @@ finish_worker (TestBackend        *backend,
     g_cond_broadcast (&backend->cond);
     g_mutex_unlock (&backend->mutex);
     g_paste_history_saver_drain (saver);
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
 }
 
 static void

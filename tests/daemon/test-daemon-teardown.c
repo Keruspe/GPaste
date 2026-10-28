@@ -738,13 +738,6 @@ test_upload_answer_is_one_url (Fixture      *fixture,
     }
 }
 
-static gboolean
-is_cleared (gconstpointer pointer,
-            gconstpointer arg G_GNUC_UNUSED)
-{
-    return !*((gconstpointer const *) pointer);
-}
-
 /* An upload out when the daemon leaves the bus is given up on there, its
  * command killed: answered as cancelled at once rather than at the deadline,
  * it lets the daemon go with it once the killed command's parts are back. */
@@ -770,7 +763,7 @@ test_upload_ends_with_export (Fixture      *fixture,
     g_clear_object (&result);
     g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
     g_clear_object (&fixture->daemon);
-    g_paste_test_bus_wait_until (is_cleared, &daemon, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &daemon, NULL);
     g_assert_null (daemon);
 }
 
@@ -791,7 +784,7 @@ test_upload_shortcut_ends_quietly (Fixture      *fixture,
     /* The upload's task holds the daemon until its callback has run. */
     g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
     g_clear_object (&fixture->daemon);
-    g_paste_test_bus_wait_until (is_cleared, &daemon, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &daemon, NULL);
     g_assert_null (daemon);
 }
 
@@ -1511,14 +1504,6 @@ test_bus_export_failed_told_once (void)
     g_assert_cmpuint (next->registrations, ==, 1);
 }
 
-static gboolean
-mark_drained (gpointer user_data)
-{
-    *(guint *) user_data = 1;
-
-    return G_SOURCE_REMOVE;
-}
-
 /* An export failure is this ownership's: the name unowned before the idle
  * telling it runs is not told about it, its listener otherwise standing down
  * a second time -- or standing down the ownership that came after. */
@@ -1539,7 +1524,6 @@ test_bus_export_failed_unowned (void)
     g_autoptr (GPasteBus) bus = g_paste_bus_new ();
     g_autoptr (TestBusObject) refused = g_object_new (TEST_TYPE_BUS_OBJECT, NULL);
     guint failures = 0;
-    guint drained = 0;
 
     refused->refuse = TRUE;
     refused->unown_bus = bus;
@@ -1548,9 +1532,8 @@ test_bus_export_failed_unowned (void)
     g_paste_bus_own_name_full (bus, FALSE);
     g_paste_test_bus_wait_for_count (&refused->unowned, 1);
 
-    /* Behind every idle of the bus's priority, its own included. */
-    g_source_set_name_by_id (g_idle_add_full (G_PRIORITY_LOW, mark_drained, &drained, NULL), "[GPaste] test drained");
-    g_paste_test_bus_wait_for_count (&drained, 1);
+    /* Every idle the bus queued dispatched, its own included. */
+    g_paste_test_bus_drain ();
 
     g_assert_cmpuint (failures, ==, 0);
 }

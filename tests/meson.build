@@ -37,6 +37,10 @@ gpaste_test_bus_dep = declare_dependency(
   include_directories: include_directories('.'),
 )
 
+# The crypto_pwhash () test-history and test-clipboard derive every key through,
+# at libsodium's minimum cost.
+gpaste_test_pwhash_sources = (libsodium_dep.found()) ? files('gpaste-test-pwhash.c') : []
+
 # The widget lookups, dialog waits and stand-in saves the suites driving widgets
 # share: the graphical tool's, and test-prompt-adw for the daemon's own prompt.
 gpaste_test_gtk_lib = static_library(

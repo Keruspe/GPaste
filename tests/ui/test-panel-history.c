@@ -3,6 +3,7 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 
 /* Reach the row the sidebar draws the history on, and the revealer on it. */
 #include <gpaste-ui-panel-history.c>
@@ -10,12 +11,9 @@
 #include <gpaste-ui-item.c>
 #include <gpaste-3/gpaste-settings.h>
 
-/* The calls the sidebar makes, answered when the test says so: @sent_name is
- * the history named, and the answer carries @answer_error if one is set. */
+/* The call the sidebar made, and the history it named. */
+static GPasteTestGtkSave call;
 static gchar *sent_name;
-static GAsyncReadyCallback sent_callback;
-static gpointer sent_data;
-static GError *answer_error;
 
 static void
 send_switch (GPasteClient       *client G_GNUC_UNUSED,
@@ -25,8 +23,7 @@ send_switch (GPasteClient       *client G_GNUC_UNUSED,
              gpointer            data)
 {
     g_set_str (&sent_name, name);
-    sent_callback = callback;
-    sent_data = data;
+    g_paste_test_gtk_save_send (&call, callback, data);
 }
 
 static void
@@ -40,13 +37,14 @@ send_backup (GPasteClient       *client,
     send_switch (client, backup, cancellable, callback, data);
 }
 
+/* A switch and a backup answer no uuid: the one the shared finish hands back
+ * is dropped. */
 static void
 finish_call (GPasteClient *client G_GNUC_UNUSED,
              GAsyncResult *result G_GNUC_UNUSED,
              GError      **error)
 {
-    if (answer_error)
-        g_propagate_error (error, g_steal_pointer (&answer_error));
+    g_free (g_paste_test_gtk_save_finish (&call, error));
 }
 
 /* What the sidebar is told of the daemon: none while it is built, so that it
@@ -71,16 +69,6 @@ get_presence (GPasteClient *client G_GNUC_UNUSED)
 #undef g_paste_client_switch_history_finish
 #undef g_paste_client_switch_history
 #undef g_paste_client_get_daemon_presence
-
-static void
-answer (GPasteClient *client)
-{
-    GAsyncReadyCallback callback = sent_callback;
-
-    g_assert_nonnull (callback);
-    sent_callback = NULL;
-    callback (G_OBJECT (client), NULL, sent_data);
-}
 
 static gboolean have_display;
 
@@ -230,14 +218,6 @@ test_drag_activates_nothing (void)
     g_assert_false (adw_sidebar_item_get_drag_motion_activate (ADW_SIDEBAR_ITEM (history)));
 }
 
-static void
-count_notify (GObject    *object G_GNUC_UNUSED,
-              GParamSpec *pspec  G_GNUC_UNUSED,
-              gpointer    user_data)
-{
-    ++*(guint *) user_data;
-}
-
 /* A row's selection mode notifies when it moves, and only then: it is bound
  * from the list's on every row, each toggle reaching all of them. */
 static void
@@ -257,7 +237,7 @@ test_item_selection_mode_notify (void)
     guint notified = 0;
 
     g_assert_no_error (error);
-    g_signal_connect (item, "notify::selection-mode", G_CALLBACK (count_notify), &notified);
+    g_signal_connect_swapped (item, "notify::selection-mode", G_CALLBACK (g_paste_test_bus_count_emission), &notified);
     g_object_set (item, "selection-mode", FALSE, NULL);
     g_assert_cmpuint (notified, ==, 0);
     g_object_set (item, "selection-mode", TRUE, NULL);
@@ -304,13 +284,6 @@ sent (gconstpointer arg1 G_GNUC_UNUSED,
       gconstpointer arg2 G_GNUC_UNUSED)
 {
     return sent_name != NULL;
-}
-
-static gboolean
-widget_mapped (gconstpointer widget,
-               gconstpointer arg G_GNUC_UNUSED)
-{
-    return gtk_widget_get_mapped ((GtkWidget *) widget);
 }
 
 /* A row handed to another item shows nothing of the one it showed, and offers
@@ -426,7 +399,7 @@ test_panel_switch_name (void)
     g_assert_false (gtk_widget_get_sensitive (GTK_WIDGET (self->jump_button)));
     g_assert_true (gtk_widget_has_css_class (GTK_WIDGET (entry), "error"));
     g_paste_ui_panel_do_switch (self);
-    g_assert_null (sent_callback);
+    g_assert_null (call.callback);
 
     gtk_editable_set_text (entry, "notes");
     g_assert_true (gtk_widget_get_sensitive (GTK_WIDGET (self->jump_button)));
@@ -435,26 +408,26 @@ test_panel_switch_name (void)
     g_assert_cmpstr (sent_name, ==, "notes");
     g_assert_cmpstr (gtk_editable_get_text (entry), ==, "notes");
 
-    answer_error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "refused");
+    call.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "refused");
     g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not switch history: refused");
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
     g_test_assert_expected_messages ();
     g_assert_cmpstr (gtk_editable_get_text (entry), ==, "notes");
 
     g_paste_ui_panel_do_switch (self);
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
     g_assert_cmpstr (gtk_editable_get_text (entry), ==, "");
 
     g_paste_ui_panel_do_switch (self);
     g_assert_cmpstr (sent_name, ==, G_PASTE_DEFAULT_HISTORY);
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
 
     /* The focus goes on to the search only while it is open, and stays put
      * otherwise rather than going to a widget nothing shows. */
     gtk_widget_grab_focus (GTK_WIDGET (entry));
     gtk_widget_set_visible (self->search_entry, FALSE);
     g_paste_ui_panel_do_switch (self);
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
     /* The search entry hands its focus to the text inside it. */
     g_assert_nonnull (gtk_root_get_focus (GTK_ROOT (window)));
     g_assert_false (gtk_widget_is_ancestor (gtk_root_get_focus (GTK_ROOT (window)), self->search_entry));
@@ -462,7 +435,7 @@ test_panel_switch_name (void)
 
     gtk_widget_set_visible (self->search_entry, TRUE);
     g_paste_ui_panel_do_switch (self);
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
     g_assert_true (gtk_widget_is_ancestor (gtk_root_get_focus (GTK_ROOT (window)), self->search_entry));
     gtk_window_destroy (window);
 }
@@ -505,13 +478,13 @@ test_panel_backup_name (void)
 
     /* The name has the focus, and Enter there backs up, as the text the entry
      * delegates to has it: Back Up answers once the dialog has closed. */
-    g_paste_test_bus_wait_until (widget_mapped, entry, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_gtk_widget_mapped, entry, NULL);
     g_assert_true (gtk_widget_has_focus (GTK_WIDGET (gtk_editable_get_delegate (GTK_EDITABLE (entry)))));
     g_clear_pointer (&sent_name, g_free);
     g_signal_emit_by_name (gtk_editable_get_delegate (GTK_EDITABLE (entry)), "activate");
     g_paste_test_bus_wait_until (sent, NULL, NULL);
     g_assert_cmpstr (sent_name, ==, "work_2026");
-    answer (client);
+    g_paste_test_gtk_save_answer (&call, client);
     gtk_window_destroy (window);
 }
 

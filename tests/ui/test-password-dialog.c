@@ -178,23 +178,6 @@ edit_window_lifetime (gconstpointer user_data)
     }
 }
 
-static AdwSpinRow *
-find_spin_row (GtkWidget *widget)
-{
-    if (ADW_IS_SPIN_ROW (widget))
-        return ADW_SPIN_ROW (widget);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        AdwSpinRow *row = find_spin_row (child);
-
-        if (row)
-            return row;
-    }
-
-    return NULL;
-}
-
 /* Whether every row under @widget shows its title as written. */
 static gboolean
 rows_plain (GtkWidget *widget)
@@ -251,7 +234,7 @@ timeout_keeps_blank (void)
     g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
     GtkWindow *window = GTK_WINDOW (adw_window_new ());
     AdwDialog *dialog = edit_dialog (client, window);
-    AdwSpinRow *timeout = find_spin_row (GTK_WIDGET (dialog));
+    AdwSpinRow *timeout = ADW_SPIN_ROW (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_SPIN_ROW));
 
     g_assert_nonnull (timeout);
     /* Its titles being translations, taken as markup they would empty. */

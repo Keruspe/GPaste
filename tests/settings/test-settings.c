@@ -92,7 +92,7 @@ rejected_write (void)
     g_test_expect_message ("GLib-GIO", G_LOG_LEVEL_WARNING, "*max-history-size*outside of valid range*");
     g_paste_settings_set_max_history_size (settings, 0);
     g_test_assert_expected_messages ();
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 
     g_autoptr (GPasteSettings) fresh = g_paste_settings_new ();
 
@@ -106,7 +106,7 @@ rejected_write (void)
     g_object_set (settings, G_PASTE_MAX_HISTORY_SIZE_SETTING, (guint64) 0, NULL);
     g_test_assert_expected_messages ();
     g_assert_cmpuint (notifications, ==, 0);
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
     g_assert_cmpuint (notifications, ==, 1);
     g_assert_cmpuint (g_paste_settings_get_max_history_size (settings), ==, 250);
 

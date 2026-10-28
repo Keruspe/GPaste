@@ -13,7 +13,7 @@ ui_shortcuts_test = executable(
   'gpaste-ui-shortcuts-test',
   sources: ui_test_sources,
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('test-ui-shortcuts', ui_shortcuts_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -55,7 +55,7 @@ ui_history_model_test = executable(
   'gpaste-ui-history-model-test',
   sources: ['test-history-model.c', '../../src/ui/gpaste-ui-history-model.c', '../../src/ui/gpaste-ui-pick-selection.c'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libgpaste_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libgpaste_internal_dep],
 )
 
 test('test-ui-history-model', ui_history_model_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -81,7 +81,7 @@ ui_panel_history_test = executable(
   # Route logs through g_test_expect_message in this test build.
   c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('test-ui-panel-history', ui_panel_history_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -92,7 +92,7 @@ ui_daemon_presence_test = executable(
   # Unstructured, so that g_test_expect_message () sees the window's warnings.
   c_args: ['-DG_PASTE_TEST_PRE_RELEASES="@0@"'.format(','.join(pre_releases_ranked)), '-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 # Some twenty seconds of real daemons coming and going and windows resizing:
@@ -110,7 +110,7 @@ if not library_static
     'gpaste-ui-preferences-test',
     sources: ['test-preferences.c'],
     c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
-    dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+    dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
   )
 
   test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])

@@ -4,6 +4,7 @@
 #include "gpaste-test-history.h"
 
 #include <glib/gstdio.h>
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
@@ -65,30 +66,7 @@ gdk_texture_new_from_bytes (GBytes  *bytes,
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-#include <gpaste-daemon/gpaste-secret-stream-converter.h>
-
 #include <sodium.h>
-
-/* Every key this binary derives costs libsodium's minimum, as in
- * test-storage-failures.c, which says why the stores still read back. GPaste
- * derives with Argon2id alone, and never with parameters its own check
- * refuses: deriving at the minimum whatever is asked would let a derivation
- * attempted with those pass the cases refusing them. */
-int
-crypto_pwhash (unsigned char * const       out,
-               unsigned long long          outlen,
-               const char * const          passwd,
-               unsigned long long          passwdlen,
-               const unsigned char * const salt,
-               unsigned long long          opslimit,
-               size_t                      memlimit,
-               int                         alg)
-{
-    g_assert_cmpint (alg, ==, crypto_pwhash_ALG_ARGON2ID13);
-    g_assert_true (g_paste_crypto_parameters_derivable (opslimit, memlimit));
-
-    return crypto_pwhash_argon2id (out, outlen, passwd, passwdlen, salt, crypto_pwhash_argon2id_OPSLIMIT_MIN, crypto_pwhash_argon2id_MEMLIMIT_MIN, alg);
-}
 #endif
 
 /* Every history a case builds, held weakly, so that run_from_defaults () can
@@ -210,13 +188,6 @@ g_settings_sync (void)
     g_thread_join (g_thread_new ("give-back", give_back, NULL));
     g_main_context_release (NULL);
     g_clear_pointer (&unstored_value, g_variant_unref);
-}
-
-/* What dconf announces once it gives a write back, run. */
-static void
-drain (void)
-{
-    while (g_main_context_iteration (NULL, FALSE));
 }
 
 /* A process racing AddFile, when set: once the type and size of @swap_to are
@@ -344,7 +315,8 @@ test_set_active_refused (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_true (g_paste_settings_get_track_changes (settings));
     g_clear_error (&error);
-    drain ();
+    /* Run what dconf announces once it gives the write back. */
+    g_paste_test_bus_drain ();
     g_assert_true (g_paste_settings_get_track_changes (settings));
 
     refused_key = NULL;
@@ -393,12 +365,12 @@ test_switch_refused (void)
     g_paste_daemon_methods_switch_history (&methods, "switch-refused-elsewhere", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_clear_error (&error);
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_paste_daemon_methods_delete_history (&methods, name, &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     refused_key = NULL;
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
@@ -414,14 +386,6 @@ test_switch_unstored (void)
     unstored = TRUE;
     test_switch_refused ();
     unstored = FALSE;
-}
-
-static void
-count_dropped (GPasteHistory *history G_GNUC_UNUSED,
-               GPasteItem    *item G_GNUC_UNUSED,
-               gpointer       user_data)
-{
-    ++*(guint *) user_data;
 }
 
 /* Deleting the current history leaves it for the default one, and the
@@ -440,7 +404,7 @@ test_delete_current_drops_passwords (void)
     g_paste_settings_set_history_name (settings, name);
     g_paste_history_add (history, g_paste_password_item_new ("bank", "the secret", 0));
     g_paste_history_add (history, g_paste_text_item_new ("a later copy"));
-    g_signal_connect (history, "password-dropped", G_CALLBACK (count_dropped), &dropped);
+    g_signal_connect_swapped (history, "password-dropped", G_CALLBACK (g_paste_test_bus_count_emission), &dropped);
 
     g_assert_true (g_paste_history_delete (history, name, &error));
     g_assert_no_error (error);
@@ -496,33 +460,6 @@ test_delete_current_failed_stays (void)
     g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
-}
-
-/* BackupHistory through the daemon's methods, waited for. */
-static void
-backup_history (const GPasteDaemonMethods *methods,
-                const gchar               *history,
-                const gchar               *backup,
-                GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
-    g_paste_daemon_methods_backup_history_finish (result, error);
-}
-
-/* ListHistories through the daemon's methods, waited for. */
-static GVariant *
-list_histories (const GPasteDaemonMethods *methods,
-                GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_list_histories_async (methods, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
-
-    return g_paste_daemon_methods_list_histories_finish (result, error);
 }
 
 /* Search through the daemon's methods, waited for. */
@@ -694,7 +631,7 @@ test_add_file_tiff (void)
     g_assert_cmpuint (g_bytes_get_size (tiff), >, 4096);
     g_assert_cmpmem (g_bytes_get_data (tiff, NULL), 4, "II*\0", 4);
     g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (path, g_bytes_get_data (tiff, NULL), (gssize) g_bytes_get_size (tiff), NULL));
+    write_bytes (path, tiff);
     g_paste_settings_set_trim_items (settings, FALSE);
     g_paste_settings_set_max_text_item_size (settings, 1024);
     g_paste_settings_set_images_support (settings, FALSE);
@@ -1110,15 +1047,7 @@ test_copy_refusals (void)
 
     g_assert_error (loading, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_close (held, NULL);
-
-    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
-
-    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
-    {
-        g_main_context_iteration (NULL, FALSE);
-        g_usleep (1000);
-    }
-    g_assert_false (g_paste_history_is_loading (history));
+    wait_load (history);
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
@@ -1151,13 +1080,12 @@ value_at (GPasteHistory *history,
 }
 
 /* One millisecond of main loop: run everything pending, then let the clock move
- * on. Every wait in this file is built out of this, so a flaky-timeout fix has
+ * on. Every pump of this file is built out of this, so a flaky-timeout fix has
  * one place to land. */
 static void
 pump_once (void)
 {
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     g_usleep (1000);
 }
 
@@ -1264,32 +1192,14 @@ test_migration_prompt_init (TestMigrationPrompt *self G_GNUC_UNUSED)
 }
 
 static void
-on_migration_settled (GObject      *source G_GNUC_UNUSED,
-                      GAsyncResult *result,
-                      gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-static void
 run_migration (GPasteSettings      *settings,
                TestMigrationPrompt *prompt)
 {
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-
-    /* Bounded, so a migration that never settles fails here rather than at
-     * meson's timeout; an import into an encrypted flavour takes seconds. */
-    gint64 deadline = g_get_monotonic_time () + 60 * G_USEC_PER_SEC;
-
-    while (!result && g_get_monotonic_time () < deadline)
-    {
-        if (!g_main_context_iteration (NULL, FALSE))
-            g_usleep (1000);
-    }
-    g_assert_nonnull (result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
 
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
@@ -1806,29 +1716,6 @@ test_file_delete_takes_temporary (void)
     g_assert_no_error (error);
     g_assert_false (g_file_test (document, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
-}
-
-static void
-on_emptied (GObject      *source G_GNUC_UNUSED,
-            GAsyncResult *result,
-            gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-/* EmptyHistory, waited for as its D-Bus answer is, and as long as
- * run_migration () waits: an encrypted flavour's emptying derives a key, which
- * a loaded machine makes slow. */
-static void
-empty_history (const GPasteDaemonMethods *methods,
-               const gchar               *name,
-               GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    g_paste_test_env_wait_result_within (&result, 60);
-    g_paste_daemon_methods_empty_history_finish (result, error);
 }
 
 /* Emptying a history this daemon does not hold writes an empty one with its
@@ -2530,8 +2417,8 @@ test_file_legacy_images_sweep (void)
     g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
 
     g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
-    g_assert_true (g_file_set_contents (aliased_legacy, g_bytes_get_data (aliased_png, NULL), (gssize) g_bytes_get_size (aliased_png), NULL));
+    write_bytes (legacy, png);
+    write_bytes (aliased_legacy, aliased_png);
     g_assert_cmpint (symlink (history_dir, alias), ==, 0);
     g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
     g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
@@ -2580,7 +2467,7 @@ legacy_history (GBytes      *png,
     g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
 
     g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+    write_bytes (legacy, png);
 
     return g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                             "<history version=\"2.0\">\n"
@@ -2748,14 +2635,14 @@ test_file_encrypted_fallback_verified (void)
         g_paste_storage_backend_write_history (encrypted, name, items);
         g_assert_cmpint (g_unlink (pngs), ==, 0);
 
-        g_assert_true (g_file_set_contents (png, g_bytes_get_data (forged, NULL), (gssize) g_bytes_get_size (forged), NULL));
+        write_bytes (png, forged);
         {
             g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
 
             g_assert_null (loaded);
         }
 
-        g_assert_true (g_file_set_contents (png, g_bytes_get_data (genuine, NULL), (gssize) g_bytes_get_size (genuine), NULL));
+        write_bytes (png, genuine);
         {
             g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
 
@@ -5333,7 +5220,7 @@ test_file_parser_malformed (void)
         g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
         g_autofree gchar *png_path = g_build_filename (history_dir, "parser-checksum.png", NULL);
 
-        g_assert_true (g_file_set_contents (png_path, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+        write_bytes (png_path, png);
 
         g_autofree gchar *image = g_strdup_printf ("  <item kind=\"Image\" date=\"1234567890\" checksum=\"../../escaped&quot;x\"><value>%s</value></item>\n", png_path);
         g_autofree gchar *checksum = read_document ("parser-checksum", image, TRUE);
@@ -5631,11 +5518,13 @@ test_reload_then_empty_drops_password (void)
     g_signal_handlers_disconnect_by_data (history, dropped);
 }
 
-/* A load waited for as the daemon's main loop would. */
+/* A load waited for as the daemon's main loop would, thirty seconds at most. */
 static gboolean
 pump_until_loaded (GPasteHistory *history)
 {
-    for (guint i = 0; i < 5000 && g_paste_history_is_loading (history); ++i)
+    gint64 deadline = g_get_monotonic_time () + 30 * G_USEC_PER_SEC;
+
+    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
         pump_once ();
     return !g_paste_history_is_loading (history);
 }
@@ -5849,12 +5738,6 @@ test_reload_twice_drops_password (void)
     test_reload_then_delete_drops_password (GINT_TO_POINTER (TRUE));
 }
 
-static void
-count_announcement (guint *count)
-{
-    ++*count;
-}
-
 /* A delete with no store to unlink -- the history in use never saved -- has
  * deleted the history all the same; one whose store went but whose images
  * could not all be swept is reported, the history gone and not gone back to,
@@ -5908,7 +5791,7 @@ test_delete_store_or_sweep (void)
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     guint announced = 0;
 
-    g_signal_connect_swapped (skeleton, "raw-history-deleted", G_CALLBACK (count_announcement), &announced);
+    g_signal_connect_swapped (skeleton, "raw-history-deleted", G_CALLBACK (g_paste_test_bus_count_emission), &announced);
     g_paste_daemon_methods_delete_history (&methods, "delete-unswept", &error);
     g_assert_cmpint (g_chmod (images, 0700), ==, 0);
     g_assert_nonnull (error);
@@ -6004,21 +5887,13 @@ test_load_selects_last_add (void)
  * change all the same, is no switch: nothing only the model holds is dropped,
  * a plain flavour's password included. */
 static void
-count_switches (GPasteHistory *history G_GNUC_UNUSED,
-                const gchar   *name G_GNUC_UNUSED,
-                gpointer       user_data)
-{
-    ++*(guint *) user_data;
-}
-
-static void
 test_switch_to_current_keeps_model (void)
 {
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteHistory) history = make_history (&settings, 10);
     guint switches = 0;
 
-    g_signal_connect (history, "switch", G_CALLBACK (count_switches), &switches);
+    g_signal_connect_swapped (history, "switch", G_CALLBACK (g_paste_test_bus_count_emission), &switches);
     g_paste_settings_set_history_name (settings, g_paste_history_get_current (history));
     g_paste_history_add (history, g_paste_text_item_new ("stored"));
     g_paste_history_add (history, g_paste_password_item_new (NULL, "in the model alone", 0));
@@ -6324,14 +6199,6 @@ test_reload_during_load_keeps_adds (void)
     g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
 }
 
-static void
-count_selected (GPasteHistory *history G_GNUC_UNUSED,
-                GPasteItem    *item G_GNUC_UNUSED,
-                gpointer       user_data)
-{
-    ++*(guint *) user_data;
-}
-
 /* A reload of the history loaded -- what ends a store check, a change of
  * passphrase or an in-place migration -- leaves the selections alone: they
  * carry what was copied last, which the history need not hold (the primary's
@@ -6348,7 +6215,7 @@ test_reload_selects_nothing (void)
 
     g_paste_history_add (history, g_paste_text_item_new ("head"));
     g_paste_history_flush (history);
-    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
+    g_signal_connect_swapped (history, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
     g_paste_history_reload_backend (history);
     g_assert_true (pump_until_loaded (history));
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
@@ -6371,7 +6238,7 @@ test_reload_selects_nothing (void)
     g_assert_true (g_paste_storage_backend_write_history (backend, name, stored));
     g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_FILE);
     selected = 0;
-    g_signal_connect (unlocked, "selected", G_CALLBACK (count_selected), &selected);
+    g_signal_connect_swapped (unlocked, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
     g_paste_history_flush (unlocked);
     g_paste_history_reload_backend (unlocked);
     g_assert_true (pump_until_loaded (unlocked));
@@ -6529,7 +6396,7 @@ test_load_skips_password_head (void)
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
     guint selected = 0;
 
-    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
+    g_signal_connect_swapped (history, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
 
     g_paste_history_load (history, names[0]);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);

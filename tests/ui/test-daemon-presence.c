@@ -3,6 +3,7 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 
 #include <gpaste-3/gpaste-util.h>
 
@@ -12,7 +13,9 @@
 
 /* The translations the suite has, each holding an &, which a label read as
  * markup would leave blank: the empty history's description and the
- * sidebar's entry. */
+ * sidebar's entry. Interposed by the suite itself, as test-preferences.c's
+ * are: gpaste-test-gtk, linked into every GTK suite, would translate for them
+ * all, and a lookup shared there would be no shorter than this one. */
 #define EMPTY_DESCRIPTION_TRANSLATED "Copy & paste to start your history"
 #define SWITCH_ENTRY_TRANSLATED      "Switch & create"
 
@@ -519,34 +522,10 @@ wait_for_presence (GPasteClient        *client,
     g_paste_test_bus_wait_for_enum (client, "daemon-presence", presence);
 }
 
-static void
-drain (void)
-{
-    while (g_main_context_iteration (NULL, FALSE));
-}
-
-static GtkWidget *
-find_widget (GtkWidget *widget,
-             GType      type)
-{
-    if (G_TYPE_CHECK_INSTANCE_TYPE (widget, type))
-        return widget;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkWidget *found = find_widget (child, type);
-
-        if (found)
-            return found;
-    }
-
-    return NULL;
-}
-
 static AdwStatusPage *
 find_status_page (GtkWidget *widget)
 {
-    return ADW_STATUS_PAGE (find_widget (widget, ADW_TYPE_STATUS_PAGE));
+    return ADW_STATUS_PAGE (g_paste_test_gtk_find_widget (widget, ADW_TYPE_STATUS_PAGE));
 }
 
 /* The sidebar's row for @history, borrowed from the sidebar's model. */
@@ -554,7 +533,7 @@ static AdwSidebarItem *
 sidebar_item (GPasteUiWindow *window,
               const gchar    *history)
 {
-    g_autoptr (GtkSelectionModel) items = adw_sidebar_get_items (ADW_SIDEBAR (find_widget (window->panel, ADW_TYPE_SIDEBAR)));
+    g_autoptr (GtkSelectionModel) items = adw_sidebar_get_items (ADW_SIDEBAR (g_paste_test_gtk_find_widget (window->panel, ADW_TYPE_SIDEBAR)));
 
     for (guint i = 0; i < g_list_model_get_n_items (G_LIST_MODEL (items)); ++i)
     {
@@ -593,7 +572,7 @@ static gboolean
 history_list_has_focus (GPasteUiWindow *window)
 {
     GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
-    GtkWidget *list = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *list = g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
 
     return focus && (focus == list || gtk_widget_is_ancestor (focus, list));
 }
@@ -616,7 +595,7 @@ static gboolean
 history_rows_are (gconstpointer window,
                   gconstpointer count)
 {
-    GtkWidget *view = find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *view = g_paste_test_gtk_find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), GTK_TYPE_LIST_VIEW);
 
     return g_list_model_get_n_items (G_LIST_MODEL (gtk_list_view_get_model (GTK_LIST_VIEW (view)))) == GPOINTER_TO_UINT (count);
 }
@@ -652,7 +631,7 @@ static gboolean
 list_shown (gconstpointer window,
             gconstpointer arg G_GNUC_UNUSED)
 {
-    return gtk_widget_get_mapped (find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), GTK_TYPE_LIST_VIEW));
+    return gtk_widget_get_mapped (g_paste_test_gtk_find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), GTK_TYPE_LIST_VIEW));
 }
 
 static GPasteUiWindow *
@@ -778,7 +757,7 @@ test_follow (void)
     g_assert_cmpstr (gtk_editable_get_text (GTK_EDITABLE (window->search_entry)), ==, "value");
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -817,7 +796,7 @@ test_retried_client (void)
     g_assert_false (adw_banner_get_revealed (window->banner));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -847,7 +826,7 @@ test_search_closed_away (void)
     gtk_search_bar_set_search_mode (window->search_bar, TRUE);
     gtk_editable_set_text (GTK_EDITABLE (window->search_entry), "value");
     g_paste_test_bus_wait_for_count (&daemon.filters, 1);
-    drain ();
+    g_paste_test_bus_drain ();
 
     GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
     guint filter = g_dbus_connection_add_filter (connection, count_outgoing, &outgoing, NULL);
@@ -859,7 +838,7 @@ test_search_closed_away (void)
     g_assert_true (on_escape (GTK_WIDGET (window), NULL, NULL));
     g_assert_false (gtk_search_bar_get_search_mode (window->search_bar));
     g_assert_cmpstr (gtk_editable_get_text (GTK_EDITABLE (window->search_entry)), ==, "");
-    drain ();
+    g_paste_test_bus_drain ();
 
     daemon.filters = 0;
     fake_daemon_start (&daemon);
@@ -873,7 +852,7 @@ test_search_closed_away (void)
     g_dbus_connection_remove_filter (connection, filter);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -908,14 +887,14 @@ test_nothing_asked (void)
     gtk_search_bar_set_search_mode (window->search_bar, TRUE);
     gtk_editable_set_text (GTK_EDITABLE (window->search_entry), "value");
     g_paste_test_bus_wait_for_count (&daemon.filters, 2);
-    drain ();
+    g_paste_test_bus_drain ();
 
     GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
     guint filter = g_dbus_connection_add_filter (connection, count_outgoing, &outgoing, NULL);
 
     fake_daemon_stop (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
-    drain ();
+    g_paste_test_bus_drain ();
 
     /* With the daemon gone, typing does not open the search, and a search
      * asked for all the same stops at the list. */
@@ -923,7 +902,7 @@ test_nothing_asked (void)
     g_paste_ui_history_search (window->history, "value");
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
     g_paste_ui_history_search (window->history, "");
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_dbus_connection_flush_sync (connection, NULL, &error);
     g_assert_no_error (error);
@@ -938,7 +917,7 @@ test_nothing_asked (void)
     g_assert_true (gtk_search_bar_get_key_capture_widget (window->search_bar) == GTK_WIDGET (window));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -964,9 +943,9 @@ test_entry_focus_released (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.listings, 1);
-    drain ();
+    g_paste_test_bus_drain ();
 
-    GtkWidget *entry = find_widget (window->panel, GTK_TYPE_TEXT);
+    GtkWidget *entry = g_paste_test_gtk_find_widget (window->panel, GTK_TYPE_TEXT);
 
     g_assert_true (gtk_widget_grab_focus (entry));
 
@@ -977,7 +956,7 @@ test_entry_focus_released (void)
     g_assert_false (gtk_widget_has_focus (entry));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
 }
 
 /* What the entry's own focus controller believes, which is what GTK leaves
@@ -996,13 +975,6 @@ entry_believes_focused (GtkWidget *text)
     }
 
     return FALSE;
-}
-
-static gboolean
-widget_mapped (gconstpointer widget,
-               gconstpointer arg G_GNUC_UNUSED)
-{
-    return gtk_widget_get_mapped ((GtkWidget *) widget);
 }
 
 static gboolean
@@ -1035,7 +1007,7 @@ test_merge_entry_focus_released (void)
     fake_daemon_start (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
-    drain ();
+    g_paste_test_bus_drain ();
 
     GtkMenuButton *merge = GTK_MENU_BUTTON (window->merge_button);
 
@@ -1050,11 +1022,11 @@ test_merge_entry_focus_released (void)
     on_enter_selection_mode (NULL, window);
     g_signal_emit_by_name (window->history, "selection-changed", 2);
     gtk_menu_button_popup (merge);
-    g_paste_test_bus_wait_until (widget_mapped, window->merge_entry, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_gtk_widget_mapped, window->merge_entry, NULL);
     g_assert_true (gtk_widget_get_mapped (window->merge_entry));
     g_assert_true (gtk_widget_grab_focus (window->merge_entry));
 
-    GtkWidget *text = find_widget (window->merge_entry, GTK_TYPE_TEXT);
+    GtkWidget *text = g_paste_test_gtk_find_widget (window->merge_entry, GTK_TYPE_TEXT);
 
     g_assert_true (entry_believes_focused (text));
 
@@ -1064,7 +1036,7 @@ test_merge_entry_focus_released (void)
     g_log_set_always_fatal (fatal);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -1091,7 +1063,7 @@ test_reply_after_close (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.sizings, 1);
-    drain ();
+    g_paste_test_bus_drain ();
 
     daemon.hold_sizes = TRUE;
     daemon.sizings = 0;
@@ -1107,7 +1079,7 @@ test_reply_after_close (void)
     g_object_add_weak_pointer (G_OBJECT (history), (gpointer *) &history);
     gtk_window_destroy (GTK_WINDOW (window));
     g_clear_object (&window);
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_null (panel);
     g_assert_nonnull (history);
 
@@ -1149,13 +1121,6 @@ count_tick (GtkWidget     *widget G_GNUC_UNUSED,
     return G_SOURCE_CONTINUE;
 }
 
-static gboolean
-ticked_twice (gconstpointer ticks,
-              gconstpointer arg G_GNUC_UNUSED)
-{
-    return *(const guint *) ticks >= 2;
-}
-
 /* Until @widget has been through a frame since now, which is what lays out
  * what its model changed: draining the main context does not wait for one. */
 static void
@@ -1164,9 +1129,8 @@ wait_for_layout (GtkWidget *widget)
     guint ticks = 0;
     guint id = gtk_widget_add_tick_callback (widget, count_tick, &ticks, NULL);
 
-    g_paste_test_bus_wait_until (ticked_twice, &ticks, NULL);
+    g_paste_test_bus_wait_for_count (&ticks, 2);
     gtk_widget_remove_tick_callback (widget, id);
-    g_assert_cmpuint (ticks, >=, 2);
 }
 
 /* Rows past what the window shows, loaded as scrolling to the bottom does,
@@ -1177,7 +1141,7 @@ grow_list (GPasteUiWindow *window,
            FakeDaemon     *daemon,
            guint           times)
 {
-    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *list_view = g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
     GtkWidget *scroll = gtk_widget_get_ancestor (list_view, GTK_TYPE_SCROLLED_WINDOW);
 
     for (guint i = 0; i < times; ++i)
@@ -1187,7 +1151,6 @@ grow_list (GPasteUiWindow *window,
         g_signal_emit_by_name (scroll, "edge-reached", GTK_POS_BOTTOM);
         g_paste_test_bus_wait_for_count (&daemon->sizings, sized + 1);
         g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon->connection);
-        drain ();
         wait_for_layout (list_view);
     }
 }
@@ -1198,7 +1161,7 @@ close_activation_window (GPasteUiWindow *window,
 {
     g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (daemon);
 }
 
@@ -1388,22 +1351,6 @@ test_search_enter_survives_update (void)
     close_activation_window (window, &daemon);
 }
 
-static gboolean
-shows_label (GtkWidget   *widget,
-             const gchar *text)
-{
-    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
-        return TRUE;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        if (shows_label (child, text))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 /* A status page's description is a translation shown as written, an & in it
  * included, rather than nothing below the title; so is the sidebar's entry's
  * title. */
@@ -1429,13 +1376,12 @@ test_status_plain (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.sizings, 1);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
 
     AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
 
     g_assert_cmpstr (adw_status_page_get_title (status), ==, _("No Items"));
-    g_assert_true (shows_label (GTK_WIDGET (status), EMPTY_DESCRIPTION_TRANSLATED));
-    g_assert_true (shows_label (window->panel, SWITCH_ENTRY_TRANSLATED));
+    g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (status), EMPTY_DESCRIPTION_TRANSLATED));
+    g_assert_true (g_paste_test_gtk_shows_label (window->panel, SWITCH_ENTRY_TRANSLATED));
     close_activation_window (window, &daemon);
 }
 
@@ -1464,7 +1410,6 @@ test_size_fails_leaving_search (void)
     g_paste_test_bus_wait_for_count (&daemon.filters, 1);
     answer_filter (&daemon);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_true (list_shown (window, NULL));
 
     guint sized = daemon.sizings;
@@ -1475,7 +1420,6 @@ test_size_fails_leaving_search (void)
     g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not get the size of history*size failed");
     g_dbus_method_invocation_return_dbus_error (g_steal_pointer (&daemon.held_size), "org.gnome.GPaste.Test.Size", "size failed");
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_test_assert_expected_messages ();
 
     AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
@@ -1522,7 +1466,6 @@ test_filter_fails (gconstpointer data)
     g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, (searched) ? "Could not search the history*filter failed" : "Could not list the pinned items*filter failed");
     g_dbus_method_invocation_return_dbus_error (g_steal_pointer (&daemon.held_filter), "org.gnome.GPaste.Test.Filter", "filter failed");
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_test_assert_expected_messages ();
 
     AdwStatusPage *status = find_status_page (GTK_WIDGET (window->history));
@@ -1560,7 +1503,6 @@ test_filtered_count (void)
     g_paste_test_bus_wait_for_count (&daemon.filters, 1);
     answer_filter (&daemon);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_cmpstr (adw_sidebar_item_get_subtitle (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)), ==, "5");
 
     daemon.size = 3;
@@ -1568,7 +1510,6 @@ test_filtered_count (void)
     g_paste_test_bus_wait_for_count (&daemon.filters, 2);
     answer_filter (&daemon);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_cmpstr (adw_sidebar_item_get_subtitle (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)), ==, "3");
     daemon.hold_filters = FALSE;
     close_activation_window (window, &daemon);
@@ -1650,7 +1591,7 @@ test_selection_mode_keys (void)
     g_assert_cmpuint (daemon.selects, ==, 0);
 
     /* What the list view's own arrow keys do as they move to a row. */
-    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *list_view = g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
     GtkSelectionModel *model = gtk_list_view_get_model (GTK_LIST_VIEW (list_view));
 
     g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
@@ -1723,7 +1664,7 @@ test_selection_click_focuses (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    GtkListView *list_view = GTK_LIST_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
 
     on_enter_selection_mode (NULL, window);
     wait_for_layout (GTK_WIDGET (list_view));
@@ -1732,7 +1673,7 @@ test_selection_click_focuses (void)
 
     g_assert_nonnull (gesture);
     g_signal_emit_by_name (gesture, "pressed", 1, 1.0, 1.0);
-    drain ();
+    g_paste_test_bus_drain ();
 
     GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
     GtkWidget *clicked = gtk_widget_get_parent (gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture)));
@@ -1762,7 +1703,7 @@ test_superseded_refresh (void)
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
-    drain ();
+    g_paste_test_bus_drain ();
     daemon.hold_sizes = TRUE;
     daemon.sizings = 0;
     g_signal_emit_by_name (client, "update", G_PASTE_UPDATE_ACTION_REMOVE, G_PASTE_UPDATE_TARGET_ITEM, "", (guint64) 2);
@@ -1778,7 +1719,6 @@ test_superseded_refresh (void)
     g_paste_daemon3_complete_get_history_size (daemon.skeleton, superseded, daemon.size);
     g_paste_daemon3_complete_get_history_size (daemon.skeleton, g_steal_pointer (&daemon.held_size), daemon.size);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
     g_assert_cmpuint (daemon.lowest_read, ==, 2);
     close_activation_window (window, &daemon);
@@ -1805,17 +1745,17 @@ test_row_read_in_place (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    GtkListView *list_view = GTK_LIST_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
 
-    drain ();
+    g_paste_test_bus_drain ();
     gtk_list_view_scroll_to (list_view, 3, GTK_LIST_SCROLL_FOCUS, NULL);
-    drain ();
+    g_paste_test_bus_drain ();
 
     GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
 
     g_assert_nonnull (focus);
 
-    GtkInscription *label = GTK_INSCRIPTION (find_widget (focus, GTK_TYPE_INSCRIPTION));
+    GtkInscription *label = GTK_INSCRIPTION (g_paste_test_gtk_find_widget (focus, GTK_TYPE_INSCRIPTION));
 
     g_assert_cmpstr (gtk_inscription_get_text (label), ==, "value 3");
 
@@ -1829,7 +1769,6 @@ test_row_read_in_place (void)
     daemon.lowest_read = G_MAXUINT64;
     release_items (&daemon);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_cmpuint (daemon.lowest_read, ==, 3);
     g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == focus);
     g_assert_cmpstr (gtk_inscription_get_text (label), ==, "value 3 edited");
@@ -1860,7 +1799,6 @@ answer_five_matches (FakeDaemon   *daemon,
     g_dbus_method_invocation_return_value (g_steal_pointer (&daemon->held_filter),
                                            g_variant_new ("(@" G_PASTE_ITEMS_VARIANT_STRING ")", g_variant_builder_end (&items)));
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon->connection);
-    drain ();
 }
 
 /* A search is listed again on every change of the history, and one answered
@@ -1883,7 +1821,7 @@ test_search_relist_keeps_focus (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    GtkListView *list_view = GTK_LIST_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
 
     daemon.hold_filters = TRUE;
     g_paste_ui_history_search (window->history, "match");
@@ -1891,9 +1829,9 @@ test_search_relist_keeps_focus (void)
     answer_five_matches (&daemon, client);
     wait_for_layout (GTK_WIDGET (list_view));
     gtk_widget_grab_focus (GTK_WIDGET (list_view));
-    drain ();
+    g_paste_test_bus_drain ();
     gtk_list_view_scroll_to (list_view, 3, GTK_LIST_SCROLL_FOCUS, NULL);
-    drain ();
+    g_paste_test_bus_drain ();
     wait_for_layout (GTK_WIDGET (list_view));
 
     GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
@@ -1905,7 +1843,7 @@ test_search_relist_keeps_focus (void)
     answer_five_matches (&daemon, client);
     wait_for_layout (GTK_WIDGET (list_view));
     g_paste_test_bus_pump (100);
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == focus);
     g_assert_nonnull (gtk_widget_get_parent (focus));
@@ -1931,14 +1869,14 @@ test_selection_mode_keeps_place (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GtkListView *list_view = GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    GtkListView *list_view = GTK_LIST_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
     GtkAdjustment *vadjustment = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (list_view));
     /* The merge bar sliding in and out would leave the list's height to when
      * a check happens to run. */
     GtkSettings *gtk_settings = gtk_widget_get_settings (GTK_WIDGET (window));
 
     g_object_set (gtk_settings, "gtk-enable-animations", FALSE, NULL);
-    drain ();
+    g_paste_test_bus_drain ();
 
     grow_list (window, client, &daemon, 3);
 
@@ -1948,11 +1886,10 @@ test_selection_mode_keeps_place (void)
 
     gtk_list_view_scroll_to (list_view, last, GTK_LIST_SCROLL_FOCUS, NULL);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     wait_for_layout (GTK_WIDGET (list_view));
 
     GtkWidget *focus = gtk_root_get_focus (GTK_ROOT (window));
-    GtkInscription *label = GTK_INSCRIPTION (find_widget (focus, GTK_TYPE_INSCRIPTION));
+    GtkInscription *label = GTK_INSCRIPTION (g_paste_test_gtk_find_widget (focus, GTK_TYPE_INSCRIPTION));
     graphene_rect_t bounds;
 
     /* On screen before selection mode, which is what it has to keep. */
@@ -1968,7 +1905,6 @@ test_selection_mode_keeps_place (void)
         else
             on_enter_selection_mode (NULL, window);
         g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-        drain ();
         wait_for_layout (GTK_WIDGET (list_view));
 
         /* Not back at the top, and the very row that had the focus still has
@@ -2011,7 +1947,7 @@ test_merge_picks_shown (void)
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
-    drain ();
+    g_paste_test_bus_drain ();
     on_enter_selection_mode (NULL, window);
     g_assert_true (g_paste_ui_history_activate_index (window->history, 2));
     g_assert_true (g_paste_ui_history_activate_index (window->history, 1));
@@ -2053,7 +1989,7 @@ test_merge_picks_unread (void)
 
     g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
     g_assert_cmpuint (daemon.held_items->len, >, 0);
-    drain ();
+    g_paste_test_bus_drain ();
     on_enter_selection_mode (NULL, window);
     g_assert_true (g_paste_ui_history_activate_index (window->history, 3));
     g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
@@ -2093,7 +2029,7 @@ test_merge_after_close (void)
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
     g_paste_test_bus_wait_until (has_held_items, &daemon, NULL);
-    drain ();
+    g_paste_test_bus_drain ();
     on_enter_selection_mode (NULL, window);
     g_assert_true (g_paste_ui_history_activate_index (window->history, 3));
     g_assert_true (g_paste_ui_history_activate_index (window->history, 0));
@@ -2106,7 +2042,7 @@ test_merge_after_close (void)
     g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
     gtk_window_destroy (GTK_WINDOW (window));
     g_clear_object (&window);
-    drain ();
+    g_paste_test_bus_drain ();
 
     gint holds = app_holds;
 
@@ -2114,7 +2050,6 @@ test_merge_after_close (void)
     g_paste_test_bus_wait_until (merged, &daemon, NULL);
     g_assert_cmpstrv (daemon.merged, expected);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_cmpint (app_holds, ==, holds - 1);
     fake_daemon_stop (&daemon);
 }
@@ -2138,9 +2073,9 @@ test_merge_pick_during_reread (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GtkWidget *list_view = find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
+    GtkWidget *list_view = g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW);
 
-    drain ();
+    g_paste_test_bus_drain ();
     wait_for_layout (list_view);
     on_enter_selection_mode (NULL, window);
 
@@ -2153,7 +2088,6 @@ test_merge_pick_during_reread (void)
     g_assert_true (g_paste_ui_history_activate_index (window->history, 2));
     release_items (&daemon);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_true (g_paste_ui_history_activate_index (window->history, 5));
 
     const gchar *expected[] = { "00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000006", NULL };
@@ -2185,9 +2119,8 @@ test_image_preview_off (void)
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
 
-    drain ();
+    g_paste_test_bus_drain ();
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_assert_cmpuint (daemon.image_reads, ==, 0);
 
     g_paste_settings_set_images_preview (settings, TRUE);
@@ -2215,7 +2148,7 @@ test_short_history_grows (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    GListModel *rows = G_LIST_MODEL (gtk_list_view_get_model (GTK_LIST_VIEW (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW))));
+    GListModel *rows = G_LIST_MODEL (gtk_list_view_get_model (GTK_LIST_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW))));
 
     /* Copied one at a time. */
     for (daemon.size = 2; daemon.size <= 12; ++daemon.size)
@@ -2258,7 +2191,7 @@ test_sidebar_choice (void)
     g_assert_no_error (error);
 
     g_autoptr (GPasteUiWindow) window = activation_window (client, &daemon);
-    AdwSidebar *sidebar = ADW_SIDEBAR (find_widget (window->panel, ADW_TYPE_SIDEBAR));
+    AdwSidebar *sidebar = ADW_SIDEBAR (g_paste_test_gtk_find_widget (window->panel, ADW_TYPE_SIDEBAR));
 
     g_paste_test_bus_wait_until (sidebar_has_history, window, "work");
     g_assert_true (sidebar_has_history (window, "work"));
@@ -2343,21 +2276,21 @@ test_outside_asks (void)
     adw_navigation_split_view_set_collapsed (window->split_view, TRUE);
     adw_navigation_split_view_set_show_content (window->split_view, FALSE);
     g_paste_ui_window_search (window, "value");
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_true (adw_navigation_split_view_get_show_content (window->split_view));
     adw_navigation_split_view_set_collapsed (window->split_view, FALSE);
 
     g_paste_ui_window_show_about (window);
-    drain ();
+    g_paste_test_bus_drain ();
 
     AdwDialog *about = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
 
     g_assert_true (ADW_IS_ABOUT_DIALOG (about));
     g_paste_ui_window_show_about (window);
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_true (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)) == about);
     adw_dialog_force_close (about);
-    drain ();
+    g_paste_test_bus_drain ();
     close_activation_window (window, &daemon);
 }
 
@@ -2395,7 +2328,7 @@ test_confirmed_without_daemon (void)
     g_assert_cmpint (g_atomic_int_get (&outgoing.others), ==, 0);
     g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
 }
 
 /* A window closed with Restart Daemon's or Stop Tracking's question up goes,
@@ -2421,7 +2354,7 @@ test_closed_with_question_up (gconstpointer data)
     g_simple_action_set_state (G_SIMPLE_ACTION (g_action_map_lookup_action (G_ACTION_MAP (window), "track-changes")),
                                g_variant_new_boolean (TRUE));
     g_action_group_activate_action (G_ACTION_GROUP (window), action, NULL);
-    drain ();
+    g_paste_test_bus_drain ();
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
 
@@ -2436,7 +2369,7 @@ test_closed_with_question_up (gconstpointer data)
     g_paste_settings_reset (window->settings, G_PASTE_CLOSE_ON_SELECT_SETTING);
     gtk_window_destroy (GTK_WINDOW (window));
     g_object_unref (window);
-    drain ();
+    g_paste_test_bus_drain ();
     g_paste_test_bus_pump (100);
     g_dbus_connection_remove_filter (connection, filter);
     g_assert_null (window);
@@ -2507,7 +2440,7 @@ test_client_fails (void)
     fail_client_builds = FALSE;
     g_assert_true (gtk_widget_get_visible (GTK_WIDGET (window)));
 
-    GtkWidget *header = find_widget (GTK_WIDGET (window), ADW_TYPE_HEADER_BAR);
+    GtkWidget *header = g_paste_test_gtk_find_widget (GTK_WIDGET (window), ADW_TYPE_HEADER_BAR);
 
     g_assert_nonnull (header);
     g_assert_true (adw_header_bar_get_show_end_title_buttons (ADW_HEADER_BAR (header)));
@@ -2522,7 +2455,7 @@ test_client_fails (void)
     g_assert_true (gtk_widget_get_first_child (GTK_WIDGET (window->content_box)) == GTK_WIDGET (window->banner));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -2549,12 +2482,11 @@ test_listing_fails (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.listings, 1);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
     g_test_assert_expected_messages ();
     g_assert_true (adw_sidebar_item_get_enabled (sidebar_item (window, G_PASTE_DEFAULT_HISTORY)));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -2564,13 +2496,6 @@ on_sigusr1 (gpointer user_data)
     ++*(guint *) user_data;
 
     return G_SOURCE_CONTINUE;
-}
-
-static gboolean
-counted (gconstpointer count,
-         gconstpointer arg G_GNUC_UNUSED)
-{
-    return *(const guint *) count > 0;
 }
 
 static gboolean
@@ -2660,7 +2585,7 @@ test_legacy_daemon (void)
     /* Pressed twice, as an impatient user would: restarted once. */
     g_signal_emit_by_name (window->banner, "button-clicked");
     g_signal_emit_by_name (window->banner, "button-clicked");
-    g_paste_test_bus_wait_until (counted, &signals, NULL);
+    g_paste_test_bus_wait_for_count (&signals, 1);
     g_paste_test_bus_pump (100);
     g_assert_cmpuint (signals, ==, 1);
     g_assert_cmpint (g_atomic_int_get (&legacy_restarts), ==, 1);
@@ -2671,12 +2596,12 @@ test_legacy_daemon (void)
     legacy_daemon_stop (&legacy);
     fake_daemon_start (&daemon);
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_false (adw_banner_get_revealed (window->banner));
 
     g_source_remove (source);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -2716,7 +2641,7 @@ test_legacy_replaced (void)
 
     g_bus_unown_name (replacement);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     g_dbus_connection_close_sync (current, NULL, NULL);
 }
 
@@ -2785,7 +2710,7 @@ test_legacy_kept (void)
 
     legacy_daemon_stop (&successor);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
 }
 
 static gboolean
@@ -2828,56 +2753,47 @@ test_legacy_restart_asked (gconstpointer user_data)
     g_autoptr (GError) error = NULL;
     g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
     g_autoptr (GPasteUiWindow) window = test_window ();
-    g_autoptr (GDBusConnection) legacy = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
-    g_autoptr (GDBusConnection) successor = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
-    g_autoptr (GDBusNodeInfo) node = g_dbus_node_info_new_for_xml ("<node><interface name='org.gnome.GPaste2'/></node>", NULL);
-    static const GDBusInterfaceVTable vtable = { 0 };
+    LegacyDaemon legacy = { 0 };
+    LegacyDaemon successor = { 0 };
+    g_autoptr (GDBusConnection) current = NULL;
+    guint current_owner = 0;
     guint signals = 0;
     guint source = g_unix_signal_add (SIGUSR1, on_sigusr1, &signals);
 
     g_source_set_name_by_id (source, "[GPaste] test SIGUSR1 counter");
     g_assert_no_error (error);
-
-    guint owner = g_bus_own_name_on_connection (legacy, G_PASTE_BUS_NAME, G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
-    guint registration = g_dbus_connection_register_object (legacy, G_PASTE_DAEMON_OBJECT_PATH, node->interfaces[0], &vtable, NULL, NULL, &error);
-
-    g_assert_no_error (error);
-    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
-    g_paste_ui_window_setup (window, client);
-    g_paste_test_bus_wait_until (banner_says, window, _("An older GPaste daemon is still running"));
-    g_assert_true (banner_says (window, _("An older GPaste daemon is still running")));
+    legacy_daemon_start (&legacy);
+    legacy_window_setup (window, client);
 
     /* Queued behind the older one, the successor gets the name as it is let
      * go of: another such daemon, or this version's, serving nothing yet. */
-    guint successor_registration = 0;
-
     if (legacy_successor)
+        legacy_daemon_start (&successor);
+    else
     {
-        successor_registration = g_dbus_connection_register_object (successor, G_PASTE_DAEMON_OBJECT_PATH, node->interfaces[0], &vtable, NULL, NULL, &error);
-        g_assert_no_error (error);
+        current = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+        current_owner = g_bus_own_name_on_connection (current, G_PASTE_BUS_NAME, G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
     }
 
-    guint successor_owner = g_bus_own_name_on_connection (successor, G_PASTE_BUS_NAME, G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+    GDBusConnection *queued = (legacy_successor) ? successor.connection : current;
 
-    g_paste_test_bus_round_trip (successor, legacy);
+    g_paste_test_bus_round_trip (queued, legacy.connection);
     g_paste_util_write_pid_file ("Daemon");
     g_atomic_int_set (&legacy_restarts, 0);
 
     gulong pressed = g_signal_connect (client, "notify::g-name-owner", G_CALLBACK (press_restart), window);
 
-    g_dbus_connection_unregister_object (legacy, registration);
-    g_bus_unown_name (owner);
-    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), successor);
+    legacy_daemon_stop (&legacy);
+    g_paste_test_bus_wait_for_owner (G_DBUS_PROXY (client), queued);
     g_signal_handler_disconnect (client, pressed);
     g_paste_test_bus_wait_until (legacy_restart_settled, window, NULL);
     g_assert_true (legacy_restart_settled (window, NULL));
 
     if (legacy_successor)
     {
-        g_paste_test_bus_wait_until (counted, &signals, NULL);
+        g_paste_test_bus_wait_for_count (&signals, 1);
         g_assert_cmpuint (signals, ==, 1);
         g_assert_cmpint (g_atomic_int_get (&legacy_restarts), ==, 1);
-        g_dbus_connection_unregister_object (successor, successor_registration);
     }
     else
     {
@@ -2886,12 +2802,15 @@ test_legacy_restart_asked (gconstpointer user_data)
     }
     g_assert_true (banner_says (window, _("Connecting to GPaste…")));
 
-    g_bus_unown_name (successor_owner);
+    if (legacy_successor)
+        legacy_daemon_stop (&successor);
+    else
+        g_bus_unown_name (current_owner);
     g_source_remove (source);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
-    g_dbus_connection_close_sync (legacy, NULL, NULL);
-    g_dbus_connection_close_sync (successor, NULL, NULL);
+    g_paste_test_bus_drain ();
+    if (current)
+        g_dbus_connection_close_sync (current, NULL, NULL);
 }
 
 /* What is typed in the search is searched for as text: Search takes a regular
@@ -2950,18 +2869,18 @@ test_listing_after_switch (void)
     g_paste_daemon3_set_history (daemon.skeleton, "work");
     g_paste_test_bus_wait_until (history_is_work, client, NULL);
     g_assert_true (history_is_work (client, NULL));
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_paste_daemon3_complete_list_histories (daemon.skeleton, g_steal_pointer (&daemon.held_listing), g_variant_new_parsed (LISTING_TWO));
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
 
-    AdwSidebarItem *selected = adw_sidebar_get_selected_item (ADW_SIDEBAR (find_widget (window->panel, ADW_TYPE_SIDEBAR)));
+    AdwSidebarItem *selected = adw_sidebar_get_selected_item (ADW_SIDEBAR (g_paste_test_gtk_find_widget (window->panel, ADW_TYPE_SIDEBAR)));
 
     g_assert_nonnull (selected);
     g_assert_cmpstr (adw_sidebar_item_get_title (selected), ==, "work");
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3004,7 +2923,7 @@ test_listing_overtaken (void)
     g_assert_true (sidebar_lists (window, "work"));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3034,7 +2953,7 @@ test_listing_abandoned (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.listings, 1);
-    drain ();
+    g_paste_test_bus_drain ();
 
     daemon.hold_listings = TRUE;
     daemon.listings = 0;
@@ -3048,7 +2967,7 @@ test_listing_abandoned (void)
     g_paste_test_bus_pump (300);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
 }
 
 /* A window closed while the sidebar's listing is out takes the sidebar with
@@ -3079,7 +2998,7 @@ test_listing_after_close (void)
 
     gtk_window_destroy (GTK_WINDOW (window));
     g_clear_object (&window);
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_null (panel);
 
     g_paste_daemon3_complete_list_histories (daemon.skeleton, g_steal_pointer (&daemon.held_listing), g_variant_new_parsed (LISTING_TWO));
@@ -3123,7 +3042,7 @@ test_listing_pruned (void)
     g_assert_true (sidebar_lists (window, G_PASTE_DEFAULT_HISTORY));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3245,11 +3164,11 @@ test_listing_handoff (void)
     /* A context menu left up on the row that was just disabled acts on
      * nothing (g_paste_ui_panel_get_menu_history ()): a backup would open
      * its dialog. */
-    AdwSidebar *sidebar = ADW_SIDEBAR (find_widget (window->panel, ADW_TYPE_SIDEBAR));
+    AdwSidebar *sidebar = ADW_SIDEBAR (g_paste_test_gtk_find_widget (window->panel, ADW_TYPE_SIDEBAR));
 
     g_signal_emit_by_name (sidebar, "setup-menu", sidebar_item (window, "work"));
     g_assert_true (gtk_widget_activate_action (window->panel, "panel.backup-history", NULL));
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_null (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)));
 
     /* A serving successor takes the name over from the one that held. */
@@ -3287,12 +3206,12 @@ test_listing_handoff (void)
 
     /* The same menu acts on the row once it can be clicked. */
     g_assert_true (gtk_widget_activate_action (window->panel, "panel.backup-history", NULL));
-    drain ();
+    g_paste_test_bus_drain ();
     g_assert_nonnull (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)));
     adw_dialog_force_close (adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window)));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&successor);
     g_dbus_connection_close_sync (holder, NULL, NULL);
     g_dbus_connection_unregister_object (holder, registration);
@@ -3329,10 +3248,9 @@ test_image_preview_unreadable (void)
                                      "00000000-0000-4000-8000-000000000000", 0);
     g_paste_test_bus_wait_for_count (&daemon.image_reads, 2);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), daemon.connection);
-    drain ();
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3381,7 +3299,7 @@ test_listing_daemon_gone (void)
     g_assert_cmpstr (adw_status_page_get_title (status), !=, _("No Pinned Items"));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3415,7 +3333,7 @@ test_owner_learned (void)
     g_assert_cmpuint (daemon.sizings, ==, 1);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3443,7 +3361,7 @@ test_listing_owner_size_error (void)
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (history_rows_are, window, GUINT_TO_POINTER (2));
     g_assert_true (history_rows_are (window, GUINT_TO_POINTER (2)));
-    gtk_widget_grab_focus (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    gtk_widget_grab_focus (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
     g_assert_true (history_has_focus (window));
 
     fake_daemon_start (&successor);
@@ -3486,7 +3404,7 @@ test_listing_owner_size_error (void)
     g_assert_true (history_list_has_focus (window));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&successor);
     fake_daemon_stop (&old);
 }
@@ -3513,8 +3431,8 @@ test_focus_restored (void)
     wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_READY);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_for_count (&daemon.sizings, 1);
-    drain ();
-    gtk_widget_grab_focus (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
+    g_paste_test_bus_drain ();
+    gtk_widget_grab_focus (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW));
     g_assert_true (history_has_focus (window));
     g_assert_false (focus_moved_away (window, NULL));
 
@@ -3546,26 +3464,8 @@ test_focus_restored (void)
     g_assert_true (gtk_root_get_focus (GTK_ROOT (window)) == elsewhere);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
-}
-
-static gboolean
-shows_text (GtkWidget   *widget,
-            const gchar *text)
-{
-    if (GTK_IS_INSCRIPTION (widget) && g_paste_str_equal (gtk_inscription_get_text (GTK_INSCRIPTION (widget)), text))
-        return TRUE;
-    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
-        return TRUE;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        if (shows_text (child, text))
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 /* A row's upload is armed once it shows a text item, which is what its fetch
@@ -3574,9 +3474,9 @@ static gboolean
 upload_armed (gconstpointer window,
               gconstpointer arg G_GNUC_UNUSED)
 {
-    GtkWidget *row = find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), G_PASTE_TYPE_UI_ITEM);
+    GtkWidget *row = g_paste_test_gtk_find_widget (GTK_WIDGET (((GPasteUiWindow *) window)->history), G_PASTE_TYPE_UI_ITEM);
 
-    return row && shows_text (row, "value 0");
+    return row && g_paste_test_gtk_shows_label (row, "value 0");
 }
 
 /* The toast saying how the upload went, which is all the window does with it. */
@@ -3584,7 +3484,7 @@ static gboolean
 upload_toasted (gconstpointer window,
                 gconstpointer arg G_GNUC_UNUSED)
 {
-    return shows_text (GTK_WIDGET (window), _("The item was uploaded, and its address copied"));
+    return g_paste_test_gtk_shows_label (GTK_WIDGET (window), _("The item was uploaded, and its address copied"));
 }
 
 static gboolean
@@ -3625,7 +3525,7 @@ test_upload_after_row_removed (void)
     g_paste_test_bus_wait_until (upload_armed, window, NULL);
     g_assert_true (upload_armed (window, NULL));
 
-    g_autoptr (GPasteUiItem) row = g_object_ref (G_PASTE_UI_ITEM (find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM)));
+    g_autoptr (GPasteUiItem) row = g_object_ref (G_PASTE_UI_ITEM (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM)));
 
     g_assert_true (gtk_widget_activate_action (GTK_WIDGET (row), "item.upload", NULL));
     g_paste_test_bus_wait_until (upload_held, &daemon, NULL);
@@ -3641,7 +3541,7 @@ test_upload_after_row_removed (void)
     g_assert_true (upload_toasted (window, NULL));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3668,13 +3568,13 @@ test_upload (void)
     g_paste_test_bus_wait_until (upload_armed, window, NULL);
     g_assert_true (upload_armed (window, NULL));
 
-    g_assert_true (gtk_widget_activate_action (find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM), "item.upload", NULL));
+    g_assert_true (gtk_widget_activate_action (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), G_PASTE_TYPE_UI_ITEM), "item.upload", NULL));
     g_paste_test_bus_wait_for_count (&daemon.uploads, 1);
     g_paste_test_bus_wait_until (upload_toasted, window, NULL);
     g_assert_true (upload_toasted (window, NULL));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -3821,7 +3721,7 @@ test_minimum_width (void)
     g_assert_true (adw_banner_get_revealed (window->banner));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     g_object_set (settings, "gtk-decoration-layout", layout, "gtk-xft-dpi", dpi, NULL);
 }
 
@@ -3869,7 +3769,7 @@ test_collapse_width (void)
     resize_to_content (window, frame, G_PASTE_UI_WINDOW_COLLAPSE_WIDTH * 5 / 4 + 1, FALSE);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
     g_object_set (settings, "gtk-decoration-layout", layout, "gtk-xft-dpi", dpi, NULL);
 }
@@ -3897,7 +3797,7 @@ test_resize (void)
     gtk_window_set_default_size (GTK_WINDOW (window), 900, 400);
     g_paste_ui_window_setup (window, client);
     g_paste_test_bus_wait_until (list_shown, window, NULL);
-    g_assert_true (gtk_widget_grab_focus (find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW)));
+    g_assert_true (gtk_widget_grab_focus (g_paste_test_gtk_find_widget (GTK_WIDGET (window->history), GTK_TYPE_LIST_VIEW)));
 
     gint frame = settle (window);
 
@@ -3921,7 +3821,7 @@ test_resize (void)
     g_assert_true (showing_history (window, NULL));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -4072,7 +3972,7 @@ test_version_toast (void)
     g_assert_null (window->version_toast);
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
 }
 
@@ -4123,7 +4023,7 @@ test_version_toast_owner_replaced (void)
     g_paste_test_bus_wait_for_count (&replacement.sizings, 1);
     g_paste_test_bus_round_trip (g_dbus_proxy_get_connection (G_DBUS_PROXY (client)), replacement.connection);
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&replacement);
     fake_daemon_stop (&older);
     fake_daemon_stop (&current);
@@ -4215,7 +4115,7 @@ test_version_toast_in_shell (void)
     g_assert_true (restart_enabled (window));
 
     gtk_window_destroy (GTK_WINDOW (window));
-    drain ();
+    g_paste_test_bus_drain ();
     fake_daemon_stop (&daemon);
     g_bus_unown_name (shell_name);
 }

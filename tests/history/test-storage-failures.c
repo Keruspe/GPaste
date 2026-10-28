@@ -282,11 +282,11 @@ gate_open (Gate *gate)
 static void
 gate_pass (Gate *gate)
 {
-    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
-
     g_mutex_lock (&gate->mutex);
     if (gate->closed && g_thread_self () != gate->spared)
     {
+        gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
         g_atomic_int_inc (&gate->held);
         /* Counted off the main thread: see g_paste_test_bus_wait_for_count (). */
         g_main_context_wakeup (NULL);
@@ -726,20 +726,6 @@ g_file_move (GFile                *source,
     return moved;
 }
 
-/* As in test-history.c. */
-static void
-backup_history (const GPasteDaemonMethods *methods,
-                const gchar               *history,
-                const gchar               *backup,
-                GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
-    g_paste_daemon_methods_backup_history_finish (result, error);
-}
-
 #ifdef G_PASTE_ENABLE_SQLITE
 #include <gpaste-daemon/gpaste-sqlite-backend.h>
 
@@ -760,14 +746,10 @@ static const gchar *upgraded_meanwhile;
 static guint full_writes;
 static guint injected_failures;
 
-/* Whether a statement stepped on another thread than @step_thread waits for
- * the case to let it go, with @step_held saying one does: a read of the SQLite
- * backend, which holds its lock meanwhile, made as long as the case needs. */
-static GThread *step_thread;
-static gboolean hold_steps;
-static gboolean step_held;
-static GMutex   step_mutex;
-static GCond    step_cond;
+/* Where a statement stepped on another thread than the case's waits while it
+ * is closed: a read of the SQLite backend, which holds its lock meanwhile,
+ * made as long as the case needs. */
+static Gate step_gate;
 
 int
 sqlite3_exec (sqlite3    *db,
@@ -822,15 +804,7 @@ sqlite3_step (sqlite3_stmt *statement)
     Step original = (Step) dlsym (RTLD_NEXT, "sqlite3_step");
 
     g_assert_nonnull (original);
-    g_mutex_lock (&step_mutex);
-    if (hold_steps && g_thread_self () != step_thread)
-    {
-        step_held = TRUE;
-        g_cond_broadcast (&step_cond);
-        while (hold_steps)
-            g_cond_wait (&step_cond, &step_mutex);
-    }
-    g_mutex_unlock (&step_mutex);
+    gate_pass (&step_gate);
 
     if (busy_step_sql && !g_strcmp0 (sqlite3_sql (statement), busy_step_sql))
     {
@@ -1404,14 +1378,6 @@ test_migration_prompt_init (TestMigrationPrompt *self G_GNUC_UNUSED)
 {
 }
 
-static void
-on_migration_settled (GObject      *source G_GNUC_UNUSED,
-                      GAsyncResult *result,
-                      gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
 /* Run the migration through @prompt and hand back whether it settled, with
  * @error set when it did not. */
 static gboolean
@@ -1421,12 +1387,40 @@ run_migration (GPasteSettings      *settings,
 {
     g_autoptr (GAsyncResult) result = NULL;
 
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
 
     return g_paste_storage_migration_finish (result, error);
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* The same, for a change of passphrase and for an unlock. */
+static gboolean
+run_rekey (GPasteSettings      *settings,
+           TestMigrationPrompt *prompt,
+           GError             **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
+
+    return g_paste_storage_rekey_finish (result, error);
+}
+
+static gboolean
+run_decryption (GPasteSettings      *settings,
+                TestMigrationPrompt *prompt,
+                GError             **error)
+{
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
+
+    return g_paste_storage_decryption_finish (result, error);
+}
+#endif
 
 #if defined(G_PASTE_ENABLE_SQLITE) || defined(G_PASTE_ENABLE_ENCRYPTION)
 /* A storage worker running, or the concern answering without one: either ends
@@ -1457,12 +1451,11 @@ release_steps_eventually (gpointer data G_GNUC_UNUSED)
 {
     gint64 deadline = g_get_monotonic_time () + 2 * G_USEC_PER_SEC;
 
-    g_mutex_lock (&step_mutex);
-    while (hold_steps && g_cond_wait_until (&step_cond, &step_mutex, deadline))
+    g_mutex_lock (&step_gate.mutex);
+    while (step_gate.closed && g_cond_wait_until (&step_gate.cond, &step_gate.mutex, deadline))
         ;
-    hold_steps = FALSE;
-    g_cond_broadcast (&step_cond);
-    g_mutex_unlock (&step_mutex);
+    g_mutex_unlock (&step_gate.mutex);
+    gate_open (&step_gate);
     return NULL;
 }
 
@@ -1481,17 +1474,11 @@ test_sqlite_delete_during_read (void)
     g_assert_true (g_paste_storage_backend_write_history (backend, "delete-during-read-a", items));
     g_assert_true (g_paste_storage_backend_write_history (backend, "delete-during-read-b", items));
 
-    step_thread = g_thread_self ();
-    hold_steps = TRUE;
-    step_held = FALSE;
+    gate_close (&step_gate);
 
     g_autoptr (GThread) reader = g_thread_new ("read-b", read_history_b, backend);
-    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
 
-    g_mutex_lock (&step_mutex);
-    while (!step_held)
-        g_assert_true (g_cond_wait_until (&step_cond, &step_mutex, deadline));
-    g_mutex_unlock (&step_mutex);
+    g_paste_test_bus_wait_for_count (&step_gate.held, 1);
 
     g_autoptr (GThread) release = g_thread_new ("release-steps", release_steps_eventually, NULL);
     g_autoptr (GError) error = NULL;
@@ -1501,10 +1488,7 @@ test_sqlite_delete_during_read (void)
 
     gint64 elapsed = g_get_monotonic_time () - start;
 
-    g_mutex_lock (&step_mutex);
-    hold_steps = FALSE;
-    g_cond_broadcast (&step_cond);
-    g_mutex_unlock (&step_mutex);
+    gate_open (&step_gate);
     g_thread_join (g_steal_pointer (&release));
     g_thread_join (g_steal_pointer (&reader));
 
@@ -1544,27 +1528,18 @@ test_sqlite_forgotten_spares_new_log (void)
 
     g_assert_true (g_paste_storage_backend_write_history (backend, "forgotten-log", items));
 
-    step_thread = g_thread_self ();
-    hold_steps = TRUE;
-    step_held = FALSE;
+    gate_close (&step_gate);
 
     g_autoptr (GThread) reader = g_thread_new ("read-forgotten", read_history_forgotten, backend);
-    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
 
-    g_mutex_lock (&step_mutex);
-    while (!step_held)
-        g_assert_true (g_cond_wait_until (&step_cond, &step_mutex, deadline));
-    g_mutex_unlock (&step_mutex);
+    g_paste_test_bus_wait_for_count (&step_gate.held, 1);
 
     g_autoptr (GError) error = NULL;
 
     g_paste_storage_backend_delete_history (backend, "forgotten-log", &error);
     g_assert_no_error (error);
 
-    g_mutex_lock (&step_mutex);
-    hold_steps = FALSE;
-    g_cond_broadcast (&step_cond);
-    g_mutex_unlock (&step_mutex);
+    gate_open (&step_gate);
     g_thread_join (g_steal_pointer (&reader));
 
     /* A full write checkpoints what it deleted; an add after it leaves its
@@ -1606,11 +1581,11 @@ test_import_busy (void)
 
     prompt->chosen = G_PASTE_STORAGE_SQLITE;
     prompt->import = TRUE;
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     /* As in /storage/rekey/busy. */
     g_paste_test_bus_wait_until (busy_or_answered, &result, NULL);
     g_assert_true (g_paste_storage_is_busy ());
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_false (g_paste_storage_is_busy ());
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
@@ -2421,27 +2396,6 @@ test_import_needs_readable_copy (void)
 }
 #endif
 
-static void
-on_emptied (GObject      *source G_GNUC_UNUSED,
-            GAsyncResult *result,
-            gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-/* As in test-history.c. */
-static void
-empty_history (const GPasteDaemonMethods *methods,
-               const gchar               *name,
-               GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    g_paste_test_env_wait_result_within (&result, 60);
-    g_paste_daemon_methods_empty_history_finish (result, error);
-}
-
 /* Whether a count of a store reaches the interposer above, the case skipped
  * when it does not: a call from gpaste-history.c into
  * gpaste-storage-backend.c, which -Bsymbolic binds inside the library, and an
@@ -2536,18 +2490,15 @@ test_list_histories_counted_off_main_loop (void)
     g_autoptr (GPasteStorageBackend) backend = NULL;
     g_autoptr (GPasteHistory) history = listed_histories_new (&settings, &backend, (const gchar *[]) { "first", "second", NULL });
     const GPasteDaemonMethods methods = { .history = history, .settings = settings };
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     g_paste_history_add (history, g_paste_text_item_new ("this session"));
     counted_on = NULL;
     counts_watched = TRUE;
-    g_paste_daemon_methods_list_histories_async (&methods, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GVariant) histories = list_histories (&methods, &error);
+
     counts_watched = FALSE;
-
-    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
-
     g_assert_no_error (error);
     g_assert_cmpuint (listed_size (histories, "listed-other"), ==, 2);
     g_assert_cmpuint (listed_size (histories, "listed-current"), ==, 1);
@@ -5262,26 +5213,24 @@ test_gates_wait_for_lock (void)
 
     g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
     prompt->dismiss = TRUE;
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_test_bus_pump (500);
     g_assert_null (result);
 
     g_paste_storage_backend_unlock ();
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->migrations, ==, 0);
     g_clear_object (&result);
 
     /* Asked once the holder lets go. */
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_test_bus_pump (500);
     g_assert_null (result);
     g_assert_cmpuint (prompt->migrations, ==, 0);
     close (fd);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->migrations, ==, 1);
@@ -5297,13 +5246,12 @@ test_gates_wait_for_lock (void)
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
     g_assert_true (g_paste_storage_decryption_needed (settings));
     prompt->passphrase = "passphrase";
-    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_test_bus_pump (500);
     g_assert_null (result);
     g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
     close (fd);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_decryption_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->passphrase_asks, >, 0);
@@ -5341,12 +5289,12 @@ test_gate_released_before_wait (gconstpointer data)
     g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
     prompt->dismiss = TRUE;
     defer_lock_waits = TRUE;
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_storage_backend_unlock ();
     if (relocked)
         g_assert_true (g_paste_storage_backend_lock (NULL));
     run_deferred_lock_wait ();
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->migrations, ==, 0);
@@ -5380,10 +5328,10 @@ test_gate_released_after_wait (void)
     g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
     prompt->dismiss = TRUE;
     release_after_lock_wait = TRUE;
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_assert_false (release_after_lock_wait);
     g_assert_null (result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->migrations, ==, 0);
@@ -5481,20 +5429,6 @@ test_storage_lock_two_waits (void)
     G_LOCK (busy_threads);
     g_clear_pointer (&busy_threads, g_hash_table_unref);
     G_UNLOCK (busy_threads);
-}
-
-static gboolean
-history_loaded (gconstpointer data,
-                gconstpointer arg G_GNUC_UNUSED)
-{
-    return !g_paste_history_is_loading ((GPasteHistory *) data);
-}
-
-static void
-wait_load (GPasteHistory *history)
-{
-    g_paste_test_bus_wait_until (history_loaded, history, NULL);
-    g_assert_false (g_paste_history_is_loading (history));
 }
 
 /* The lock a wait of this process has just taken is the process's: asked
@@ -6153,17 +6087,6 @@ write_encrypted_history (GPasteSettings *settings,
     g_assert_true (g_file_test (*image, G_FILE_TEST_EXISTS));
 }
 
-static GBytes *
-read_bytes (const gchar *path)
-{
-    gchar *contents = NULL;
-    gsize length;
-
-    g_assert_true (g_file_get_contents (path, &contents, &length, NULL));
-
-    return g_bytes_new_take (contents, length);
-}
-
 /* Whether anything a re-key puts beside the files of @name is still there. */
 static gboolean
 has_rekey_leftovers (const gchar *name)
@@ -6617,14 +6540,6 @@ test_rekey_settled_back (void)
     g_assert_false (has_rekey_leftovers (name));
 }
 
-/* The other way from read_bytes (). */
-static void
-write_bytes (const gchar *path,
-             GBytes      *bytes)
-{
-    g_assert_true (g_file_set_contents (path, g_bytes_get_data (bytes, NULL), (gssize) g_bytes_get_size (bytes), NULL));
-}
-
 /* An image the passphrase in use cannot read -- damaged, or under another
  * key -- is already lost to its history: a change of passphrase goes through
  * without it, rather than failing for good over a file no window shows, and
@@ -7057,14 +6972,6 @@ test_rekey_foreign_side_file (void)
     assert_contents (foreign, "not ours");
 }
 
-static void
-on_rekey_settled (GObject      *source G_GNUC_UNUSED,
-                  GAsyncResult *result,
-                  gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
 /* A change of passphrase reads each history it re-keys once: asked first
  * whether the passphrase in use opens it, every history would have a key
  * derived and its document decrypted twice. */
@@ -7086,14 +6993,11 @@ test_rekey_cost (void)
     g_paste_storage_backend_set_passphrase ("one");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     prompt->passphrase = "two";
     g_atomic_int_set (&derivations, 0);
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_true (run_rekey (settings, prompt, &error));
     g_assert_no_error (error);
     /* Two checking the passphrase in use, then per history its document read
      * with the old key, and written and read back with the new one. */
@@ -7140,14 +7044,11 @@ test_decryption_nothing_to_unlock (void)
 
     for (guint i = 0; i < 2; ++i)
     {
-        g_autoptr (GAsyncResult) result = NULL;
         g_autoptr (GError) error = NULL;
 
         g_paste_settings_set_storage_backend (settings, (i) ? G_PASTE_STORAGE_ENCRYPTED_FILE : G_PASTE_STORAGE_FILE);
         g_paste_storage_backend_set_passphrase ((i) ? "set" : NULL);
-        g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-        g_assert_true (g_paste_storage_decryption_finish (result, &error));
+        g_assert_true (run_decryption (settings, prompt, &error));
         g_assert_no_error (error);
     }
 
@@ -7175,7 +7076,6 @@ test_decryption_confirms_unverifiable (void)
 
     for (guint i = 0; i < 2; ++i)
     {
-        g_autoptr (GAsyncResult) result = NULL;
         g_autoptr (GError) error = NULL;
 
         if (i)
@@ -7187,9 +7087,7 @@ test_decryption_confirms_unverifiable (void)
             g_paste_storage_backend_set_passphrase (NULL);
         }
 
-        g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-        g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-        g_assert_true (g_paste_storage_decryption_finish (result, &error));
+        g_assert_true (run_decryption (settings, prompt, &error));
         g_assert_no_error (error);
         g_assert_cmpuint (prompt->passphrase_asks, ==, i + 1);
         g_assert_cmpint (prompt->confirmed, ==, !i);
@@ -7271,17 +7169,14 @@ test_rekey_unopenable (void)
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
     hidden_kind = G_PASTE_STORAGE_ENCRYPTED_FILE;
     prompt->passphrase = "anything";
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_false (run_rekey (settings, prompt, &error));
     hidden_kind = -1;
 
-    g_assert_false (g_paste_storage_rekey_finish (result, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_cmpuint (prompt->passphrase_asks, ==, 0);
 }
@@ -7347,12 +7242,12 @@ test_rekey_busy (void)
 
     prompt->passphrase = "new passphrase";
     g_assert_false (g_paste_storage_is_busy ());
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
+    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     /* The worker starts and reports in two turns of the main loop, so it is
      * seen running between them. */
     g_paste_test_bus_wait_until (busy_or_answered, &result, NULL);
     g_assert_true (g_paste_storage_is_busy ());
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_false (g_paste_storage_is_busy ());
     g_assert_true (g_paste_storage_rekey_finish (result, &error));
     g_assert_no_error (error);
@@ -7398,16 +7293,13 @@ test_rekey_cut_short (void)
     g_paste_storage_backend_set_passphrase ("one");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     /* Kept until reported: a process ending first leaves it for the next start
      * to report. */
     g_assert_true (g_paste_storage_decryption_needed (settings));
     g_assert_true (g_file_test (journal, G_FILE_TEST_EXISTS));
-    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_true (run_decryption (settings, prompt, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (prompt->reports, ==, 1);
     g_assert_nonnull (strstr (prompt->message, "“other” are on the new passphrase"));
@@ -7417,12 +7309,9 @@ test_rekey_cut_short (void)
 
     /* Each history's re-key begins with itself recorded as under way, the
      * second's with the first recorded as done. */
-    g_clear_object (&result);
     prompt->passphrase = "two";
     rekey_journals = g_ptr_array_new_with_free_func (g_free);
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_true (run_rekey (settings, prompt, &error));
     g_assert_false (g_file_test (journal, G_FILE_TEST_EXISTS));
     g_assert_cmpuint (rekey_journals->len, ==, 2);
 
@@ -7468,14 +7357,11 @@ test_rekey_cut_short_under_way (void)
     g_paste_storage_backend_set_passphrase ("one");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
     g_autofree gchar *quoted = g_strdup_printf ("“%s” was being changed", name);
 
     g_assert_true (g_paste_storage_decryption_needed (settings));
-    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_true (g_paste_storage_decryption_finish (result, &error));
+    g_assert_true (run_decryption (settings, prompt, &error));
     g_assert_cmpuint (prompt->reports, ==, 1);
     g_assert_nonnull (strstr (prompt->message, quoted));
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
@@ -7587,18 +7473,15 @@ test_rekey_failed_leaves_no_journal (void)
     g_paste_storage_backend_set_passphrase ("one");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     prompt->passphrase = "two";
     rekey_journals = g_ptr_array_new_with_free_func (g_free);
     failed_rekey = 2;
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_false (run_rekey (settings, prompt, &error));
     failed_rekey = 0;
     failed_moves = NULL;
 
-    g_assert_false (g_paste_storage_rekey_finish (result, &error));
     /* The two re-keys, then the first put back. */
     g_assert_cmpuint (rekey_journals->len, ==, 3);
     g_assert_true (g_str_has_prefix (g_ptr_array_index (rekey_journals, 1), "rekey "));
@@ -7656,13 +7539,10 @@ test_rekey_split_passphrases (void)
     g_paste_storage_backend_set_passphrase ("one");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
     prompt->passphrase = "three";
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_true (g_paste_storage_rekey_finish (result, &error));
+    g_assert_true (run_rekey (settings, prompt, &error));
     g_assert_no_error (error);
     /* Nothing written for the history left on its passphrase either: asked
      * whether it is under the new one already, it says it is not before it is
@@ -7746,30 +7626,19 @@ test_rekey_split_reported (void)
     g_paste_storage_backend_set_passphrase ("old passphrase");
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
-    g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
     const gchar * const no_way_back[] = { ".xmls.rekey", ".pngs.rekey-old", NULL };
 
     prompt->passphrase = "new passphrase";
     failed_moves = no_way_back;
-    g_paste_storage_rekey_async (G_PASTE_PROMPT (prompt), settings, on_rekey_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_false (run_rekey (settings, prompt, &error));
     failed_moves = NULL;
 
-    g_assert_false (g_paste_storage_rekey_finish (result, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_cmpuint (prompt->reports, ==, 1);
     g_assert_true (g_str_has_prefix (prompt->message, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REKEY_SPLIT_DESCRIPTION)));
 }
 #endif
-
-static void
-on_doctor_settled (GObject      *source G_GNUC_UNUSED,
-                   GAsyncResult *result,
-                   gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
 
 /* Check the store through @prompt, handing back its report. */
 static GStrv
@@ -7781,8 +7650,8 @@ run_doctor (GPasteSettings      *settings,
     g_autoptr (GError) error = NULL;
     GStrv report = NULL;
 
-    g_paste_storage_doctor_async (G_PASTE_PROMPT (prompt), settings, on_doctor_settled, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_storage_doctor_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_doctor_finish (result, &report, healthy, &error));
     g_assert_no_error (error);
     g_assert_false (g_paste_storage_is_busy ());
@@ -7971,14 +7840,6 @@ test_doctor_reads_whole (void)
 }
 #endif
 
-static void
-on_other_passphrase (GObject      *source G_GNUC_UNUSED,
-                     GAsyncResult *result,
-                     gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
 /* What a prompt is handed is UTF-8, whatever history names it carries: a
  * file's name need not be, the Adwaita dialog shows nothing of a description
  * that is not, and the in-shell one throws on it, the user then told nothing
@@ -7995,8 +7856,8 @@ test_prompt_texts_valid (void)
 
     prompt->passphrase = "other";
     g_paste_prompt_other_passphrase_async (G_PASTE_PROMPT (prompt), "The histories \xe9 take another passphrase",
-                                           "Wrong for \xff", on_other_passphrase, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+                                           "Wrong for \xff", g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_true (g_utf8_validate (prompt->passphrase_description, -1, NULL));
     g_assert_true (g_utf8_validate (prompt->passphrase_error, -1, NULL));
 }
@@ -8471,11 +8332,11 @@ test_decryption_gate_settles (void)
 
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
 
-    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_test_bus_pump (300);
     g_assert_null (result);
     close (fd);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_decryption_finish (result, &error));
     g_assert_no_error (error);
     g_assert_false (has_rekey_leftovers (name));
@@ -8535,11 +8396,11 @@ test_decryption_gate_asks_keyring (void)
     g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
 
     prompt->passphrase = "passphrase";
-    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_paste_storage_decryption_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
     g_paste_test_bus_pump (300);
     g_assert_cmpuint (keyring_lookups, ==, 0);
     close (fd);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
     g_assert_true (g_paste_storage_decryption_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (keyring_lookups, ==, 1);

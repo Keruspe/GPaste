@@ -5,7 +5,9 @@
  * shortcut row hand their setting, and what each leaves behind; and what the
  * storage buttons ask the daemon, and when. */
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-3/gpaste-client.h>
 
 #include <dlfcn.h>
@@ -232,22 +234,6 @@ present_group (GPasteGtkPreferencesGroup *group)
     return window;
 }
 
-static gboolean
-shows_label (GtkWidget   *widget,
-             const gchar *text)
-{
-    if (GTK_IS_LABEL (widget) && g_paste_str_equal (gtk_label_get_text (GTK_LABEL (widget)), text))
-        return TRUE;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        if (shows_label (child, text))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 /* What the rows and the groups show is plain text: an & a translation holds is
  * shown as written, rather than a label Pango refuses, blank, with a warning. */
 static void
@@ -275,7 +261,7 @@ test_plain_text (void)
     GtkWindow *window = present_group (group);
 
     for (gsize i = 0; i < G_N_ELEMENTS (shown); ++i)
-        g_assert_true (shows_label (GTK_WIDGET (window), shown[i]));
+        g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (window), shown[i]));
     gtk_window_destroy (window);
 
     if (library_widgets_clash ())
@@ -285,7 +271,7 @@ test_plain_text (void)
     gtk_window_set_child (window, g_paste_gtk_preferences_widget_new ());
     gtk_window_present (window);
     for (gsize i = 0; i < G_N_ELEMENTS (translations); ++i)
-        g_assert_true (shows_label (GTK_WIDGET (window), translations[i].translation));
+        g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (window), translations[i].translation));
     gtk_window_destroy (window);
 }
 
@@ -376,15 +362,18 @@ apply_shown (GtkWidget *widget)
     return FALSE;
 }
 
-static void
-drain (void)
+static gboolean
+apply_up (gconstpointer row,
+          gconstpointer arg G_GNUC_UNUSED)
 {
-    for (guint i = 0; i < 20; ++i)
-    {
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
-        g_usleep (10 * 1000);
-    }
+    return apply_shown ((GtkWidget *) row);
+}
+
+static gboolean
+row_says (gconstpointer row,
+          gconstpointer text)
+{
+    return g_paste_str_equal (gtk_editable_get_text ((GtkEditable *) row), text);
 }
 
 /* A write of the setting from elsewhere -- the row's own Reset to Default,
@@ -404,15 +393,20 @@ test_text_written_elsewhere (void)
     AdwEntryRow *row = g_paste_gtk_preferences_group_add_text_setting (group, "Command", G_PASTE_UPLOAD_COMMAND_SETTING, settings);
     GtkWindow *window = present_group (group);
 
-    drain ();
+    /* The apply button not coming is what nothing announces: the main context
+     * runs a while before each check that it is not up, on a mapped row. */
+    g_paste_test_bus_wait_until (g_paste_test_gtk_widget_mapped, row, NULL);
+    g_assert_true (gtk_widget_get_mapped (GTK_WIDGET (row)));
+    g_paste_test_bus_pump (200);
     g_assert_false (apply_shown (GTK_WIDGET (row)));
     g_paste_settings_set_upload_command (settings, "written elsewhere");
-    drain ();
+    g_paste_test_bus_wait_until (row_says, row, "written elsewhere");
     g_assert_cmpstr (gtk_editable_get_text (GTK_EDITABLE (row)), ==, "written elsewhere");
+    g_paste_test_bus_pump (200);
     g_assert_false (apply_shown (GTK_WIDGET (row)));
 
     gtk_editable_set_text (GTK_EDITABLE (row), "typed");
-    drain ();
+    g_paste_test_bus_wait_until (apply_up, row, NULL);
     g_assert_true (apply_shown (GTK_WIDGET (row)));
 
     gtk_window_destroy (window);
@@ -876,6 +870,13 @@ test_standalone_window (void)
     g_set_prgname (prgname);
 }
 
+static gboolean
+has_width (gconstpointer widget,
+           gconstpointer arg G_GNUC_UNUSED)
+{
+    return gtk_widget_get_width ((GtkWidget *) widget) > 0;
+}
+
 /* The embeddable widget comes up without libadwaita warning that its
  * breakpoint bin was given no least size. */
 static void
@@ -891,12 +892,10 @@ test_widget_presented (void)
 
     GtkWindow *window = GTK_WINDOW (gtk_window_new ());
     GtkWidget *widget = g_paste_gtk_preferences_widget_new ();
-    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
 
     gtk_window_set_child (window, widget);
     gtk_window_present (window);
-    while (gtk_widget_get_width (widget) == 0 && g_get_monotonic_time () < deadline)
-        g_main_context_iteration (NULL, FALSE);
+    g_paste_test_bus_wait_until (has_width, widget, NULL);
     g_assert_cmpint (gtk_widget_get_width (widget), >, 0);
     gtk_window_destroy (window);
 }
@@ -908,17 +907,6 @@ record_order (gpointer data,
     GPtrArray *order = data;
 
     g_ptr_array_add (order, where_the_object_was);
-}
-
-static void
-collect_rows (GtkWidget *root,
-              GPtrArray *rows)
-{
-    if (ADW_IS_PREFERENCES_ROW (root))
-        g_ptr_array_add (rows, root);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
-        collect_rows (child, rows);
 }
 
 /* The rows of the widget or the dialog bind to their settings without holding
@@ -949,9 +937,8 @@ test_settings_go_last (gconstpointer user_data)
         adw_window_set_content (ADW_WINDOW (window), preferences);
     gtk_window_present (window);
 
-    g_autoptr (GPtrArray) rows = g_ptr_array_new ();
+    g_autoptr (GPtrArray) rows = g_paste_test_gtk_find_all (preferences, ADW_TYPE_PREFERENCES_ROW);
 
-    collect_rows (preferences, rows);
     g_assert_cmpuint (rows->len, >, 1);
     for (guint i = 0; i < rows->len; ++i)
         g_object_weak_ref (rows->pdata[i], record_order, order);

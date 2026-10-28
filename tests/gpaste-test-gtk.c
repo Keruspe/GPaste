@@ -55,12 +55,40 @@ g_paste_test_gtk_find_button (GtkWidget   *root,
     return NULL;
 }
 
-/* Whether a label in @root's tree, @root included, shows @text as written. */
+static void
+collect (GtkWidget *root,
+         GType      type,
+         GPtrArray *found)
+{
+    if (G_TYPE_CHECK_INSTANCE_TYPE (root, type))
+        g_ptr_array_add (found, root);
+
+    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
+        collect (child, type, found);
+}
+
+/* Every widget of @type in @root's tree, @root included, depth first, in an
+ * array that does not own them. */
+GPtrArray *
+g_paste_test_gtk_find_all (GtkWidget *root,
+                           GType      type)
+{
+    GPtrArray *found = g_ptr_array_new ();
+
+    collect (root, type, found);
+
+    return found;
+}
+
+/* Whether a label or an inscription -- what a list row draws its text with --
+ * in @root's tree, @root included, shows @text as written. */
 gboolean
 g_paste_test_gtk_shows_label (GtkWidget   *root,
                               const gchar *text)
 {
     if (GTK_IS_LABEL (root) && !g_strcmp0 (gtk_label_get_text (GTK_LABEL (root)), text))
+        return TRUE;
+    if (GTK_IS_INSCRIPTION (root) && !g_strcmp0 (gtk_inscription_get_text (GTK_INSCRIPTION (root)), text))
         return TRUE;
 
     for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
@@ -70,6 +98,14 @@ g_paste_test_gtk_shows_label (GtkWidget   *root,
     }
 
     return FALSE;
+}
+
+/* A GPasteTestBusDone for @widget being mapped, @arg unused. */
+gboolean
+g_paste_test_gtk_widget_mapped (gconstpointer widget,
+                                gconstpointer arg G_GNUC_UNUSED)
+{
+    return gtk_widget_get_mapped ((GtkWidget *) widget);
 }
 
 static gboolean
@@ -89,16 +125,21 @@ g_paste_test_gtk_wait_dialog_closed (GtkWindow *window)
     g_assert_null (visible_dialog (window));
 }
 
-static GtkTextBuffer *
-dialog_buffer (AdwDialog *dialog)
+/* The buffer of the text view @dialog has to have. */
+GtkTextBuffer *
+g_paste_test_gtk_dialog_buffer (AdwDialog *dialog)
 {
-    return gtk_text_view_get_buffer (GTK_TEXT_VIEW (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), GTK_TYPE_TEXT_VIEW)));
+    GtkWidget *view = g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), GTK_TYPE_TEXT_VIEW);
+
+    g_assert_nonnull (view);
+
+    return gtk_text_view_get_buffer (GTK_TEXT_VIEW (view));
 }
 
 gchar *
 g_paste_test_gtk_dialog_text (AdwDialog *dialog)
 {
-    GtkTextBuffer *buffer = dialog_buffer (dialog);
+    GtkTextBuffer *buffer = g_paste_test_gtk_dialog_buffer (dialog);
     GtkTextIter start, end;
 
     gtk_text_buffer_get_bounds (buffer, &start, &end);
@@ -110,7 +151,7 @@ void
 g_paste_test_gtk_set_dialog_text (AdwDialog   *dialog,
                                   const gchar *text)
 {
-    gtk_text_buffer_set_text (dialog_buffer (dialog), text, -1);
+    gtk_text_buffer_set_text (g_paste_test_gtk_dialog_buffer (dialog), text, -1);
 }
 
 /* What a suite's stand-in for the client's call does with the save. */
@@ -151,8 +192,10 @@ g_paste_test_gtk_save_answer (GPasteTestGtkSave *save,
     callback (G_OBJECT (client), NULL, save->data);
 }
 
-/* The dialog is held up while the save is out, and a refused one leaves the
- * user what they wrote, the failure said above it; @label is its confirm. The
+/* @text written in @dialog and confirmed, @label being its confirm: the dialog
+ * is held up while the save is out, and a refused one leaves the user what they
+ * wrote, the failure said above it, for a second try to go through, each save
+ * carrying @text (@save's text, which the suite's stand-in records). The
  * refusal's warning is expected through g_test_expect_message (), which sees
  * none from code built with G_LOG_USE_STRUCTURED: the suite compiles the
  * composer in without it. */
@@ -162,6 +205,7 @@ g_paste_test_gtk_assert_refusal_kept (GPasteTestGtkSave *save,
                                       GtkWindow         *window,
                                       AdwDialog         *dialog,
                                       const gchar       *label,
+                                      const gchar       *text,
                                       const gchar       *message)
 {
     GtkWidget *confirm = g_paste_test_gtk_find_button (GTK_WIDGET (dialog), label);
@@ -169,14 +213,24 @@ g_paste_test_gtk_assert_refusal_kept (GPasteTestGtkSave *save,
     GtkWidget *view = g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), GTK_TYPE_TEXT_VIEW);
     AdwBanner *banner = ADW_BANNER (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_BANNER));
     g_autofree gchar *pattern = g_strdup_printf ("%s: refused", message);
+    guint sent = save->sent;
+
+    g_paste_test_gtk_set_dialog_text (dialog, text);
+    g_clear_pointer (&save->text, g_free);
+    g_signal_emit_by_name (confirm, "clicked");
+    g_assert_cmpuint (save->sent, ==, sent + 1);
+    g_assert_cmpstr (save->text, ==, text);
+    {
+        g_autofree gchar *written = g_paste_test_gtk_dialog_text (dialog);
+
+        g_assert_cmpstr (written, ==, text);
+    }
 
     g_assert_nonnull (save->callback);
     g_assert_false (gtk_widget_get_sensitive (confirm));
     /* Nor does a second press send it twice. */
-    guint sent = save->sent;
-
     g_signal_emit_by_name (confirm, "clicked");
-    g_assert_cmpuint (save->sent, ==, sent);
+    g_assert_cmpuint (save->sent, ==, sent + 1);
     g_assert_false (gtk_widget_get_sensitive (cancel));
     g_assert_false (gtk_text_view_get_editable (GTK_TEXT_VIEW (view)));
     adw_dialog_close (dialog);
@@ -192,9 +246,17 @@ g_paste_test_gtk_assert_refusal_kept (GPasteTestGtkSave *save,
     g_assert_true (gtk_widget_get_sensitive (confirm));
     g_assert_true (gtk_widget_get_sensitive (cancel));
     g_assert_true (gtk_text_view_get_editable (GTK_TEXT_VIEW (view)));
+    {
+        g_autofree gchar *kept = g_paste_test_gtk_dialog_text (dialog);
+
+        g_assert_cmpstr (kept, ==, text);
+    }
 
     /* Again, and through this time. */
+    g_clear_pointer (&save->text, g_free);
     g_signal_emit_by_name (confirm, "clicked");
+    g_assert_cmpuint (save->sent, ==, sent + 2);
+    g_assert_cmpstr (save->text, ==, text);
     g_assert_false (adw_banner_get_revealed (banner));
     g_paste_test_gtk_save_answer (save, client);
     g_paste_test_gtk_wait_dialog_closed (window);

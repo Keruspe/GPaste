@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
@@ -9,10 +10,6 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-#include <sodium.h>
-#endif
 
 #define TEST_TYPE_CLIPBOARD (test_clipboard_get_type ())
 G_DECLARE_FINAL_TYPE (TestClipboard, test_clipboard, TEST, CLIPBOARD, GObject)
@@ -281,24 +278,6 @@ make_history (GPasteSettings *settings)
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-/* Every key this binary derives costs libsodium's minimum, as in
- * test-storage-failures.c: the cases below need a store that keeps its
- * passwords, not a costly key. GPaste derives with Argon2id alone. */
-int
-crypto_pwhash (unsigned char * const       out,
-               unsigned long long          outlen,
-               const char * const          passwd,
-               unsigned long long          passwdlen,
-               const unsigned char * const salt,
-               unsigned long long          opslimit G_GNUC_UNUSED,
-               size_t                      memlimit G_GNUC_UNUSED,
-               int                         alg)
-{
-    g_assert_cmpint (alg, ==, crypto_pwhash_ALG_ARGON2ID13);
-
-    return crypto_pwhash_argon2id (out, outlen, passwd, passwdlen, salt, crypto_pwhash_argon2id_OPSLIMIT_MIN, crypto_pwhash_argon2id_MEMLIMIT_MIN, alg);
-}
-
 /* A history whose store keeps its passwords, as an encrypted flavour's does: a
  * switch away from it leaves them there, and the records naming them outlive
  * it. Its writes land, and the passphrase -- the process's -- goes, in
@@ -464,17 +443,27 @@ text_ready (TestClipboard         *self G_GNUC_UNUSED,
     g_paste_clipboard_update_maybe_done (pending);
 }
 
+static gboolean
+update_concluded (gconstpointer pending,
+                  gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const GPasteClipboardUpdate *) pending)->concluded;
+}
+
+/* The read guard's deadline run out at once, and the update it concludes. */
+static void
+expire_read_guard (GPasteClipboardUpdate *pending)
+{
+    pending->guard.last_read -= (gint64) pending->guard.timeout * G_USEC_PER_SEC;
+    g_source_set_ready_time (g_main_context_find_source_by_id (NULL, pending->guard.timeout_id), 0);
+    g_paste_test_bus_wait_until (update_concluded, pending, NULL);
+    g_assert_true (pending->concluded);
+}
+
 static void
 assert_superseded (GPasteClipboardUpdate *pending)
 {
-    gint64 deadline = g_get_monotonic_time () + 3 * G_USEC_PER_SEC;
-
-    while (!pending->concluded && g_get_monotonic_time () < deadline)
-    {
-        g_main_context_iteration (NULL, FALSE);
-        g_usleep (1000);
-    }
-
+    g_paste_test_bus_wait_until (update_concluded, pending, NULL);
     g_assert_true (pending->concluded);
     g_assert_true (g_cancellable_is_cancelled (pending->guard.cancellable));
 }
@@ -1283,11 +1272,11 @@ pump_for (guint milliseconds)
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         g_usleep (1000);
     } while (g_get_monotonic_time () < deadline);
 
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 /* Whether @milliseconds after @start is still ahead. A "has not fired yet"
@@ -1899,16 +1888,7 @@ test_unidentified_selection (gconstpointer user_data)
     }
     else if (outcome == 3)
     {
-        pending->guard.last_read -= (gint64) pending->guard.timeout * G_USEC_PER_SEC;
-        g_source_set_ready_time (g_main_context_find_source_by_id (NULL, pending->guard.timeout_id), 0);
-        gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
-
-        while (!pending->concluded && g_get_monotonic_time () < deadline)
-        {
-            g_main_context_iteration (NULL, FALSE);
-            g_usleep (1000);
-        }
-        g_assert_true (pending->concluded);
+        expire_read_guard (pending);
         g_paste_clipboard_update_maybe_done (pending);
         g_paste_clipboard_update_maybe_done (pending);
     }
@@ -1952,16 +1932,6 @@ test_emptied_under_password (void)
 
     g_assert_cmpuint (clipboard->publications, ==, 0);
     g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
-}
-
-static void
-capture_expiry (GObject      *source G_GNUC_UNUSED,
-                GAsyncResult *result,
-                gpointer      user_data)
-{
-    GAsyncResult **captured = user_data;
-
-    *captured = g_object_ref (result);
 }
 
 typedef enum
@@ -2136,7 +2106,7 @@ test_follow_release (gconstpointer user_data)
         g_assert_cmpstr (primary->content.str, ==, "copied secret");
 
         /* A wait for expiry asks for the identifying read, which finds it. */
-        g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &expiry);
+        g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &expiry);
         pending = clipboard->pending;
         g_assert_nonnull (pending);
         text_ready (clipboard, settings, pending, "");
@@ -2417,13 +2387,11 @@ test_not_text_retires_record (gconstpointer user_data)
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     answer_content (clipboard, secret);
 
-    g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (20);
     if (clipboard->pending)
         answer_content (clipboard, secret);
-    for (guint i = 0; i < 3000 && !result; ++i)
-        pump_for (1);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, 3);
     g_assert_true (g_paste_clipboards_manager_expire_password_finish (manager, result, &error));
     g_assert_no_error (error);
 
@@ -2765,7 +2733,7 @@ test_expiry_rechecks_new_read (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
     g_autoptr (GAsyncResult) result = NULL;
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &result);
     password_read_ready (fixture, "same secret");
     pump_for (10);
     g_assert_nonnull (result);
@@ -2833,7 +2801,7 @@ test_empty_text_retires_record (gconstpointer user_data)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (10);
     g_assert_null (clipboard->pending);
     g_assert_nonnull (result);
@@ -2871,7 +2839,7 @@ test_expiry_deadline_with_changing_owner (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
     g_autoptr (GAsyncResult) result = NULL;
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &result);
     /* Exercise the shipped manager and its actual source, without a second
      * GType implementation or a minute of wall-clock waiting. */
     GSource *wait = find_source_named ("[GPaste] password expiry deadline");
@@ -2958,10 +2926,10 @@ test_expiry_independent_deadlines (void)
     g_autoptr (GAsyncResult) first = NULL;
     g_autoptr (GAsyncResult) second = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &first);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &first);
     GSource *deadline = find_source_named ("[GPaste] password expiry deadline");
     g_assert_nonnull (deadline);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &second);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &second);
     /* Only the older request reaches its deadline; the later one must retain
      * both its budget and the force flag that makes the read complete it. */
     g_source_set_ready_time (deadline, 0);
@@ -2988,8 +2956,8 @@ test_expiry_pending_preserves_other_waiter (void)
     g_autoptr (GAsyncResult) second = NULL;
     g_autoptr (GAsyncResult) retry = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &first);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &second);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &first);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &second);
     password_read_ready (fixture, "same secret");
     pump_for (10);
     g_assert_nonnull (first);
@@ -3000,7 +2968,7 @@ test_expiry_pending_preserves_other_waiter (void)
     g_assert_false (g_paste_clipboards_manager_expire_password_finish (fixture->manager, first, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_PENDING);
     g_clear_error (&error);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &retry);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &retry);
     /* This caller gives up after PENDING; the first caller's retry still owns
      * a wait and must not depend on the second caller rearming anything. */
     g_assert_false (g_paste_clipboards_manager_expire_password_finish (fixture->manager, second, &error));
@@ -3516,16 +3484,6 @@ test_overdue_password_is_reread (gconstpointer user_data)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
-static void
-on_expiry_kept (GObject      *source G_GNUC_UNUSED,
-                GAsyncResult *result,
-                gpointer      user_data)
-{
-    GAsyncResult **kept = user_data;
-
-    *kept = g_object_ref (result);
-}
-
 /* The wait answers on an idle, and a password left unconfirmed in between is
  * one more selection to classify: finishing then asks the caller to wait again
  * rather than tell it every password is off. */
@@ -3546,7 +3504,7 @@ test_unconfirmed_after_expiry_answered (void)
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     g_paste_clipboards_manager_activate (manager);
 
-    g_paste_clipboards_manager_expire_password_async (manager, on_expiry_kept, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (10);
     g_assert_nonnull (result);
 
@@ -3747,6 +3705,15 @@ complete_new_copy_read (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
+static gboolean
+expiry_checked (gconstpointer check,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    const ExpiryHistoryCheck *self = check;
+
+    return self->read_done && self->counter.completed;
+}
+
 /* Forced expiry answers only once the read that resolved it has updated the
  * history, even though GTask may invoke the callback inline. */
 static void
@@ -3763,13 +3730,7 @@ test_forced_expiry_after_history_update (void)
     g_paste_clipboard_update_maybe_done (untracked);
     g_paste_clipboards_manager_expire_password_async (fixture->manager, on_expired_check_history, &check);
     g_source_set_name_by_id (g_timeout_add (5, complete_new_copy_read, &check), "[GPaste] test new copy read");
-    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
-
-    while ((!check.read_done || !check.counter.completed) && g_get_monotonic_time () < deadline)
-    {
-        if (!g_main_context_iteration (NULL, FALSE))
-            g_usleep (1000);
-    }
+    g_paste_test_bus_wait_until (expiry_checked, &check, NULL);
     g_assert_true (check.read_done);
     g_assert_true (check.counter.completed);
     g_assert_true (check.saw_new_copy);
@@ -5945,17 +5906,7 @@ test_guard_concludes_with_hint_out (void)
     GPasteClipboardUpdate *pending = clipboard->pending;
     GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
 
-    pending->guard.last_read -= (gint64) pending->guard.timeout * G_USEC_PER_SEC;
-    g_source_set_ready_time (g_main_context_find_source_by_id (NULL, pending->guard.timeout_id), 0);
-
-    gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
-
-    while (!pending->concluded && g_get_monotonic_time () < deadline)
-    {
-        g_main_context_iteration (NULL, FALSE);
-        g_usleep (1000);
-    }
-    g_assert_true (pending->concluded);
+    expire_read_guard (pending);
     g_paste_clipboard_update_on_mime_read (ctx, NULL);
     g_paste_clipboard_update_maybe_done (pending);
     g_paste_clipboard_update_maybe_done (pending);

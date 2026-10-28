@@ -24,7 +24,7 @@ send_add_text (GPasteClient       *client G_GNUC_UNUSED,
                GAsyncReadyCallback callback,
                gpointer            data)
 {
-    g_assert_cmpstr (text, ==, "Text");
+    g_set_str (&save.text, text);
     g_paste_test_gtk_save_send (&save, callback, data);
 }
 
@@ -53,16 +53,7 @@ refusal_kept (void)
 
     AdwDialog *dialog = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
 
-    g_paste_test_gtk_set_dialog_text (dialog, "Text");
-    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Add"), "clicked");
-    g_assert_cmpuint (save.sent, ==, 1);
-    {
-        g_autofree gchar *text = g_paste_test_gtk_dialog_text (dialog);
-
-        g_assert_cmpstr (text, ==, "Text");
-    }
-    g_paste_test_gtk_assert_refusal_kept (&save, client, window, dialog, "Add", "Could not add the item");
-    g_assert_cmpuint (save.sent, ==, 2);
+    g_paste_test_gtk_assert_refusal_kept (&save, client, window, dialog, "Add", "Text", "Could not add the item");
     gtk_window_destroy (window);
 }
 

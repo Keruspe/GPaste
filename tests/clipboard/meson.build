@@ -1,7 +1,7 @@
 test_clipboard = executable(
   'test-clipboard',
-  sources: [ 'test-clipboard.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  sources: [ 'test-clipboard.c' ] + gpaste_test_pwhash_sources,
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
 )
 
 # The password countdowns under test are real GLib timeouts, 1 to 2 s each, and
@@ -13,7 +13,7 @@ test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor]
 clipboard_gdk_test = executable(
   'test-clipboard-gdk',
   sources: [ 'test-clipboard-gdk.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('clipboard-gdk', clipboard_gdk_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -52,7 +52,7 @@ test('clipboard-hints', test_clipboard_hints, depends: [gpaste_schemas, test_bus
 test_clipboard_x11_hints = executable(
   'test-clipboard-x11-hints',
   sources: [ 'test-clipboard-x11-hints.c', '../../src/daemon/gpaste-clipboard-x11-hints.c' ] + test_clipboard_provider_sources,
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep, cc.find_library('dl') ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep, cc.find_library('dl') ],
 )
 
 test('clipboard-x11-hints', test_clipboard_x11_hints, depends: [gpaste_schemas, test_bus_supervisor])
@@ -65,7 +65,7 @@ if get_option('gnome-shell')
     'test-clipboard-meta',
     sources: [ 'test-clipboard-meta.c' ],
     c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
-    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, cc.find_library('dl') ],
   )
 
   test('clipboard-meta', test_clipboard_meta, depends: [gpaste_schemas, test_bus_supervisor])

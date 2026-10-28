@@ -3,6 +3,7 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 
 #include <dlfcn.h>
 
@@ -56,24 +57,6 @@ shortcuts_changed (gconstpointer user_data)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
-static GtkWidget *
-find_widget_of_type (GtkWidget *root,
-                     GType      type)
-{
-    if (G_TYPE_CHECK_INSTANCE_TYPE (root, type))
-        return root;
-
-    for (GtkWidget *child = gtk_widget_get_first_child (root); child; child = gtk_widget_get_next_sibling (child))
-    {
-        GtkWidget *found = find_widget_of_type (child, type);
-
-        if (found)
-            return found;
-    }
-
-    return NULL;
-}
-
 /* Icon-only buttons have a name as well as a tooltip: New's on the split button
  * itself, which its inner button is labelled by, and the custom separator's. */
 static void
@@ -88,7 +71,7 @@ icon_buttons_named (void)
     /* In a window: a widget has an accessible context once it is rooted. */
     GtkWidget *header_window = gtk_window_new ();
     GtkWidget *header = g_paste_ui_header_new ();
-    GtkWidget *split = find_widget_of_type (header, ADW_TYPE_SPLIT_BUTTON);
+    GtkWidget *split = g_paste_test_gtk_find_widget (header, ADW_TYPE_SPLIT_BUTTON);
 
     gtk_window_set_child (GTK_WINDOW (header_window), header);
     gtk_window_present (GTK_WINDOW (header_window));

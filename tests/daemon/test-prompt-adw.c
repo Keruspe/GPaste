@@ -142,56 +142,16 @@ press_escape (GtkWindow *window)
     g_assert_not_reached ();
 }
 
-static void
-collect (GtkWidget *widget,
-         GType      type,
-         GPtrArray *found)
-{
-    if (G_TYPE_CHECK_INSTANCE_TYPE (widget, type))
-        g_ptr_array_add (found, widget);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-        collect (child, type, found);
-}
-
-static GPtrArray *
-find_all (GtkWindow *window,
-          GType      type)
-{
-    GPtrArray *found = g_ptr_array_new ();
-
-    collect (GTK_WIDGET (window), type, found);
-
-    return found;
-}
-
 /* Whether some label shows @text, markup parsed or not. */
 static gboolean
 shows (GtkWindow   *window,
        const gchar *text)
 {
-    g_autoptr (GPtrArray) labels = find_all (window, GTK_TYPE_LABEL);
+    g_autoptr (GPtrArray) labels = g_paste_test_gtk_find_all (GTK_WIDGET (window), GTK_TYPE_LABEL);
 
     for (guint i = 0; i < labels->len; ++i)
     {
         if (g_strrstr (gtk_label_get_text (labels->pdata[i]), text))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-/* Whether a button says @label: the Keep button's words are quoted in the
- * description too. */
-static gboolean
-has_button (GtkWindow   *window,
-            const gchar *label)
-{
-    g_autoptr (GPtrArray) buttons = find_all (window, GTK_TYPE_BUTTON);
-
-    for (guint i = 0; i < buttons->len; ++i)
-    {
-        if (!g_strcmp0 (gtk_button_get_label (buttons->pdata[i]), label))
             return TRUE;
     }
 
@@ -204,7 +164,7 @@ static gboolean
 has_description (GtkWindow   *window,
                  const gchar *text)
 {
-    g_autoptr (GPtrArray) groups = find_all (window, ADW_TYPE_PREFERENCES_GROUP);
+    g_autoptr (GPtrArray) groups = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_PREFERENCES_GROUP);
     g_autofree gchar *escaped = g_markup_escape_text (text, -1);
 
     for (guint i = 0; i < groups->len; ++i)
@@ -220,8 +180,8 @@ has_description (GtkWindow   *window,
 static void
 assert_plain_rows (GtkWindow *window)
 {
-    g_autoptr (GPtrArray) rows = find_all (window, ADW_TYPE_PREFERENCES_ROW);
-    g_autoptr (GPtrArray) banners = find_all (window, ADW_TYPE_BANNER);
+    g_autoptr (GPtrArray) rows = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_PREFERENCES_ROW);
+    g_autoptr (GPtrArray) banners = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_BANNER);
 
     g_assert_cmpuint (rows->len, >, 0);
     for (guint i = 0; i < rows->len; ++i)
@@ -291,7 +251,9 @@ test_migration_current_picked (void)
     g_assert_true (gtk_check_button_get_active (dialog->backend_checks[0]));
     g_assert_false (gtk_check_button_get_active (dialog->backend_checks[1]));
     g_assert_true (gtk_widget_get_sensitive (dialog->apply));
-    g_assert_true (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
+    /* Asked of the buttons: the Keep button's words are quoted in the
+     * description too. */
+    g_assert_nonnull (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
     g_assert_true (has_description (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION)));
 
     gtk_check_button_set_active (dialog->backend_checks[1], TRUE);
@@ -332,7 +294,7 @@ test_migration_nothing_picked (void)
     for (guint i = 0; i < G_N_ELEMENTS (offered); ++i)
         g_assert_false (gtk_check_button_get_active (dialog->backend_checks[i]));
     g_assert_false (gtk_widget_get_sensitive (dialog->apply));
-    g_assert_false (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
+    g_assert_null (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
     /* Nor is the button named. */
     g_assert_true (has_description (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT)));
     on_apply (NULL, dialog);
@@ -366,13 +328,6 @@ test_migration_dismissed (void)
     g_assert_false (answer.confirmed);
 }
 
-static gboolean
-is_unset (gconstpointer pointer,
-          gconstpointer arg G_GNUC_UNUSED)
-{
-    return !*(gconstpointer const *) pointer;
-}
-
 /* Escape closes every prompt as its close button does: a dismissal for the two
  * that ask something, the window gone for the report. */
 static void
@@ -404,7 +359,7 @@ test_escape_closes (void)
 
     g_object_add_weak_pointer (G_OBJECT (report), (gpointer *) &report);
     press_escape (report);
-    g_paste_test_bus_wait_until (is_unset, &report, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &report, NULL);
     g_assert_null (report);
 }
 
@@ -520,7 +475,7 @@ test_passphrase_other_histories (void)
 
     assert_plain_rows (window);
     g_assert_true (shows (window, description));
-    g_assert_true (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT)));
+    g_assert_nonnull (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT)));
     g_assert_false (shows (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION)));
     g_assert_null (dialog->remember);
 

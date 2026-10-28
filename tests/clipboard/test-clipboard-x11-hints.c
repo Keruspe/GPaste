@@ -18,6 +18,7 @@
 
 #include "gpaste-test-clipboard-provider.h"
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -257,7 +258,7 @@ pump (Owner *owner,
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         owner_dispatch (owner);
         g_usleep (1000);
     } while (g_get_monotonic_time () < end);

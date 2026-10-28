@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-test-gtk.h>
 #include <gpaste-3/gpaste-client.h>
@@ -47,11 +48,12 @@ finish_save (GPasteClient *client G_GNUC_UNUSED,
 static void
 send_replace (GPasteClient       *client G_GNUC_UNUSED,
               const gchar        *uuid G_GNUC_UNUSED,
-              const gchar        *contents G_GNUC_UNUSED,
+              const gchar        *contents,
               GCancellable       *cancellable G_GNUC_UNUSED,
               GAsyncReadyCallback callback,
               gpointer            data)
 {
+    g_set_str (&save.text, contents);
     g_paste_test_gtk_save_send (&save, callback, data);
 }
 
@@ -193,7 +195,7 @@ foreign_parent_refused (gconstpointer user_data)
 
         /* Nothing was connected to the parent either. */
         gtk_window_destroy (parent);
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         g_assert_cmpuint (answers, ==, 1);
         return;
     }
@@ -289,20 +291,10 @@ refusal_kept (void)
     GtkWindow *window = GTK_WINDOW (adw_window_new ());
 
     gtk_window_present (window);
-    save.sent = 0;
 
     AdwDialog *dialog = edit_dialog (client, window);
 
-    g_paste_test_gtk_set_dialog_text (dialog, "Text edited");
-    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
-    g_assert_cmpuint (save.sent, ==, 1);
-    {
-        g_autofree gchar *text = g_paste_test_gtk_dialog_text (dialog);
-
-        g_assert_cmpstr (text, ==, "Text edited");
-    }
-    g_paste_test_gtk_assert_refusal_kept (&save, client, window, dialog, "Save", "Could not save the edited item");
-    g_assert_cmpuint (save.sent, ==, 2);
+    g_paste_test_gtk_assert_refusal_kept (&save, client, window, dialog, "Save", "Text edited", "Could not save the edited item");
     gtk_window_destroy (window);
 }
 

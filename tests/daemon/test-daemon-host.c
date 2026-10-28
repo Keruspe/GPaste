@@ -364,8 +364,7 @@ test_reexec_order (void)
     GLogLevelFlags fatal = g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
 
     /* What the cases before left due, their flushes' answers among it. */
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     exit_calls = calls;
     g_assert_false (reexec (daemon, &ctx));
     exit_calls = NULL;
@@ -485,8 +484,7 @@ test_reexec_loop_lets_through (void)
         { G_STRUCT_OFFSET (DaemonContext, changing_passphrase), TRUE },
     };
 
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     for (guint i = 0; i < G_N_ELEMENTS (cases); ++i)
     {
         g_autoptr (GString) calls = g_string_new (NULL);
@@ -618,8 +616,7 @@ test_exit_answers (void)
     g_autoptr (GString) calls = g_string_new (NULL);
     DaemonContext ctx = { 0 };
 
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     exit_calls = calls;
     g_source_set_name_by_id (g_idle_add_once (fake_answer, NULL), "[GPaste] test idle answer");
     answer_before_exit (&ctx);

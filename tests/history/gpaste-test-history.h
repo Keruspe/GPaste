@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <glib.h>
+#include <gpaste-daemon/gpaste-daemon-methods.h>
 
 /* A test that provokes a warning runs its body in a child: the refusals under
  * test warn, and with structured logging (G_LOG_USE_STRUCTURED)
@@ -19,3 +19,27 @@
         g_test_trap_assert_passed ();                                \
         g_test_trap_assert_stderr (stderr_glob);                     \
     } while (FALSE)
+
+/* How long a storage operation run off the main loop -- a migration, a change
+ * of passphrase, an unlock, the doctor's check -- is given before the case
+ * waiting on it fails: a bound on one that never settles, not on how long one
+ * takes. One reads, writes, syncs and verifies every history and image it goes
+ * through, which a loaded runner, valgrind or an emulated machine slows down;
+ * a minute is past what any of those take, and well inside each suite's
+ * timeout. */
+#define G_PASTE_TEST_STORAGE_WAIT_SECONDS 60
+
+void      backup_history (const GPasteDaemonMethods *methods,
+                          const gchar               *history,
+                          const gchar               *backup,
+                          GError                   **error);
+void      empty_history  (const GPasteDaemonMethods *methods,
+                          const gchar               *name,
+                          GError                   **error);
+GVariant *list_histories (const GPasteDaemonMethods *methods,
+                          GError                   **error);
+void      wait_load      (GPasteHistory             *history);
+
+GBytes *read_bytes  (const gchar *path);
+void    write_bytes (const gchar *path,
+                     GBytes      *bytes);

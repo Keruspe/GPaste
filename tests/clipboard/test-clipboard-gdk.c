@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
@@ -253,14 +254,14 @@ pump (guint milliseconds)
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         g_usleep (1000);
     } while (g_get_monotonic_time () < end);
 
     /* What became due during the last sleep runs too, as in test-clipboard's
      * pump_for (): an assertion that a timer has
      * fired by now must not race it. */
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 static void
@@ -997,12 +998,6 @@ formats_deadline_slow_owner (Fixture      *f,
 }
 
 static void
-count_update (guint *updates)
-{
-    ++*updates;
-}
-
-static void
 offer_value (GType type)
 {
     g_clear_pointer (&formats, gdk_content_formats_unref);
@@ -1070,14 +1065,8 @@ read_value_kinds (Fixture      *f,
     guint length = g_paste_history_get_length (f->history);
     guint updates = 0;
 
-    g_signal_connect_swapped (f->history, "update", G_CALLBACK (count_update), &updates);
-    set_formats (FALSE);
-    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
-    offer_value (type);
-    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
-    pump (10);
-    answer_value ();
-    pump (10);
+    g_signal_connect_swapped (f->history, "update", G_CALLBACK (g_paste_test_bus_count_emission), &updates);
+    copy_value (f, type);
     g_assert_cmpuint (g_paste_history_get_length (f->history), ==, length);
     g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (f->history, 0)), ==, uuid);
     g_assert_cmpuint (updates, ==, 0);

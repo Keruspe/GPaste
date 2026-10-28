@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-test-history.h"
+
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
@@ -228,20 +230,6 @@ release_eventually (gpointer data G_GNUC_UNUSED)
 }
 
 static gboolean
-history_loaded (gconstpointer data,
-                gconstpointer arg G_GNUC_UNUSED)
-{
-    return !g_paste_history_is_loading ((GPasteHistory *) data);
-}
-
-static void
-wait_load (GPasteHistory *history)
-{
-    g_paste_test_bus_wait_until (history_loaded, history, NULL);
-    g_assert_false (g_paste_history_is_loading (history));
-}
-
-static gboolean
 is_released (void)
 {
     g_mutex_lock (&barrier.mutex);
@@ -255,8 +243,7 @@ static void
 finish_history (GPasteHistory *history)
 {
     g_paste_history_flush (history);
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
 }
 
 /* A history called @name holding one stored item in @storage, loaded, with
@@ -462,20 +449,6 @@ leave_with_write_out (GPasteHistory *history,
     wait_load (history);
 }
 
-/* As in test-history.c. */
-static void
-backup_history (const GPasteDaemonMethods *methods,
-                const gchar               *history,
-                const gchar               *backup,
-                GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
-    g_paste_daemon_methods_backup_history_finish (result, error);
-}
-
 /* The current history is backed up from its model, which holds what is still
  * on its way to the store, in the background: the call holds the main thread
  * for none of the writes out, and the copy lands behind them, its write coming
@@ -501,8 +474,7 @@ test_backup_current (void)
     written_after_held = "backup-current-copy";
     g_paste_daemon_methods_backup_history_async (&methods, "backup-current", "backup-current-copy", g_paste_test_env_keep_result, &result);
     g_assert_false (is_released ());
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     g_assert_null (result);
     release_worker ();
     g_thread_join (g_steal_pointer (&release));
@@ -688,10 +660,6 @@ test_backup_other (void)
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
 }
 
-static void empty_history (const GPasteDaemonMethods *methods,
-                           const gchar               *name,
-                           GError                   **error);
-
 /* A history a backup still queued reads is not deleted, nor the one it writes
  * emptied, until the copy has landed: drained first, the copy would run on the
  * main thread, and left behind the unlink it would read a store that is gone
@@ -765,27 +733,6 @@ test_backup_loading (void)
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "backup-loading-copy");
 
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
-}
-
-static void
-on_emptied (GObject      *source G_GNUC_UNUSED,
-            GAsyncResult *result,
-            gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-/* As in test-history.c. */
-static void
-empty_history (const GPasteDaemonMethods *methods,
-               const gchar               *name,
-               GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    g_paste_test_env_wait_result_within (&result, 60);
-    g_paste_daemon_methods_empty_history_finish (result, error);
 }
 
 /* An emptied current history is backed up empty, from its model like any
@@ -881,7 +828,7 @@ test_empty_other_off_main_loop (void)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "emptied-elsewhere", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "emptied-elsewhere", g_paste_test_env_keep_result, &result);
     wait_worker ();
     g_assert_null (result);
     release_worker ();
@@ -920,7 +867,7 @@ test_empty_other_then_switch (void)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "empty-then-switch-to", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-then-switch-to", g_paste_test_env_keep_result, &result);
     wait_worker ();
     g_paste_history_switch (history, "empty-then-switch-to");
 
@@ -959,7 +906,7 @@ test_empty_other_flushed (void)
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     g_autoptr (GAsyncResult) result = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "empty-flushed", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-flushed", g_paste_test_env_keep_result, &result);
     wait_worker ();
 
     g_autoptr (GThread) release = g_thread_new ("release-emptying", release_later, NULL);
@@ -1306,7 +1253,7 @@ test_count_pending_emptied_other (void)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "count-emptied-elsewhere", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "count-emptied-elsewhere", g_paste_test_env_keep_result, &result);
     wait_worker ();
     g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 0);
     release_worker ();

@@ -101,7 +101,7 @@ test_extension_binding (void)
     g_assert_false (g_action_get_enabled (G_ACTION (row)));
 
     g_simple_action_set_enabled (row, TRUE);
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 
     g_assert_false (g_paste_settings_get_extension_enabled (settings));
     g_assert_false (g_action_get_enabled (G_ACTION (row)));
