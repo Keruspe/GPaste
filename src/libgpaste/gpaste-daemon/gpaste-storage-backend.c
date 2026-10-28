@@ -144,15 +144,20 @@ g_paste_storage_backend_lock_since (guint         releases,
     {
         g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
+        /* Held, but maybe by a wait begun after this process let go of the
+         * one this wait was counted from: that release ends this wait all the
+         * same, whoever has taken the lock since. */
         if (g_paste_storage_lock_fd >= 0)
-            return TRUE;
+            return g_paste_storage_backend_get_releases () == releases;
     }
 
     gint fd = g_paste_storage_backend_open_lock_file ();
 
-    /* open_lock_file () says why it failed, and why that refuses nothing. */
+    /* open_lock_file () says why it failed, and why that refuses nothing. A
+     * release since the count ends the wait all the same, as everywhere
+     * below. */
     if (fd < 0)
-        return TRUE;
+        return g_paste_storage_backend_get_releases () == releases;
 
     gint64 start = g_get_monotonic_time ();
     gboolean logged = FALSE;
@@ -174,11 +179,12 @@ g_paste_storage_backend_lock_since (guint         releases,
             g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
             /* Another wait of this process's got it, and a lock of this
-             * process's is one flock () refuses this wait's own file. */
+             * process's is one flock () refuses this wait's own file. As
+             * above, a release since the count this wait was given ends it. */
             if (g_paste_storage_lock_fd >= 0)
             {
                 close (fd);
-                return TRUE;
+                return g_paste_storage_backend_get_releases () == releases;
             }
 
             if (flock (fd, LOCK_EX | LOCK_NB) == 0)
@@ -204,7 +210,7 @@ g_paste_storage_backend_lock_since (guint         releases,
         {
             g_warning ("Failed to lock the history: %s", g_strerror (refused));
             close (fd);
-            return TRUE;
+            return g_paste_storage_backend_get_releases () == releases;
         }
 
         /* A brief handover is normal; only warn if the previous daemon really is

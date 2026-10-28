@@ -1501,14 +1501,20 @@ when_storage_locked (GTask              *gate,
  * -- the store is not the gate's to touch, and it ends with nothing done. With
  * it, or with no lock file to take, which no daemon can hold either, what the
  * daemon taken over from settled on is stored by now, and the notification
- * saying so may still be on its way. */
+ * saying so may still be on its way.
+ *
+ * Letting go is counted up to here, not only up to the wait's answer: one in
+ * the turn of the main loop between the two -- the in-shell daemon standing
+ * down -- leaves the gate a lock that is no longer the process's, which the
+ * gate would otherwise act on, and take back through try_lock (). */
 static gboolean
 when_storage_locked_finish (GTask        *gate,
                             GAsyncResult *result)
 {
     g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == when_storage_locked, FALSE);
 
-    if (!g_task_propagate_boolean (G_TASK (result), NULL))
+    if (!g_task_propagate_boolean (G_TASK (result), NULL) ||
+        g_paste_storage_backend_get_releases () != GPOINTER_TO_UINT (g_task_get_task_data (G_TASK (result))))
     {
         g_task_return_boolean (gate, TRUE);
         return FALSE;

@@ -319,10 +319,13 @@ g_file_enumerate_children (GFile              *file,
 static guint loads_started;
 /* With @defer_lock_waits, a startup gate's wait for the storage lock is kept
  * here rather than handed to a thread, as a pool with every thread busy keeps
- * it, until run_deferred_lock_wait (). */
+ * it, until run_deferred_lock_wait (). With @release_after_lock_wait, it is run
+ * there and then, and the process lets go of the lock once it has answered,
+ * before the gate's callback can run. */
 static gboolean        defer_lock_waits;
 static GTask          *deferred_lock_wait;
 static GTaskThreadFunc deferred_lock_func;
+static gboolean        release_after_lock_wait;
 
 void
 g_task_run_in_thread (GTask          *task,
@@ -339,6 +342,13 @@ g_task_run_in_thread (GTask          *task,
         g_assert_null (deferred_lock_wait);
         deferred_lock_wait = g_object_ref (task);
         deferred_lock_func = task_func;
+        return;
+    }
+    if (release_after_lock_wait && g_paste_str_equal (g_task_get_name (task), "gpaste-storage-lock-wait"))
+    {
+        release_after_lock_wait = FALSE;
+        task_func (task, g_task_get_source_object (task), g_task_get_task_data (task), g_task_get_cancellable (task));
+        g_paste_storage_backend_unlock ();
         return;
     }
     original (task, task_func);
@@ -481,6 +491,24 @@ flock (int fd,
     }
 
     return taken;
+}
+
+/* While @paused_sleeper names a thread, its next g_usleep () -- a wait for the
+ * storage lock between two attempts -- is held at @sleep_gate. */
+static GThread *paused_sleeper;
+static Gate     sleep_gate;
+
+void
+g_usleep (gulong microseconds)
+{
+    typedef void (*Sleep) (gulong);
+    Sleep original = (Sleep) dlsym (RTLD_NEXT, "g_usleep");
+
+    g_assert_nonnull (original);
+    if (g_atomic_pointer_compare_and_exchange (&paused_sleeper, g_thread_self (), NULL))
+        gate_pass (&sleep_gate);
+
+    original (microseconds);
 }
 
 /* Whether link () fails as a filesystem without hard links has it fail. */
@@ -3713,7 +3741,8 @@ test_verification_empty_active_database (void)
  * another user owns or a read-only data directory elsewhere -- tells no daemon
  * apart, nor does one flock () refuses: the store may be touched all the
  * same, rather than every load reading nothing and every Backup, Empty or
- * Delete blaming another daemon. */
+ * Delete blaming another daemon. Not by a wait counted before this process
+ * let go of the lock, though: a gate decided then ends with nothing done. */
 static void
 test_lock_file_unusable (void)
 {
@@ -3734,11 +3763,19 @@ test_lock_file_unusable (void)
     g_assert_true (g_paste_storage_backend_try_lock ());
     g_assert_true (g_paste_storage_backend_lock (NULL));
 
+    guint releases = g_paste_storage_backend_get_releases ();
+
+    g_paste_storage_backend_unlock ();
+    g_assert_false (g_paste_storage_backend_lock_since (releases, NULL));
+
     /* The same of one flock () refuses. */
     g_assert_cmpint (g_rmdir (lock), ==, 0);
     refused_flock = ENOLCK;
     g_assert_true (g_paste_storage_backend_try_lock ());
     g_assert_true (g_paste_storage_backend_lock (NULL));
+    releases = g_paste_storage_backend_get_releases ();
+    g_paste_storage_backend_unlock ();
+    g_assert_false (g_paste_storage_backend_lock_since (releases, NULL));
     refused_flock = 0;
 }
 
@@ -4601,10 +4638,16 @@ test_gates_wait_for_lock (void)
 /* Letting go of the lock after a gate decided to wait for it, but before a
  * thread got to the wait, ends it all the same: the in-shell daemon stopping
  * with the pool's threads all busy, gnome-shell then holding the lock for as
- * long as it runs, and a gate going on with a store no longer its own. */
+ * long as it runs, and a gate going on with a store no longer its own. With
+ * @data, the lock is taken back meanwhile by a later wait of the process -- a
+ * runner re-enabled, whose own gate counts from the release: the gate decided
+ * before it ends with nothing done all the same, rather than go on alongside
+ * the later one. */
 static void
-test_gate_released_before_wait (void)
+test_gate_released_before_wait (gconstpointer data)
 {
+    gboolean relocked = GPOINTER_TO_INT (data);
+
     if (!g_test_subprocess ())
     {
         g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
@@ -4622,7 +4665,46 @@ test_gate_released_before_wait (void)
     defer_lock_waits = TRUE;
     g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
     g_paste_storage_backend_unlock ();
+    if (relocked)
+        g_assert_true (g_paste_storage_backend_lock (NULL));
     run_deferred_lock_wait ();
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
+    g_assert_true (g_paste_storage_migration_finish (result, &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (prompt->migrations, ==, 0);
+
+    /* Held by nothing, the later wait's let go of: another file of this
+     * process's can take it. */
+    if (relocked)
+        g_paste_storage_backend_unlock ();
+    close (hold_storage_lock ());
+}
+
+/* And so does letting go of it once the wait has answered, before the gate's
+ * callback runs -- the turn of the main loop between the two, which the
+ * in-shell daemon may stand down in: the gate neither acts on the lock it was
+ * answered, no longer the process's, nor takes it back. */
+static void
+test_gate_released_after_wait (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, G_PASTE_STORAGE_BACKEND_REVISION - 1);
+    prompt->dismiss = TRUE;
+    release_after_lock_wait = TRUE;
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
+    g_assert_false (release_after_lock_wait);
+    g_assert_null (result);
     g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
@@ -4632,6 +4714,45 @@ test_gate_released_before_wait (void)
     gint fd = hold_storage_lock ();
 
     close (fd);
+}
+
+static gpointer
+wait_for_lock_pausing (gpointer data)
+{
+    g_atomic_pointer_set (&paused_sleeper, g_thread_self ());
+
+    return wait_for_lock (data);
+}
+
+/* Letting go of the lock while a wait sleeps between two attempts ends it
+ * too, its holder gone and a later wait of the process having taken the lock
+ * back before it tries again: finding the process holding the lock, the wait
+ * answers that it has none. */
+static void
+test_lock_released_then_relocked_while_waiting (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    gint held = hold_storage_lock ();
+    LockWait wait = { NULL, FALSE, FALSE };
+
+    gate_close (&sleep_gate);
+
+    GThread *thread = g_thread_new ("lock-wait", wait_for_lock_pausing, &wait);
+
+    g_paste_test_bus_wait_for_count (&sleep_gate.held, 1);
+    g_close (held, NULL);
+    g_paste_storage_backend_unlock ();
+    g_assert_true (g_paste_storage_backend_lock (NULL));
+    gate_open (&sleep_gate);
+    g_thread_join (thread);
+    g_assert_false (wait.locked);
+    g_paste_storage_backend_unlock ();
 }
 
 /* Two waits of one process -- a load and the one superseding it -- both get the
@@ -7535,7 +7656,10 @@ main (int    argc,
     g_test_add_func ("/storage/lock/two-waits", test_storage_lock_two_waits);
     g_test_add_func ("/storage/lock/taken-is-ours", test_taken_lock_is_ours);
     g_test_add_func ("/storage/lock/gates", test_gates_wait_for_lock);
-    g_test_add_func ("/storage/lock/gate-released-before-wait", test_gate_released_before_wait);
+    g_test_add_data_func ("/storage/lock/gate-released-before-wait", GINT_TO_POINTER (FALSE), test_gate_released_before_wait);
+    g_test_add_data_func ("/storage/lock/gate-released-then-relocked", GINT_TO_POINTER (TRUE), test_gate_released_before_wait);
+    g_test_add_func ("/storage/lock/gate-released-after-wait", test_gate_released_after_wait);
+    g_test_add_func ("/storage/lock/released-then-relocked-while-waiting", test_lock_released_then_relocked_while_waiting);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/storage/lock/decryption-gate-settles", test_decryption_gate_settles);
 #ifdef G_PASTE_ENABLE_LIBSECRET
