@@ -162,6 +162,18 @@ pkg.generate(
 )
 
 if get_option('introspection')
+  # The scanner links the library it describes into a program of its own, and
+  # names that library's external dependencies to it but not the libraries of
+  # this tree it calls into: libgpaste-gtk4 and libgpaste-daemon call into
+  # libgpaste, which a shared library carries a reference to, with its own
+  # dependencies, and a static archive does not.
+  gir_libgpaste_args = []
+  gir_libgpaste_deps = []
+  if get_option('default_library') == 'static'
+    gir_libgpaste_args = [ '-L' + meson.current_build_dir(), '--extra-library=' + 'gpaste-' + apiversion ]
+    gir_libgpaste_deps = libgpaste_lib_deps
+  endif
+
   libgpaste_gir = gnome.generate_gir(
     libgpaste,
     sources: [ libgpaste_sources, libgpaste_headers ],
@@ -177,7 +189,8 @@ if get_option('introspection')
     libgpaste_gtk4,
     sources: [ libgpaste_gtk4_public_sources, libgpaste_gtk4_headers ],
     includes: [ libgpaste_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0' ],
-    dependencies: libgpaste_gtk4_deps,
+    dependencies: [ libgpaste_gtk4_deps, gir_libgpaste_deps ],
+    extra_args: gir_libgpaste_args,
     header: 'gpaste-gtk4.h',
     namespace: 'GPasteGtk',
     nsversion: '4',
@@ -412,7 +425,8 @@ if get_option('introspection')
     libgpaste_daemon,
     sources: [ gpaste_daemon_gir_sources, gpaste_daemon_gir_headers ],
     includes: [ libgpaste_gir[0], 'Gtk-4.0', 'Gdk-4.0', 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
-    dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep ],
+    dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep, gir_libgpaste_deps ],
+    extra_args: gir_libgpaste_args,
     header: 'gpaste-daemon.h',
     namespace: 'GPasteDaemon',
     nsversion: '1',

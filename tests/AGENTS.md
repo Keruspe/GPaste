@@ -64,7 +64,8 @@ leaving bindings with no async pairing.
 `GObject` and `Pango` constant the extension's code names, its comments aside,
 is defined: GJS reads a misspelt one as `undefined` and passes it on as 0, which
 the suites' doubles cannot tell, defining whatever the code spells. With the
-build's own typelibs -- every build with introspection -- it asks the same of
+build's own typelibs -- every shared build with introspection, a static one's
+naming no library GJS could load their types from -- it asks the same of
 every `GPaste`, `GPasteDaemon` and `GPasteGtk` name the extension reaches, a
 class's function included -- one it calls as `name?.()`, which a build without
 the feature compiling it in has no binding for, looked for by its C name in the

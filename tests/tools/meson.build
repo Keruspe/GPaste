@@ -26,8 +26,10 @@ test(
 
 # The extension's GPaste names are checked against the build's typelibs, and its
 # Clutter and St ones against mutter's and the shell's where the extension is
-# built, which needs libmutter anyway.
-if get_option('introspection')
+# built, which needs libmutter anyway. A static build's typelibs name no shared
+# library for GJS to load their types from, so only GLib's own names and
+# Pango's are checked there.
+if get_option('introspection') and not library_static
   gi_constants_args = [meson.project_build_root() / 'src/libgpaste']
   if get_option('gnome-shell')
     gi_constants_args += [dependency('libmutter-51').get_variable(pkgconfig: 'typelibdir')]
