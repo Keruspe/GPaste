@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // What the Node suites share, required from beside them.
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
 // Signals as the shell's actors carry them, enough to emit one by hand.
 class Signals {
@@ -40,4 +43,17 @@ function runSuite(name, body) {
     });
 }
 
-module.exports = {Signals, runSuite};
+// Runs the function @name of the shipped @file in @context, @file sitting beside
+// the shipped file the suite was handed: a helper of a module the suite does not
+// load whole.
+function runShipped(context, file, name) {
+    const source = fs.readFileSync(path.join(path.dirname(process.argv[2]), file), 'utf8');
+    const [found] = source.match(new RegExp(`^export function ${name}\\b[^]*?^}\n`, 'm')) ?? [];
+
+    if (!found)
+        throw new Error(`${file} has no function ${name}`);
+
+    vm.runInContext(found.replace('export ', ''), context);
+}
+
+module.exports = {Signals, runShipped, runSuite};

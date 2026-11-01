@@ -13,7 +13,7 @@ import St from 'gi://St';
 
 import {addActionButton} from './actionButton.js';
 import {GPasteDeleteButton} from './deleteButton.js';
-import {awaitReply, daemonGone, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, daemonGone, logFailure, replaceCancellable, widthWithoutRevealed} from './dependencies.js';
 
 /**
  * Makes an entry of the chooser act on the name typed into it on Enter, or on a
@@ -94,7 +94,8 @@ class GPasteHistoryConfirmationDialog extends ModalDialog.ModalDialog {
  * the row and hide it under the keyboard, which GPasteItem answers with a watch
  * on the stage's focus. Every row that wears it answers the Delete key with what
  * the button does, so there is nothing the button would add there to be worth
- * that.
+ * that. Every such row also leaves it out of the width it asks for
+ * (widthWithoutRevealed ()), so that it takes the name's room when it shows.
  *
  * @param {PopupBaseMenuItem} row - the row the button sits on
  * @param {Function} onClicked - what deleting from that row does
@@ -163,7 +164,8 @@ class GPasteHistoryRow extends PopupMenuItem {
         // Ahead of the count rather than after it: shown and hidden with the
         // hover, a button at the end of the row would push the count left and
         // back on every row the pointer crosses.
-        this.add_child(newHistoryDeleteButton(this, () => this.emit('delete', this._history)));
+        this._deleteButton = newHistoryDeleteButton(this, () => this.emit('delete', this._history));
+        this.add_child(this._deleteButton);
 
         // The count at the end of the row.
         this._size = new St.Label({
@@ -190,6 +192,10 @@ class GPasteHistoryRow extends PopupMenuItem {
 
     get history() {
         return this._history;
+    }
+
+    vfunc_get_preferred_width(forHeight) {
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), [this._deleteButton], forHeight);
     }
 
     setSize(size) {
@@ -411,7 +417,8 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         // of landing ahead of the name and moving it on every hover.
         const expander = this.get_children().find(child => child.has_style_class_name('popup-menu-item-expander'));
 
-        this.insert_child_above(newHistoryDeleteButton(this, () => this._deleteCurrent()), expander ?? null);
+        this._deleteButton = newHistoryDeleteButton(this, () => this._deleteCurrent());
+        this.insert_child_above(this._deleteButton, expander ?? null);
 
         // The listing filling the submenu, cancelled and replaced by every pass
         // that starts one -- the chooser opening, a history appearing or going
@@ -831,6 +838,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         }, this);
 
         dialog.open();
+    }
+
+    vfunc_get_preferred_width(forHeight) {
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), [this._deleteButton], forHeight);
     }
 
     // No name, no history to delete: the property is cached off the daemon, and

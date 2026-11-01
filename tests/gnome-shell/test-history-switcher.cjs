@@ -7,9 +7,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const {runShipped, runSuite} = require('./suite.cjs');
 
 class Actor {
     static get_binding_pool() { return {install_closure() {}}; }
+
+    // A box layout's: the name's 500 pixels, and the bin after it when shown.
+    vfunc_get_preferred_width() { return [30, 500 + (this._deleteButton?.visible ? 22 : 0)]; }
     vfunc_hide() { this.hidden = true; }
     get active() { return this._active ?? false; }
     set active(active) { this._active = active; }
@@ -69,9 +73,11 @@ const context = vm.createContext({
         return [!cancellable.cancelled, value];
     },
 });
+// The shipped helper the rows ask their width of.
+runShipped(context, 'dependencies.js', 'widthWithoutRevealed');
 const source = fs.readFileSync(process.argv[2], 'utf8')
     .replace(/^import .*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Switcher = GPasteHistorySwitcher;`, context);
+vm.runInContext(`${source}\nthis.Switcher = GPasteHistorySwitcher;\nthis.Row = GPasteHistoryRow;`, context);
 
 function switcher() {
     const item = Object.create(context.Switcher.prototype);
@@ -104,16 +110,7 @@ function switcher() {
     return item;
 }
 
-// As runSuite () in suite.cjs does.
-let finished = false;
-process.on('exit', () => {
-    if (!finished) {
-        console.error('History switcher: the suite stopped on a promise that never settled');
-        process.exitCode = 1;
-    }
-});
-
-(async () => {
+runSuite('History switcher', async () => {
     const item = switcher();
     item._client.list_histories = async () => [{get_name: () => 'work', get_size: () => 0}];
     focus = item.entry;
@@ -388,6 +385,19 @@ process.on('exit', () => {
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(emptied._rows.find(r => r.history === 'work').size, 0);
 
+    // The bin a look at a history row, or at the switcher's own, shows takes
+    // the name's room, not the menu's: the row asks for the width it asked
+    // for without it.
+    for (const Klass of [context.Row, context.Switcher]) {
+        const row = Object.create(Klass.prototype);
+
+        row.layout_manager = {spacing: 6};
+        row._deleteButton = {visible: false, get_preferred_width: () => [16, 16]};
+        assert.deepEqual([...row.vfunc_get_preferred_width(-1)], [30, 500]);
+        row._deleteButton.visible = true;
+        assert.deepEqual([...row.vfunc_get_preferred_width(-1)], [30, 500]);
+    }
+
     assert.deepEqual(errors, []);
-    console.log('History switcher: draft refresh, source deletion, daemon loss, current count, empties, row focus and call reporting passed');
-})().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => { finished = true; });
+    console.log('History switcher: draft refresh, source deletion, daemon loss, current count, empties, row focus, call reporting and revealed widths passed');
+});

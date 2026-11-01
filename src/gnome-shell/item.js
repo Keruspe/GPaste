@@ -10,7 +10,7 @@ import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {awaitReply, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, debugFailure, logFailure, replaceCancellable, widthWithoutRevealed} from './dependencies.js';
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
 
@@ -183,7 +183,8 @@ export class GPasteItem extends PopupMenuItem {
         //
         // Hidden outright rather than faded out: a line of text is taller than a
         // symbolic icon, so the row's height is the label's either way, and
-        // hiding them gives their width back to it.
+        // hiding them gives their width back to it. Shown, they take it from
+        // the label and not from the menu (vfunc_get_preferred_width ()).
         //
         // The buttons themselves are the third thing that counts as asked for:
         // they are built with can_focus set, and tabbing into one is the
@@ -325,8 +326,7 @@ export class GPasteItem extends PopupMenuItem {
     _disarmActions() {
         this._favouriteItem.setUuid(null);
         this._shownUuid = null;
-        this._favourited = false;
-        this._updateActionsVisibility();
+        this._setFavourited(false);
     }
 
     _setValue(value, favourite = false, kind = null) {
@@ -353,7 +353,18 @@ export class GPasteItem extends PopupMenuItem {
         this._favouriteItem.setFavourite(favourite);
         this._shownUuid = this._uuid;
 
-        this._favourited = favourite;
+        this._setFavourited(favourite);
+    }
+
+    // Pinning can leave the star shown, a badge where it was a button: the
+    // width the row asks for changes with nothing shown or hidden, which is
+    // otherwise what queues the relayout.
+    _setFavourited(favourited) {
+        if (favourited !== this._favourited) {
+            this._favourited = favourited;
+            this.queue_relayout();
+        }
+
         this._updateActionsVisibility();
     }
 
@@ -387,6 +398,14 @@ export class GPasteItem extends PopupMenuItem {
 
         this._deleteItem.visible = revealed;
         this._favouriteItem.visible = revealed || this._favourited;
+    }
+
+    // The star counts among the buttons a look reveals only while it is one: a
+    // pinned item's badge shows either way.
+    vfunc_get_preferred_width(forHeight) {
+        const revealed = this._favourited ? [this._deleteItem] : [this._deleteItem, this._favouriteItem];
+
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), revealed, forHeight);
     }
 
     // Not ClutterText's max_length, which drops what is past it from the

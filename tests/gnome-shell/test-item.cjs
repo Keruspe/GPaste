@@ -9,7 +9,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const {Signals, runSuite} = require('./suite.cjs');
+const {Signals, runShipped, runSuite} = require('./suite.cjs');
 
 const errors = [];
 const debugged = [];
@@ -24,10 +24,20 @@ class PopupMenuItem extends Signals {
     constructor() {
         super();
         this.label = {clutter_text: new Text(), set_x_expand() {}, set_style() {}, get_preferred_height: () => [0, 16]};
+        this.layout_manager = {spacing: 6};
+        this._children = [];
     }
 
+    // A box layout's: the label's 500 pixels, and every child shown after it.
+    vfunc_get_preferred_width(forHeight) {
+        const shown = this._children.filter(child => child.visible);
+
+        return [30, shown.reduce((width, child) => width + child.get_preferred_width(forHeight)[1] + this.layout_manager.spacing, 500)];
+    }
+
+    queue_relayout() {}
     insert_child_below() {}
-    add_child() {}
+    add_child(child) { this._children.push(child); }
     add_action() {}
     remove_child() {}
     show() { this.visible = true; }
@@ -40,6 +50,7 @@ class PopupMenuItem extends Signals {
 class Button extends Signals {
     setUuid(uuid) { this.uuid = uuid; }
     setFavourite() {}
+    get_preferred_width() { return [16, 16]; }
 }
 
 const context = vm.createContext({
@@ -79,12 +90,14 @@ const context = vm.createContext({
     logFailure: finish => ({finish}),
     debugFailure: e => debugged.push(e.message),
 });
+// The shipped helper the row asks its width of.
+runShipped(context, 'dependencies.js', 'widthWithoutRevealed');
 const source = fs.readFileSync(process.argv[2], 'utf8')
     .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
 vm.runInContext(`${source}\nthis.Item = GPasteItem;`, context);
 
-function item(uuid, value) {
-    return {get_uuid: () => uuid, get_value: () => value, is_favourite: () => false, get_kind: () => 0};
+function item(uuid, value, favourite = false) {
+    return {get_uuid: () => uuid, get_value: () => value, is_favourite: () => favourite, get_kind: () => 0};
 }
 
 // A client whose items the test hands out, and which records what is sent.
@@ -105,8 +118,8 @@ function client() {
     };
 }
 
-async function filled(row, bus, uuid, value) {
-    bus.pending.resolve(item(uuid, value));
+async function filled(row, bus, uuid, value, favourite = false) {
+    bus.pending.resolve(item(uuid, value, favourite));
     await new Promise(resolve => setImmediate(resolve));
 }
 
@@ -131,6 +144,43 @@ runSuite('Item', async () => {
         row.refresh();
         await filled(row, bus, 'a', 'x'.repeat(100000));
         assert.equal(row.label.clutter_text.text, `${'x'.repeat(1000)}…`);
+    }
+
+    // The pin and the bin a look at the row shows take the label's room, not
+    // the menu's, which is as wide as its widest row: the row asks for the
+    // width it asked for without them. A pinned item's star, a badge either
+    // way, counts in both.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+        const looked = () => {
+            row.hover = true;
+            row.emit('notify::hover');
+            assert.equal(row._deleteItem.visible, true);
+            assert.equal(row._favouriteItem.visible, true);
+        };
+        const unlooked = () => {
+            row.hover = false;
+            row.emit('notify::hover');
+            assert.equal(row._deleteItem.visible, false);
+        };
+        // Copied out of the context the row runs in, whose arrays are not this
+        // one's.
+        const width = () => [...row.vfunc_get_preferred_width(-1)];
+
+        await filled(row, bus, 'a', 'abc');
+        assert.deepEqual(width(), [30, 500]);
+        looked();
+        assert.deepEqual(width(), [30, 500]);
+        unlooked();
+
+        row.refresh();
+        await filled(row, bus, 'a', 'abc', true);
+        assert.equal(row._favouriteItem.visible, true);
+        assert.deepEqual(width(), [30, 522]);
+        looked();
+        assert.deepEqual(width(), [30, 522]);
+        unlooked();
     }
 
     // Rebound to another uuid, the row selects and deletes nothing until that

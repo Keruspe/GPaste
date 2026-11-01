@@ -92,11 +92,19 @@ switcher -- which the daemon going does, a handoff to another included -- gives
 up both its listing and its size read, and that nothing is sized while the
 presence is not `READY`, the name still having an owner; and that a history in
 use no listing names gets a row, its count and its open actions all the same, a
-switch to one with no row listing again. It is omitted when Node.js is
+switch to one with no row listing again; and that a history row's bin, and the
+switcher row's, leave the width the row asks for as it was. It is omitted when Node.js is
 unavailable and exercises no real Shell rendering or session. Like every Node
-suite whose body awaits (`runSuite()`, in `suite.cjs` beside them), it fails
-when that body stops on a promise that never settles, rather than exit 0 with
-its later assertions skipped.
+suite whose body awaits (`runSuite()`), it fails when that body stops on a
+promise that never settles, rather than exit 0 with its later assertions
+skipped.
+
+`suite.cjs`, beside the Node suites, holds what they share: `runSuite()`;
+`Signals`, the `connect()` and `emit()` an actor's double extends to have a
+signal emitted by hand; and `runShipped()`, which runs one function of a
+shipped file beside the one the suite was handed -- a helper of a module the
+suite does not load whole, as the rows' `widthWithoutRevealed()` from
+`dependencies.js`.
 
 `indicator` runs the shipped indicator the same way: its teardown, run once and
 chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --
@@ -141,13 +149,16 @@ past `element-size` is cut with an ellipsis -- libgpaste's cut, by characters,
 being `/util/shown-line`'s -- and a larger size shows more of it again; a row rebound to another uuid selects and deletes
 nothing until that item is what it shows, then acts on it with a callback that
 logs a refusal, as the star does; the menu key on the star or the bin opens the
-row's actions; and a failed read goes to `debugFailure()` alone.
+row's actions; a failed read goes to `debugFailure()` alone; and the pin and the
+bin a look at the row shows leave the width it asks for as it was, a pinned
+star counting either way.
 
 `dependencies` runs the helpers every other suite stands in for, from
 `dependencies.js` itself: a row's failed read said at debug level and nowhere
 else, a refusal nothing waits on logged, a replaced request cancelled, and a
 reply read as unwanted once its cancellable is, as is a call failing as
-cancelled, any other failure rethrown.
+cancelled, any other failure rethrown, and a row's width asked for less the
+buttons it reveals, spacing included, never under its minimum.
 
 `extension` runs the shipped `enable ()` and `disable ()` over shell, bus and
 libgpaste doubles: with the in-shell daemon told in process the indicator
