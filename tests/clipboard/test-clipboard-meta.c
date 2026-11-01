@@ -927,6 +927,49 @@ release_after_text (Fixture      *f,
     g_task_return_new_error (held, G_IO_ERROR, G_IO_ERROR_CLOSED, "The owner is gone");
 }
 
+/* A password GPaste publishes between a release and the conclusion of the read
+ * it ended supersedes that read, however soon the conclusion is: the gone
+ * owner's copy is no longer what the selection carries, and its conclusion
+ * filling the cache would have the password taken for gone, its countdown with
+ * it (g_paste_clipboard_update_owner_gone ()). The copy is the history's all the
+ * same, its owner having served it whole. */
+static void
+release_publish_before_conclusion (Fixture      *f,
+                                   gconstpointer user_data G_GNUC_UNUSED)
+{
+    const gchar *mimetypes[] = { "text/plain;charset=utf-8", "x-kde-passwordManagerHint", NULL };
+    g_autoptr (GBytes) text = g_bytes_new_static ("served then gone", 16);
+    g_autoptr (GBytes) hint = g_bytes_new_static ("secret", 6);
+    GBytes *contents[] = { text, hint };
+    g_autoptr (MultiSource) source = multi_source_new (mimetypes, contents);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "picked", 1);
+
+    source->held_mime = "x-kde-passwordManagerHint";
+    meta_selection_set_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
+    /* As in release_after_text (). */
+    while (g_main_context_iteration (NULL, FALSE));
+    g_assert_nonnull (source->held);
+
+    meta_selection_unset_owner (f->selection, META_SELECTION_CLIPBOARD, META_SELECTION_SOURCE (source));
+    g_assert_true (g_paste_clipboards_manager_select (f->manager, password));
+    pump_until_read (f);
+
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (f->clipboard), ==, "picked");
+    /* Recorded all the same, the copy being complete: see
+     * g_paste_clipboard_update_owner_gone (). */
+    g_assert_cmpuint (g_paste_history_get_length (f->history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+
+    g_autoptr (GBytes) served = transfer (f, "text/plain;charset=utf-8");
+    g_autoptr (GBytes) picked = g_bytes_new_static ("picked", 6);
+
+    g_assert_true (g_bytes_equal (served, picked));
+
+    g_autoptr (GTask) held = g_steal_pointer (&source->held);
+
+    g_task_return_new_error (held, G_IO_ERROR, G_IO_ERROR_CLOSED, "The owner is gone");
+}
+
 /* An empty transfer is the empty text, which is what a password manager
  * clearing its copy writes -- not a read that failed. */
 static void
@@ -1170,6 +1213,7 @@ main (int argc, char *argv[])
     g_test_add ("/meta/release/emission-order", Fixture, NULL, fixture_setup, release_emission_order, fixture_teardown);
     g_test_add ("/meta/release/after-text", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, release_after_text, fixture_teardown);
     g_test_add ("/meta/release/after-text-synced", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, release_after_text, fixture_teardown);
+    g_test_add ("/meta/release/publish-before-conclusion", Fixture, NULL, fixture_setup, release_publish_before_conclusion, fixture_teardown);
     g_test_add ("/meta/read/empty-text", Fixture, NULL, fixture_setup, read_empty_text, fixture_teardown);
     g_test_add ("/meta/read/unhandled-kept", Fixture, NULL, fixture_setup, read_unhandled_kept, fixture_teardown);
     g_test_add ("/meta/sync/delivers", Fixture, NULL, fixture_setup, sync_delivers, fixture_teardown);

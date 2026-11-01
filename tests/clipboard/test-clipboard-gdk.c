@@ -875,14 +875,10 @@ formats_release (Fixture      *f,
     g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
 }
 
-/* An owner gone once it has served the text, the hints' own TARGETS left
- * unanswered -- a paste helper exiting after a set number of requests: its
- * release ends what is left of the update as the deadline would, rather than
- * giving up on the text it read, and the copy is recorded as a text whose hint
- * could not be asked. */
+/* An owner serving its text, the hints' own TARGETS held unanswered, and then
+ * releasing the selection. */
 static void
-release_after_text (Fixture      *f,
-                    gconstpointer user_data G_GNUC_UNUSED)
+serve_text_then_release (Fixture *f)
 {
     hold_hints = TRUE;
     g_paste_clipboard_gdk_on_real_changed (f->clipboard);
@@ -897,11 +893,45 @@ release_after_text (Fixture      *f,
     hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
     set_formats (FALSE);
     g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+}
+
+/* An owner gone once it has served the text, the hints' own TARGETS left
+ * unanswered -- a paste helper exiting after a set number of requests: its
+ * release ends what is left of the update as the deadline would, rather than
+ * giving up on the text it read, and the copy is recorded as a text whose hint
+ * could not be asked. */
+static void
+release_after_text (Fixture      *f,
+                    gconstpointer user_data G_GNUC_UNUSED)
+{
+    serve_text_then_release (f);
     pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
     hold_hints = FALSE;
 
     g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+}
+
+/* As /meta/release/publish-before-conclusion: a password published between a
+ * release and the conclusion of the read it ended supersedes that read, which
+ * still records its copy. */
+static void
+release_publish (Fixture      *f,
+                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    serve_text_then_release (f);
+    g_assert_true (g_paste_clipboards_manager_select (f->manager, f->password));
+    /* Pumped past the grace rather than waited on: the publication supersedes
+     * the read and the grace at once, leaving is_reading () nothing to wait for
+     * while the read's conclusion, which records the copy, is still to run. */
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "secret");
+    /* The gone owner served it whole: recorded, above the history's head. */
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 1)), ==, "replacement");
 }
 
 static void
@@ -1247,6 +1277,7 @@ main (int argc, char **argv)
     g_test_add ("/gdk/publish/kinds", Fixture, NULL, fixture_setup, publish_kinds, fixture_teardown);
     g_test_add ("/gdk/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
+    g_test_add ("/gdk/formats/release-publish", Fixture, NULL, fixture_setup, release_publish, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/formats/stale-read-publication", Fixture, NULL, fixture_setup, stale_read_and_publication, fixture_teardown);

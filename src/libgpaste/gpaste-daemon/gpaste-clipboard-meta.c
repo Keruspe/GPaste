@@ -86,12 +86,10 @@ struct _GPasteClipboardMetaRelease
     GWeakRef                              self;
     GPasteClipboardProviderUpdateCallback callback;
     gpointer                              user_data;
-    /* The read's own callback, called first. */
-    GPasteClipboardProviderUpdateCallback read_callback;
-    gpointer                              read_user_data;
-    /* While that callback runs, the cache answers for the copy: see
-     * is_reading (). */
-    gboolean                              handing_over;
+    /* Chained onto that read, which is_reading () counts instead while it
+     * stays in the provider's slot: the read's own callback, once it has
+     * concluded, finds the cache answering for the copy. */
+    gboolean                              chained;
     /* Answered as superseded, when the read concludes or the turn comes. */
     gboolean                              superseded;
 };
@@ -147,22 +145,14 @@ g_paste_clipboard_meta_release_answer (GPasteClipboardMetaRelease *release,
     }
 }
 
-/* The read a release ended concluding: see
+/* The read a release ended has concluded, its copy handed over: see
  * g_paste_clipboard_meta_answer_release (). */
 static void
-g_paste_clipboard_meta_release_after_read (GPasteClipboardProvider *provider,
-                                           GPasteItem              *item,
+g_paste_clipboard_meta_release_after_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
                                            gboolean                 superseded,
-                                           GPasteClipboardSecret    secret,
-                                           gpointer                 user_data)
+                                           gpointer                 data)
 {
-    g_autoptr (GPasteClipboardMetaRelease) release = user_data;
-
-    release->handing_over = TRUE;
-    if (release->read_callback)
-        release->read_callback (provider, item, superseded, secret, release->read_user_data);
-    else
-        g_clear_object (&item);
+    g_autoptr (GPasteClipboardMetaRelease) release = data;
 
     g_paste_clipboard_meta_release_answer (release, superseded);
 }
@@ -187,9 +177,11 @@ g_paste_clipboard_meta_release_due (gpointer user_data)
  * after it, and the head put back is that copy. Cleared before, the conclusion
  * would fill it again for a selection nobody owns, and nothing would ever be
  * put back on it (/meta/release/after-text, /meta/release/after-text-synced).
- * Counted by is_reading () until the read hands its copy over, or until it is
- * answered when there is none, the cache naming content the selection no
- * longer holds.
+ * The selection counts as being read until then, through the read while it is
+ * out and through the release when there is none, the cache naming content the
+ * selection no longer holds. Kept in @release meanwhile all the same, so that
+ * whatever reaches the selection before the answer -- a publication the read's
+ * own callback makes there included -- supersedes it.
  *
  * Never at once, even with no read to wait for: a release comes in under
  * MetaSelection's owner-changed emission, and putting the head back is a
@@ -211,10 +203,8 @@ g_paste_clipboard_meta_answer_release (GPasteClipboardMeta                  *sel
 
     if (read)
     {
-        release->read_callback = read->callback;
-        release->read_user_data = read->user_data;
-        read->callback = g_paste_clipboard_meta_release_after_read;
-        read->user_data = release;
+        release->chained = TRUE;
+        g_paste_clipboard_update_then (read, g_paste_clipboard_meta_release_after_read, release);
     }
     else
     {
@@ -234,7 +224,7 @@ g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
 static gboolean
 g_paste_clipboard_meta_is_reading (GPasteClipboardMeta *self)
 {
-    return self->update || (self->release && !self->release->handing_over);
+    return self->update || (self->release && !self->release->chained);
 }
 
 static const gchar *

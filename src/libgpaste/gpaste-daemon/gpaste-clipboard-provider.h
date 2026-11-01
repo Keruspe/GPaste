@@ -51,8 +51,14 @@ typedef enum
  *        when the content is unchanged, unrecognised, a secret that is not a
  *        text -- identified, but no item -- or the selection is empty
  * @superseded: whether another selection change overtook this read; @item is
- *              %NULL and the callback must only release its state in that case
- * @secret: what the read found out about the owner marking its content a secret
+ *              %NULL and the callback must only release its state in that case,
+ *              bar a copy the owner served whole before releasing the
+ *              selection, which @item still carries: the history's to record,
+ *              saying nothing of what the selection holds
+ * @secret: what the read found out about the owner marking its content a secret;
+ *          %G_PASTE_CLIPBOARD_SECRET_UNKNOWN when @superseded, bar the copy
+ *          served whole above, which answers what its hint said before the
+ *          owner left
  * @user_data: the data the update was given
  *
  * Receives the outcome of an update, the interface's @update. The callback

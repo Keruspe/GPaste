@@ -296,6 +296,9 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @concluded rather than folded into it because the two say opposite things
  * about what is still owed -- a superseded update has yet to call its callback,
  * and that callback is what releases whatever the caller put behind it.
+ * @released says the owner left once the content had landed
+ * (g_paste_clipboard_update_owner_gone ()), which makes the copy complete: one
+ * superseded after that still builds its item, for the history alone.
  *
  * @slot is where the backend keeps its pointer to the update in flight on this
  * selection, cleared at the conclusion: one goes out per
@@ -322,8 +325,18 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @unchanged confirms an exact match with the cache. A read producing no item
  * without this confirmation leaves the selection unidentified, not empty.
  * @reselect asks for the selection to be re-owned after all reads complete:
- * trimmed text needs its normalized value published. */
+ * trimmed text needs its normalized value published.
+ *
+ * @thens is what the conclusion runs once the callback has returned, in the
+ * order chained: see g_paste_clipboard_update_then (). */
 typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
+
+/* What a backend does once an update has concluded and its callback has
+ * returned, told whether that update was superseded: see
+ * g_paste_clipboard_update_then (). */
+typedef void (*GPasteClipboardUpdateThenFunc) (GPasteClipboardProvider *provider,
+                                               gboolean                 superseded,
+                                               gpointer                 data);
 
 struct _GPasteClipboardUpdate
 {
@@ -337,6 +350,7 @@ struct _GPasteClipboardUpdate
     gint                                  sensitive_pending;
     gboolean                              concluded;
     gboolean                              superseded;
+    gboolean                              released;
     GPasteClipboardUpdate               **slot;
     GPasteClipboardContent               *cache;
     gchar                                *mime;
@@ -356,6 +370,8 @@ struct _GPasteClipboardUpdate
      * the backend says otherwise. */
     gboolean                              record;
     GPasteClipboardMimeResults            mimes;
+
+    GSList                               *thens;
 };
 
 /* What a backend answers about the selection it is reading: whether that
@@ -380,6 +396,10 @@ typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                back
 
 void                    g_paste_clipboard_update_supersede                (GPasteClipboardUpdate               **slot);
 GPasteClipboardUpdate  *g_paste_clipboard_update_owner_gone               (GPasteClipboardUpdate               **slot);
+void                    g_paste_clipboard_update_then                     (GPasteClipboardUpdate                *update,
+                                                                           GPasteClipboardUpdateThenFunc         then,
+                                                                           gpointer                              data);
+const gchar            *g_paste_clipboard_update_overtaken_text           (void);
 GPasteClipboardUpdate  *g_paste_clipboard_update_new                      (GPasteClipboardProvider              *provider,
                                                                            GPasteSettings                       *settings,
                                                                            GPasteClipboardContentKind            content_kind,

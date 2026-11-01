@@ -34,6 +34,8 @@ struct _TestClipboard
     /* What a deferred read reads, a text when left unset. */
     GPasteClipboardContentKind defer_kind;
     gboolean                   reject_next;
+    /* The next change is a release: see update (). */
+    gboolean                   release_next;
     /* Another client takes the selection before every claim. */
     gboolean                   refuse_claims;
     /* Every claim made, refused ones included. */
@@ -100,7 +102,17 @@ update (GPasteClipboardProvider              *provider,
 {
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
-    if (self->defer_reads)
+    /* A release ends the read in flight with what it read, which stays for
+     * whatever reaches the selection next to overtake, as both backends leave
+     * it; the release itself is answered overtaken, saying nothing. */
+    if (self->release_next)
+    {
+        self->release_next = FALSE;
+        g_paste_clipboard_update_owner_gone (&self->pending);
+        if (callback)
+            callback (provider, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
+    }
+    else if (self->defer_reads)
     {
         GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings,
                                                                        (self->defer_kind) ? self->defer_kind : CLIPBOARD_CONTENT_TEXT,
@@ -595,6 +607,180 @@ test_superseded_empty_cache (gconstpointer user_data)
     g_assert_cmpuint (clipboard->publications, ==, 0);
     g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "new copy");
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
+/* What the copy a released read brings back is, for test_released_copy (). */
+typedef enum
+{
+    /* The password the selection was carrying, copied again, its hint offered
+     * and never served. */
+    RELEASED_RECORD,
+    /* As RELEASED_RECORD, the password ending in a line break, which
+     * trim-items takes off a text. */
+    RELEASED_PADDED,
+    /* As RELEASED_RECORD, the hint served first and saying no secret. */
+    RELEASED_ANSWERED_NO,
+    /* As RELEASED_RECORD, the password's countdown brought forward while the
+     * read is out, so that the read is what takes it off. */
+    RELEASED_EXPIRED,
+    /* A password entry a timeout edit made during the read waits on, its hint
+     * offered and never served. */
+    RELEASED_EDIT,
+    /* A text the user stripped while it was being read. */
+    RELEASED_STRIP,
+    /* Anything, read with tracking paused. */
+    RELEASED_UNTRACKED,
+    /* Or'd in: a new owner overtakes the copy, its read concluding first,
+     * rather than a publication. */
+    RELEASED_CLAIMED = 1 << 4,
+} ReleasedCopy;
+
+/* A copy its owner served whole before leaving, overtaken before it concluded,
+ * is recorded as the read would have recorded it had it concluded first --
+ * whatever overtook it having moved the selection's own records on by then: a
+ * copy of the password the selection was carrying is that password rather than
+ * its cleartext, trimming or not, unless its owner said it is no secret or its
+ * countdown has run out -- nothing then, the password being taken off -- one
+ * of an entry a timeout edit waits on that entry, a copy of a text stripped
+ * meanwhile the stripped entry rather than the rich formats back, and one read
+ * with tracking paused nothing at all. */
+static void
+test_released_copy (gconstpointer user_data)
+{
+    ReleasedCopy kind = GPOINTER_TO_UINT (user_data) & ~RELEASED_CLAIMED;
+    gboolean claimed = !!(GPOINTER_TO_UINT (user_data) & RELEASED_CLAIMED);
+    gboolean recorded = kind == RELEASED_RECORD || kind == RELEASED_PADDED || kind == RELEASED_ANSWERED_NO || kind == RELEASED_EXPIRED;
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteItem) picked = g_paste_text_item_new ("picked");
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    const gchar *value = (kind == RELEASED_STRIP) ? "rich text" :
+                         (kind == RELEASED_PADDED) ? "hunter2\n" :
+                         (kind == RELEASED_UNTRACKED) ? "served then gone" : "hunter2";
+    GPasteItem *entry = NULL;
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    if (recorded || kind == RELEASED_EDIT)
+    {
+        entry = g_paste_password_item_new ("Work", value, (kind == RELEASED_EXPIRED) ? 60 : 0);
+        g_paste_history_add (history, g_object_ref (entry));
+        if (recorded)
+            g_assert_true (g_paste_clipboards_manager_select (manager, entry));
+    }
+    else if (kind == RELEASED_STRIP)
+    {
+        entry = g_paste_text_item_new ("rich text");
+        g_paste_item_add_special_value (entry, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                       g_bytes_new_static ("<b>rich text</b>", 16)));
+        g_paste_history_add (history, g_object_ref (entry));
+    }
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *uuid = (entry) ? g_strdup (g_paste_item_get_uuid (entry)) : NULL;
+    guint64 length = g_paste_history_get_length (history);
+
+    g_clear_object (&entry);
+    if (kind == RELEASED_UNTRACKED)
+        g_paste_settings_set_track_changes (settings, FALSE);
+    if (kind == RELEASED_PADDED)
+        g_paste_settings_set_trim_items (settings, TRUE);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *copy = clipboard->pending;
+    GPasteClipboardMimeCtx *hint = NULL;
+
+    if (kind == RELEASED_EDIT)
+        g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+    else if (kind == RELEASED_STRIP)
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+        g_assert_no_error (error);
+    }
+
+    if (kind == RELEASED_ANSWERED_NO)
+    {
+        g_autoptr (GBytes) no = g_bytes_new_static ("none", 4);
+
+        g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (copy, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), no);
+    }
+    else if (recorded || kind == RELEASED_EDIT)
+        hint = g_paste_clipboard_update_add_sensitive_mime_read (copy, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+    if (kind == RELEASED_EXPIRED)
+        g_paste_clipboards_manager_expire_password (manager);
+
+    text_ready (clipboard, settings, copy, value);
+    if (kind == RELEASED_STRIP)
+        copy->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML] = g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static ("<b>rich text</b>", 16));
+    clipboard->release_next = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_assert_true (clipboard->pending == copy);
+
+    if (claimed)
+    {
+        g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+        GPasteClipboardUpdate *next = clipboard->pending;
+
+        text_ready (clipboard, settings, next, "next copy");
+        g_paste_clipboard_update_maybe_done (next);
+        ++length;
+    }
+    else
+        g_assert_true (g_paste_clipboards_manager_select (manager, picked));
+
+    assert_superseded (copy);
+    if (hint)
+        g_paste_clipboard_update_on_mime_read (hint, NULL);
+    g_paste_clipboard_update_maybe_done (copy);
+
+    switch (kind)
+    {
+    case RELEASED_RECORD:
+    case RELEASED_PADDED:
+    case RELEASED_EDIT:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+        {
+            GPasteItem *item = g_paste_history_get (history, i);
+
+            g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item) || !g_str_equal (g_paste_item_get_real_value (item), "hunter2"));
+        }
+        break;
+    case RELEASED_EXPIRED:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), !=, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+        {
+            GPasteItem *item = g_paste_history_get (history, i);
+
+            g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item) || !g_str_equal (g_paste_item_get_real_value (item), "hunter2"));
+        }
+        break;
+    case RELEASED_ANSWERED_NO:
+        g_assert_false (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+        g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "hunter2");
+        ++length;
+        break;
+    case RELEASED_STRIP:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+            g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, i)));
+        break;
+    case RELEASED_UNTRACKED:
+    case RELEASED_CLAIMED:
+        break;
+    }
+    /* What the copy stands for moves to the head; nothing beside it is added,
+     * bar the text a copy said to be no secret is, and nothing at all with
+     * tracking paused. */
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, length);
 }
 
 static void
@@ -6232,6 +6418,18 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/late_text_reply", GINT_TO_POINTER (FALSE), test_overlapping_copies);
     g_test_add_data_func ("/clipboard/superseded_bootstrap", GINT_TO_POINTER (TRUE), test_superseded_empty_cache);
     g_test_add_data_func ("/clipboard/superseded_update", GINT_TO_POINTER (FALSE), test_superseded_empty_cache);
+    g_test_add_data_func ("/clipboard/released_copy/record_published", GUINT_TO_POINTER (RELEASED_RECORD), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/record_claimed", GUINT_TO_POINTER (RELEASED_RECORD | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/padded_published", GUINT_TO_POINTER (RELEASED_PADDED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/padded_claimed", GUINT_TO_POINTER (RELEASED_PADDED | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/answered_no", GUINT_TO_POINTER (RELEASED_ANSWERED_NO), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/expired_published", GUINT_TO_POINTER (RELEASED_EXPIRED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/expired_claimed", GUINT_TO_POINTER (RELEASED_EXPIRED | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/edit_published", GUINT_TO_POINTER (RELEASED_EDIT), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/edit_claimed", GUINT_TO_POINTER (RELEASED_EDIT | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/strip_published", GUINT_TO_POINTER (RELEASED_STRIP), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/strip_claimed", GUINT_TO_POINTER (RELEASED_STRIP | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/untracked", GUINT_TO_POINTER (RELEASED_UNTRACKED), test_released_copy);
     g_test_add_data_func ("/clipboard/strip_during_read/unrelated", GUINT_TO_POINTER (0), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/matching", GUINT_TO_POINTER (1), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/non_head", GUINT_TO_POINTER (2), test_strip_during_read);
