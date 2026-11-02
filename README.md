@@ -186,7 +186,7 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 All of them are configurable in the preferences.
 
 Uploading runs whatever the `upload-command` preference names, defaulting to
-`curl -sS --data-binary @- https://paste.rs`. Any command that takes the item on its
+`curl -sS --data-binary @- https://paste.c-net.org/`. Any command that takes the item on its
 standard input and answers the url on its standard output will do —
 `wgetpaste`, `pastebinit` and `nc termbin.com 9999` among them.
 

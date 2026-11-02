@@ -261,7 +261,7 @@
     </key>
 
     <key name="upload-command" type="s">
-      <default>'curl -sS --data-binary @- https://paste.rs'</default>
+      <default>'curl -sS --data-binary @- https://paste.c-net.org/'</default>
       <summary>The command uploading an item to a pastebin service</summary>
       <description>
         The item is written to the command’s standard input, and the command must
