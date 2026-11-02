@@ -602,6 +602,8 @@ backup_history_data_free (BackupHistoryData *self)
     g_free (self);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (BackupHistoryData, backup_history_data_free)
+
 static void
 g_paste_daemon_methods_on_backup_copied (GObject      *source_object G_GNUC_UNUSED,
                                          GAsyncResult *result,
@@ -646,12 +648,12 @@ g_paste_daemon_methods_backup_history_async (const GPasteDaemonMethods *self,
     g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
     GError *error = NULL;
 
-    BackupHistoryData *data = g_new0 (BackupHistoryData, 1);
+    g_autoptr (BackupHistoryData) data = g_new0 (BackupHistoryData, 1);
 
     data->skeleton = g_object_ref (self->skeleton);
     data->history = g_object_ref (self->history);
     g_task_set_source_tag (task, g_paste_daemon_methods_backup_history_async);
-    g_task_set_task_data (task, data, (GDestroyNotify) backup_history_data_free);
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) backup_history_data_free);
 
     if (!g_paste_daemon_methods_backup_allowed (self, history, backup, &error))
     {
