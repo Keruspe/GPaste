@@ -913,6 +913,83 @@ release_after_text (Fixture      *f,
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
 }
 
+/* As release_after_text (), with the selections kept in step: the copy reaches
+ * the primary selection as any copy does, the release's grace waiting for the
+ * read it ended to answer, and the history's head -- that copy -- goes back on
+ * the clipboard once the grace is over, as /meta/release/after-text-synced has
+ * it of the mutter backend. */
+static void
+release_after_text_synced (Fixture      *f,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    /* Driven by nothing but the manager, which reads it once on adding it. */
+    g_autoptr (GPasteClipboardGdk) primary = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
+
+    primary->settings = f->settings;
+    g_paste_clipboards_manager_add_clipboard (f->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_synchronize_clipboards (f->settings, TRUE);
+
+    serve_text_then_release (f);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "served then gone");
+
+    /* Borrowed, as the fixture's own clipboard has it. */
+    primary->settings = NULL;
+}
+
+/* As release_after_text_synced (), the released read overtaken by an owner that
+ * serves a copy of its own and leaves in turn, all before the first read's
+ * conclusion -- an idle, behind the events of the main loop's own priority.
+ * That conclusion arms nothing: the second release's grace waits for the
+ * second read, whose copy reaches the primary selection as any copy does. */
+static void
+release_overtaken_arms_nothing (Fixture      *f,
+                                gconstpointer user_data G_GNUC_UNUSED)
+{
+    /* As in release_after_text_synced (). */
+    g_autoptr (GPasteClipboardGdk) primary = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
+
+    primary->settings = f->settings;
+    g_paste_clipboards_manager_add_clipboard (f->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_synchronize_clipboards (f->settings, TRUE);
+
+    serve_text_then_release (f);
+
+    GPasteClipboardUpdate *first = f->clipboard->update;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    set_formats (TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("second copy"), g_free);
+    g_clear_object (&pending_text);
+    /* One turn at a time, which dispatches the text's answer ahead of the
+     * idle the first read concludes from. */
+    for (guint i = 0; i < 100 && !f->clipboard->update->produced; ++i)
+        g_main_context_iteration (NULL, FALSE);
+    g_assert_true (f->clipboard->update->produced);
+    g_assert_false (first->concluded);
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "second copy");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)), ==, "second copy");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "second copy");
+
+    primary->settings = NULL;
+}
+
 /* As /meta/release/publish-before-conclusion: a password published between a
  * release and the conclusion of the read it ended supersedes that read, which
  * still records its copy. */
@@ -1266,6 +1343,8 @@ main (int argc, char **argv)
     g_test_add ("/gdk/publish/kinds", Fixture, NULL, fixture_setup, publish_kinds, fixture_teardown);
     g_test_add ("/gdk/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
+    g_test_add ("/gdk/formats/release-after-text-synced", Fixture, NULL, fixture_setup, release_after_text_synced, fixture_teardown);
+    g_test_add ("/gdk/formats/overtaken-release-arms-nothing", Fixture, NULL, fixture_setup, release_overtaken_arms_nothing, fixture_teardown);
     g_test_add ("/gdk/formats/release-publish", Fixture, NULL, fixture_setup, release_publish, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);

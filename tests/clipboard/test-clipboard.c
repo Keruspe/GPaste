@@ -14,6 +14,28 @@
 #define TEST_TYPE_CLIPBOARD (test_clipboard_get_type ())
 G_DECLARE_FINAL_TYPE (TestClipboard, test_clipboard, TEST, CLIPBOARD, GObject)
 
+/* A release waiting for the read it ended, answered once that read has
+ * concluded as both backends answer theirs (g_paste_clipboard_update_then ()),
+ * or on the next turn of the main loop with none left, and overtaken by
+ * whatever reaches the selection first. The provider is held weakly, as the
+ * mutter backend holds it for that turn. */
+typedef struct
+{
+    GWeakRef                              self;
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    gboolean                              superseded;
+} TestRelease;
+
+static void
+test_release_free (TestRelease *release)
+{
+    g_weak_ref_clear (&release->self);
+    g_free (release);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (TestRelease, test_release_free)
+
 struct _TestClipboard
 {
     GObject parent_instance;
@@ -31,8 +53,10 @@ struct _TestClipboard
     /* What a deferred read reads, a text when left unset. */
     GPasteClipboardContentKind defer_kind;
     gboolean                   reject_next;
-    /* The next change is a release: see update (). */
+    /* The next change is a release, and the one left to answer: see
+     * update (). */
     gboolean                   release_next;
+    TestRelease               *release;
     /* Another client takes the selection before every claim. */
     gboolean                   refuse_claims;
     /* Every claim made, refused ones included. */
@@ -91,6 +115,57 @@ is_identified (GPasteClipboardProvider *provider)
     return g_paste_clipboard_content_is_identified (&self->content);
 }
 
+/* Every change and every claim overtakes the release left to answer. */
+static void
+supersede_release (TestClipboard *self)
+{
+    TestRelease *release = g_steal_pointer (&self->release);
+
+    if (release)
+        release->superseded = TRUE;
+}
+
+/* A release answered, as the mutter backend answers one: the selection is
+ * empty, which has the manager put the history's head back on it, unless
+ * something overtook the release -- or disposed the provider -- which then says
+ * nothing. */
+static void
+release_answer (TestRelease *release,
+                gboolean     superseded)
+{
+    g_autoptr (TestClipboard) self = g_weak_ref_get (&release->self);
+
+    if (self && self->release == release)
+        self->release = NULL;
+    superseded |= release->superseded || !self;
+    if (!superseded)
+        g_paste_clipboard_content_clear (&self->content);
+    if (release->callback)
+    {
+        release->callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded,
+                           (superseded) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN : G_PASTE_CLIPBOARD_SECRET_NO,
+                           release->user_data);
+    }
+}
+
+static void
+release_after_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+                    gboolean                 superseded,
+                    gpointer                 data)
+{
+    g_autoptr (TestRelease) release = data;
+
+    release_answer (release, superseded);
+}
+
+static gboolean
+release_due (gpointer data)
+{
+    release_answer (data, FALSE);
+
+    return G_SOURCE_REMOVE;
+}
+
 static void
 update (GPasteClipboardProvider              *provider,
         gboolean                              record,
@@ -99,15 +174,31 @@ update (GPasteClipboardProvider              *provider,
 {
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
+    supersede_release (self);
+
     /* A release ends the read in flight with what it read, which stays for
      * whatever reaches the selection next to overtake, as both backends leave
-     * it; the release itself is answered overtaken, saying nothing. */
+     * it, and is answered once that read has concluded -- on the next turn of
+     * the main loop with none left, never from inside the notify () it came
+     * in on, as neither backend answers one. */
     if (self->release_next)
     {
+        GPasteClipboardUpdate *read = g_paste_clipboard_update_owner_gone (&self->pending);
+        TestRelease *release = g_new0 (TestRelease, 1);
+
         self->release_next = FALSE;
-        g_paste_clipboard_update_owner_gone (&self->pending);
-        if (callback)
-            callback (provider, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
+        g_weak_ref_init (&release->self, self);
+        release->callback = callback;
+        release->user_data = user_data;
+        self->release = release;
+        if (read)
+            g_paste_clipboard_update_then (read, release_after_read, release);
+        else
+        {
+            guint source_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, release_due, release, (GDestroyNotify) test_release_free);
+
+            g_source_set_name_by_id (source_id, "[GPaste] test clipboard release");
+        }
     }
     else if (self->defer_reads)
     {
@@ -139,6 +230,7 @@ select_item (GPasteClipboardProvider *provider,
         return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
     g_paste_clipboard_update_supersede (&self->pending);
+    supersede_release (self);
     ++self->claims;
     if (self->refuse_claims)
     {
@@ -159,6 +251,7 @@ select_text (GPasteClipboardProvider *provider,
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
     g_paste_clipboard_update_supersede (&self->pending);
+    supersede_release (self);
     ++self->claims;
     if (self->refuse_claims)
     {
@@ -619,6 +712,8 @@ typedef enum
     RELEASED_STRIP,
     /* Anything, read with tracking paused. */
     RELEASED_UNTRACKED,
+    /* Anything, with nothing overtaking it. */
+    RELEASED_LIVE,
     /* Or'd in: a new owner overtakes the copy, its read concluding first,
      * rather than a publication. */
     RELEASED_CLAIMED = 1 << 4,
@@ -632,7 +727,9 @@ typedef enum
  * countdown has run out -- nothing then, the password being taken off -- one
  * of an entry a timeout edit waits on that entry, a copy of a text stripped
  * meanwhile the stripped entry rather than the rich formats back, and one read
- * with tracking paused nothing at all. */
+ * with tracking paused nothing at all. Nothing overtaking it, the release is
+ * answered once the copy is in, which puts the history's head -- that copy --
+ * back on the selection. */
 static void
 test_released_copy (gconstpointer user_data)
 {
@@ -647,7 +744,7 @@ test_released_copy (gconstpointer user_data)
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
     const gchar *value = (kind == RELEASED_STRIP) ? "rich text" :
                          (kind == RELEASED_PADDED) ? "hunter2\n" :
-                         (kind == RELEASED_UNTRACKED) ? "served then gone" : "hunter2";
+                         (kind == RELEASED_UNTRACKED || kind == RELEASED_LIVE) ? "served then gone" : "hunter2";
     GPasteItem *entry = NULL;
 
     clipboard->is_clipboard = TRUE;
@@ -713,19 +810,31 @@ test_released_copy (gconstpointer user_data)
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     g_assert_true (clipboard->pending == copy);
 
-    if (claimed)
-    {
-        g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
-        GPasteClipboardUpdate *next = clipboard->pending;
+    guint publications = clipboard->publications;
 
-        text_ready (clipboard, settings, next, "next copy");
-        g_paste_clipboard_update_maybe_done (next);
+    /* Concluded on the next turn of the main loop either way, and its reads
+     * cancelled, which is all assert_superseded () asks. */
+    if (kind == RELEASED_LIVE)
+    {
+        assert_superseded (copy);
         ++length;
     }
     else
-        g_assert_true (g_paste_clipboards_manager_select (manager, picked));
+    {
+        if (claimed)
+        {
+            g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+            GPasteClipboardUpdate *next = clipboard->pending;
 
-    assert_superseded (copy);
+            text_ready (clipboard, settings, next, "next copy");
+            g_paste_clipboard_update_maybe_done (next);
+            ++length;
+        }
+        else
+            g_assert_true (g_paste_clipboards_manager_select (manager, picked));
+
+        assert_superseded (copy);
+    }
     if (hint)
         g_paste_clipboard_update_on_mime_read (hint, NULL);
     g_paste_clipboard_update_maybe_done (copy);
@@ -762,6 +871,11 @@ test_released_copy (gconstpointer user_data)
         for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
             g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, i)));
         break;
+    case RELEASED_LIVE:
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "served then gone");
+        g_assert_cmpuint (clipboard->publications, ==, publications + 1);
+        g_assert_cmpstr (clipboard->content.str, ==, "served then gone");
+        break;
     case RELEASED_UNTRACKED:
     case RELEASED_CLAIMED:
         break;
@@ -770,6 +884,40 @@ test_released_copy (gconstpointer user_data)
      * bar the text a copy said to be no secret is, and nothing at all with
      * tracking paused. */
     g_assert_cmpuint (g_paste_history_get_length (history), ==, length);
+}
+
+static gboolean
+published_once (gconstpointer clipboard,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const TestClipboard *) clipboard)->publications > 0;
+}
+
+/* A release with no read left to end is answered on a later turn of the main
+ * loop, as both backends answer one, and not from inside the change it came
+ * in on: the history's head goes back on the selection then. */
+static void
+test_release_nothing_out (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    clipboard->defer_reads = TRUE;
+    clipboard->release_next = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+
+    g_paste_test_bus_wait_until (published_once, clipboard, NULL);
+    g_assert_cmpuint (clipboard->publications, ==, 1);
+    g_assert_cmpstr (clipboard->content.str, ==, "head");
 }
 
 static void
@@ -6381,6 +6529,8 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/released_copy/strip_published", GUINT_TO_POINTER (RELEASED_STRIP), test_released_copy);
     g_test_add_data_func ("/clipboard/released_copy/strip_claimed", GUINT_TO_POINTER (RELEASED_STRIP | RELEASED_CLAIMED), test_released_copy);
     g_test_add_data_func ("/clipboard/released_copy/untracked", GUINT_TO_POINTER (RELEASED_UNTRACKED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/live", GUINT_TO_POINTER (RELEASED_LIVE), test_released_copy);
+    g_test_add_func ("/clipboard/released_copy/nothing_out", test_release_nothing_out);
     g_test_add_data_func ("/clipboard/strip_during_read/unrelated", GUINT_TO_POINTER (0), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/matching", GUINT_TO_POINTER (1), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/non_head", GUINT_TO_POINTER (2), test_strip_during_read);

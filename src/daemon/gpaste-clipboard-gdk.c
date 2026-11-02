@@ -163,6 +163,10 @@ struct _GPasteClipboardGdkFormatsWait
      * release waits (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE), with no owner left
      * whose targets could answer it. */
     gboolean                              released;
+    /* That grace held back, unarmed and not counted as reading, until the read
+     * the release ended has answered, that read owning the wait meanwhile: see
+     * release_after_read (). */
+    gboolean                              held;
 };
 
 /* The wait itself, and nothing it owes: its callback is its caller's to answer
@@ -285,16 +289,22 @@ g_paste_clipboard_gdk_formats_wait_superseded (gpointer user_data)
  * releases the address space. A caller needing completion before stopping its
  * loop must await expiry, as documented beside the formats timeout. */
 static void
+g_paste_clipboard_gdk_answer_superseded_wait (GPasteClipboardGdkFormatsWait *wait)
+{
+    g_clear_handle_id (&wait->source_id, g_source_remove);
+    wait->source_id = g_idle_add_once (g_paste_clipboard_gdk_formats_wait_superseded, wait);
+    g_source_set_name_by_id (wait->source_id, "[GPaste] superseded clipboard formats wait");
+}
+
+/* Every wait the selection's change or publication makes stale. One held behind
+ * a read stays that read's to answer (release_after_read ()). */
+static void
 g_paste_clipboard_gdk_supersede_formats_wait (GPasteClipboardGdk *self)
 {
     GPasteClipboardGdkFormatsWait *wait = g_steal_pointer (&self->formats_wait);
 
-    if (!wait)
-        return;
-
-    g_source_remove (wait->source_id);
-    wait->source_id = g_idle_add_once (g_paste_clipboard_gdk_formats_wait_superseded, wait);
-    g_source_set_name_by_id (wait->source_id, "[GPaste] superseded clipboard formats wait");
+    if (wait && !wait->held)
+        g_paste_clipboard_gdk_answer_superseded_wait (wait);
 }
 
 /* The wait out, ended before its deadline for a caller answering its callback
@@ -310,14 +320,49 @@ g_paste_clipboard_gdk_take_formats_wait (GPasteClipboardGdk *self)
 }
 
 static void
+g_paste_clipboard_gdk_arm_formats_wait (GPasteClipboardGdkFormatsWait *wait)
+{
+    guint timeout = (wait->released) ? G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE : G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT;
+
+    wait->source_id = g_timeout_add_once (timeout, g_paste_clipboard_gdk_formats_wait_timed_out, wait);
+    g_source_set_name_by_id (wait->source_id, "[GPaste] clipboard formats wait");
+}
+
+/* The read a release ended has answered, as g_paste_clipboard_update_then ()
+ * runs this with that release's own wait: its copy recorded, and handed to the
+ * other selection with the cache answering for it, as the mutter backend's
+ * chained release has it (/gdk/formats/release-after-text-synced). The grace
+ * starts now, for a wait that is still the selection's. One that is not was
+ * superseded meanwhile -- whatever overtook the read did, or what the read's
+ * own callback published -- and is answered as such, however soon a later
+ * release holds a wait of its own behind a read of its own
+ * (/gdk/formats/overtaken-release-arms-nothing). */
+static void
+g_paste_clipboard_gdk_release_after_read (GPasteClipboardProvider *provider,
+                                          gboolean                 superseded G_GNUC_UNUSED,
+                                          gpointer                 data)
+{
+    GPasteClipboardGdkFormatsWait *wait = data;
+
+    wait->held = FALSE;
+    if (G_PASTE_CLIPBOARD_GDK (provider)->formats_wait == wait)
+        g_paste_clipboard_gdk_arm_formats_wait (wait);
+    else
+        g_paste_clipboard_gdk_answer_superseded_wait (wait);
+}
+
+/* Wait for the formats, answering @callback at the deadline. A release with a
+ * read left to conclude (@behind, which g_paste_clipboard_update_owner_gone ()
+ * handed back) holds its grace until that read has answered. */
+static void
 g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *self,
                                         gboolean                              released,
+                                        GPasteClipboardUpdate                *behind,
                                         gboolean                              record,
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data)
 {
     GPasteClipboardGdkFormatsWait *wait = g_new (GPasteClipboardGdkFormatsWait, 1);
-    guint timeout = (released) ? G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE : G_PASTE_CLIPBOARD_GDK_FORMATS_TIMEOUT;
 
     g_weak_ref_init (&wait->self, self);
     wait->record = record;
@@ -325,9 +370,14 @@ g_paste_clipboard_gdk_wait_for_formats (GPasteClipboardGdk                   *se
     wait->user_data = user_data;
     wait->after_change = self->emitting_change;
     wait->released = released;
-    wait->source_id = g_timeout_add_once (timeout, g_paste_clipboard_gdk_formats_wait_timed_out, wait);
-    g_source_set_name_by_id (wait->source_id, "[GPaste] clipboard formats wait");
+    wait->held = !!behind;
+    wait->source_id = 0;
     self->formats_wait = wait;
+
+    if (behind)
+        g_paste_clipboard_update_then (behind, g_paste_clipboard_gdk_release_after_read, wait);
+    else
+        g_paste_clipboard_gdk_arm_formats_wait (wait);
 }
 
 /* Every write and every change makes both the read and the formats wait in
@@ -345,10 +395,13 @@ g_paste_clipboard_gdk_is_clipboard (GPasteClipboardGdk *self)
     return self->is_clipboard;
 }
 
+/* A wait held behind the read a release ended is not counted: that read is,
+ * while it is out, and its own callback finds the cache answering for its copy
+ * (release_after_read ()). */
 static gboolean
 g_paste_clipboard_gdk_is_reading (GPasteClipboardGdk *self)
 {
-    return self->update || self->formats_wait;
+    return self->update || (self->formats_wait && !self->formats_wait->held);
 }
 
 static const gchar *
@@ -1141,9 +1194,11 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
          * what it has left is the hints' own conversion, sent behind the
          * content read, and the reads riding along with it. A new owner's empty
          * formats supersede it, as any other change does. */
+        GPasteClipboardUpdate *read = NULL;
+
         if (released)
         {
-            g_paste_clipboard_update_owner_gone (&self->update);
+            read = g_paste_clipboard_update_owner_gone (&self->update);
             g_paste_clipboard_gdk_supersede_formats_wait (self);
         }
         else
@@ -1160,8 +1215,9 @@ g_paste_clipboard_gdk_update (GPasteClipboardGdk                   *self,
          *
          * How long it waits is what the server decides: a selection nobody owns
          * has already told the two apart, leaving only the gap a release and the
-         * claim after it pass through (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE). */
-        g_paste_clipboard_gdk_wait_for_formats (self, released, record, callback, user_data);
+         * claim after it pass through (%G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE),
+         * counted from the conclusion of the read the release ended. */
+        g_paste_clipboard_gdk_wait_for_formats (self, released, read, record, callback, user_data);
         return;
     }
     else

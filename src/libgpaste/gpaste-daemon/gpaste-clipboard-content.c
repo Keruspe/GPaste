@@ -1529,7 +1529,7 @@ g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
  * the first release ended has concluded hands that same update back twice, and
  * both releases are owed their answer (/meta/release/twice).
  */
-void
+G_PASTE_VISIBLE void
 g_paste_clipboard_update_then (GPasteClipboardUpdate        *update,
                                GPasteClipboardUpdateThenFunc then,
                                gpointer                      data)
