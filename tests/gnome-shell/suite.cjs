@@ -43,11 +43,33 @@ function runSuite(name, body) {
     });
 }
 
+// Lets every reaction already queued run, and those they queue in turn: a
+// reply resolved by hand reaches what awaits it.
+function settle() {
+    return new Promise(resolve => setImmediate(resolve));
+}
+
+// The shipped file the suite was handed, or @file beside it.
+function shipped(file) {
+    return file === undefined ? process.argv[2] : path.join(path.dirname(process.argv[2]), file);
+}
+
+// Runs the shipped module @file (shipped ()) in @context, its imports left to
+// what @context defines and its exports declared plainly, and sets each name of
+// @exports on @context to the expression, in the module's scope, it maps to.
+function loadShipped(context, exports, file) {
+    const source = fs.readFileSync(shipped(file), 'utf8')
+        .replace(/^import [^;]*;\n/gm, '').replace(/^export (default )?/gm, '');
+    const exported = Object.entries(exports).map(([name, value]) => `this.${name} = ${value};`);
+
+    vm.runInContext([source, ...exported].join('\n'), context);
+}
+
 // Runs the function @name of the shipped @file in @context, @file sitting beside
 // the shipped file the suite was handed: a helper of a module the suite does not
 // load whole.
 function runShipped(context, file, name) {
-    const source = fs.readFileSync(path.join(path.dirname(process.argv[2]), file), 'utf8');
+    const source = fs.readFileSync(shipped(file), 'utf8');
     const [found] = source.match(new RegExp(`^export function ${name}\\b[^]*?^}\n`, 'm')) ?? [];
 
     if (!found)
@@ -56,4 +78,4 @@ function runShipped(context, file, name) {
     vm.runInContext(found.replace('export ', ''), context);
 }
 
-module.exports = {Signals, runShipped, runSuite};
+module.exports = {Signals, loadShipped, runShipped, runSuite, settle, shipped};

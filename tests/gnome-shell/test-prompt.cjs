@@ -7,9 +7,8 @@
 // passphrase asked for other histories says and offers. Not Shell rendering.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
-const {Signals} = require('./suite.cjs');
+const {Signals, loadShipped, shipped} = require('./suite.cjs');
 
 const errors = [];
 const dialogs = [];
@@ -96,9 +95,7 @@ const context = vm.createContext({
         prompt_text: text => text,
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace(/^export const /gm, 'const ');
-vm.runInContext(`${source}\nthis.Prompt = GPasteShellPrompt;`, context);
+loadShipped(context, {Prompt: 'GPasteShellPrompt'});
 
 function request() {
     return {
@@ -354,8 +351,8 @@ dialogs.slice(-2).forEach(dialog => dialog.close());
 
 // Both prompts say one thing: every word one shows, the other shows too.
 const words = (file, pattern) => new Set([...fs.readFileSync(file, 'utf8').matchAll(pattern)].map(m => m[1]));
-const shellWords = words(process.argv[2], /PromptText\.([A-Z_]+)/g);
-const adwWords = words(path.join(path.dirname(process.argv[2]), '../daemon/gpaste-prompt-adw.c'), /G_PASTE_PROMPT_TEXT_([A-Z_]+)/g);
+const shellWords = words(shipped(), /PromptText\.([A-Z_]+)/g);
+const adwWords = words(shipped('../daemon/gpaste-prompt-adw.c'), /G_PASTE_PROMPT_TEXT_([A-Z_]+)/g);
 
 assert.deepEqual([...adwWords].filter(word => !shellWords.has(word)), []);
 assert.deepEqual([...shellWords].filter(word => !adwWords.has(word)), []);

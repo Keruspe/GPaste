@@ -7,8 +7,8 @@
 // through the extension's `settings` getter. Not the shell's own extension
 // machinery.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {loadShipped} = require('./suite.cjs');
 
 const errors = [];
 const calls = [];
@@ -64,9 +64,7 @@ const context = vm.createContext({
         }
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export default class ', 'class ');
-vm.runInContext(`${source}\nthis.ExtensionClass = GPasteExtension;`, context);
+loadShipped(context, {ExtensionClass: 'GPasteExtension'});
 
 // The indicator, which reports through its client when it has one.
 function connectedIndicator() {

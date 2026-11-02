@@ -5,9 +5,8 @@
 // nothing waits on is said with and at which level, and what a reply a newer
 // request replaced is read as.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
-const {runSuite} = require('./suite.cjs');
+const {loadShipped, runSuite} = require('./suite.cjs');
 
 const said = {error: [], debug: []};
 
@@ -46,9 +45,7 @@ const context = vm.createContext({
     Config: {LIBMUTTER_API_VERSION: '18'},
     gi: {require() {}},
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace(/^export /gm, '');
-vm.runInContext(`${source}\nthis.helpers = {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone, widthWithoutRevealed};`, context);
+loadShipped(context, {helpers: '{logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone, widthWithoutRevealed}'});
 
 const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone, widthWithoutRevealed} = context.helpers;
 

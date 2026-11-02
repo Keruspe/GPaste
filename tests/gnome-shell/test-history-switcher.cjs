@@ -5,9 +5,8 @@
 // This checks lifecycle, draft ownership, the current row's count and what may
 // set the switcher row's `active`, not Shell rendering or modal grabs.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
-const {runShipped, runSuite} = require('./suite.cjs');
+const {loadShipped, runShipped, runSuite, settle} = require('./suite.cjs');
 
 class Actor {
     static get_binding_pool() { return {install_closure() {}}; }
@@ -75,9 +74,7 @@ const context = vm.createContext({
 });
 // The shipped helper the rows ask their width of.
 runShipped(context, 'dependencies.js', 'widthWithoutRevealed');
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import .*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Switcher = GPasteHistorySwitcher;\nthis.Row = GPasteHistoryRow;`, context);
+loadShipped(context, {Switcher: 'GPasteHistorySwitcher', Row: 'GPasteHistoryRow'});
 
 function switcher() {
     const item = Object.create(context.Switcher.prototype);
@@ -224,14 +221,14 @@ runSuite('History switcher', async () => {
     };
     sized._client.list_histories = async () => [];
     await sized.refresh();
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 1);
     assert.equal(sized._rows.find(r => r.history === 'default').size, 7);
 
     // A listing that does name it answers its count without another call.
     sized._client.list_histories = async () => [{get_name: () => 'default', get_size: () => 3}];
     await sized.refresh();
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 1);
     assert.equal(sized._rows.find(r => r.history === 'default').size, 3);
 
@@ -247,7 +244,7 @@ runSuite('History switcher', async () => {
     };
     unlisted._client.list_histories = async () => [];
     await unlisted.refresh();
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.deepEqual([...unlisted._rows].map(r => r.history), ['default', 'work']);
     assert.equal(unlisted._rows[1].size, 4);
     assert.equal(unlistedSizes, 1);
@@ -269,18 +266,18 @@ runSuite('History switcher', async () => {
     // chooser is open.
     const {UpdateAction, UpdateTarget} = context.GPaste;
     sized._onUpdate(null, UpdateAction.REPLACE, UpdateTarget.ITEM);
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 1);
     sized._onUpdate(null, UpdateAction.REMOVE, UpdateTarget.ITEM);
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 2);
     assert.equal(sized._rows.find(r => r.history === 'default').size, 7);
     sized._onUpdate(null, UpdateAction.REPLACE, UpdateTarget.ALL);
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 3);
     sized.menu.isOpen = false;
     sized._onUpdate(null, UpdateAction.REMOVE, UpdateTarget.ALL);
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 3);
     // Nor while another daemon takes the name over, the old one, which still
     // owns it, being the one the call would reach.
@@ -288,7 +285,7 @@ runSuite('History switcher', async () => {
     sized._client.get_name_owner = () => ':1.42';
     sized._client.daemon_presence = 1;
     sized._onUpdate(null, UpdateAction.REMOVE, UpdateTarget.ALL);
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(sizeCalls, 3);
     // The chooser's listing, asked on opening the submenu, waits for a daemon
     // to ask as well.
@@ -382,7 +379,7 @@ runSuite('History switcher', async () => {
     assert.equal(answers.length, 4);
     answers[3](histories(0, ['work']));
     answers[2](histories(2, ['work']));
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
     assert.equal(emptied._rows.find(r => r.history === 'work').size, 0);
 
     // The bin a look at a history row, or at the switcher's own, shows takes

@@ -5,9 +5,8 @@
 // This checks its teardown, what the placeholder row says of the daemon and
 // where an item row's actions stay, not Shell rendering or the menu's grab.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
-const {runSuite} = require('./suite.cjs');
+const {Signals, loadShipped, runSuite} = require('./suite.cjs');
 
 let focus = null;
 const notified = [];
@@ -31,21 +30,15 @@ class WeakRefDouble {
 // Its constructor connects that teardown to 'destroy', as the real one does, so
 // an indicator built through its own constructor is torn down the way the
 // shell tears it down.
-class Button {
+class Button extends Signals {
     constructor() {
+        super();
         this.menu = {addMenuItem() {}};
-        this._handlers = [];
         this.connect('destroy', () => this._onDestroy());
     }
 
-    connect(signal, handler) { this._handlers.push({signal, handler}); }
     add_child() {}
-    destroy() {
-        for (const {signal, handler} of this._handlers) {
-            if (signal === 'destroy')
-                handler();
-        }
-    }
+    destroy() { this.emit('destroy'); }
 
     _onDestroy() { this.buttonDestroyed = (this.buttonDestroyed ?? 0) + 1; }
     _onOpenStateChanged() {}
@@ -114,9 +107,7 @@ const context = vm.createContext({
         return {cancel() { this.cancelled = true; }, is_cancelled() { return !!this.cancelled; }};
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-vm.runInContext(`${source}\nthis.Indicator = GPasteIndicator;`, context);
+loadShipped(context, {Indicator: 'GPasteIndicator'});
 
 const {DaemonPresence} = context.GPaste;
 

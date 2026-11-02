@@ -7,9 +7,8 @@
 // rewriting, and how it runs a check of the store for the daemon. Not the
 // daemon itself, which the C suites cover.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
-const {runSuite} = require('./suite.cjs');
+const {loadShipped, runSuite, settle} = require('./suite.cjs');
 
 const errors = [];
 // Every main loop source, by id: what runs it is the test.
@@ -50,10 +49,6 @@ function runSources(kind) {
 
 function countSources(kind) {
     return [...sources.values()].filter(source => source.kind === kind).length;
-}
-
-function settle() {
-    return new Promise(resolve => setImmediate(resolve));
 }
 
 // Signals as connectObject () takes them: pairs, then the owner.
@@ -181,9 +176,7 @@ const context = vm.createContext({
     },
     global: {display: {get_selection: () => ({})}},
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Runner = GPasteDaemonRunner;`, context);
+loadShipped(context, {Runner: 'GPasteDaemonRunner'});
 
 const settings = {reload() {}};
 

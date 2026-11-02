@@ -6,10 +6,8 @@
 // where the menu key reaches it, and what a failed read leaves in the journal.
 // Not Shell rendering.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
-const {Signals, runShipped, runSuite} = require('./suite.cjs');
+const {Signals, loadShipped, runShipped, runSuite, settle} = require('./suite.cjs');
 
 const errors = [];
 const debugged = [];
@@ -85,9 +83,7 @@ const context = vm.createContext({
 });
 // The shipped helper the row asks its width of.
 runShipped(context, 'dependencies.js', 'widthWithoutRevealed');
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Item = GPasteItem;`, context);
+loadShipped(context, {Item: 'GPasteItem'});
 
 // How many times a row read an item's whole value, which a text's row has no
 // need of: it is drawn from the line libgpaste cuts.
@@ -128,7 +124,7 @@ function client() {
 
 async function filled(row, bus, uuid, value, kind = 0, favourite = false) {
     bus.pending.resolve(item(uuid, value, kind, favourite));
-    await new Promise(resolve => setImmediate(resolve));
+    await settle();
 }
 
 runSuite('Item', async () => {
@@ -232,7 +228,7 @@ runSuite('Item', async () => {
 
         row.setIndex(3);
         overtaken.resolve(item('older', 'stale'));
-        await new Promise(resolve => setImmediate(resolve));
+        await settle();
         assert.notEqual(row.label.clutter_text.text, 'stale');
         assert.equal(row.uuid, null);
 
@@ -242,7 +238,7 @@ runSuite('Item', async () => {
 
         row.setUuid('newer');
         stale.resolve(item('older', 'stale'));
-        await new Promise(resolve => setImmediate(resolve));
+        await settle();
         assert.notEqual(row.label.clutter_text.text, 'stale');
 
         row.destroy();
@@ -300,7 +296,7 @@ runSuite('Item', async () => {
         const row = new context.Item(bus, 50, 1, 1);
 
         bus.pending.reject(new Error('INVALID_INDEX'));
-        await new Promise(resolve => setImmediate(resolve));
+        await settle();
         assert.deepEqual(errors, []);
         assert.deepEqual(debugged, ['INVALID_INDEX']);
         assert.ok(row);
@@ -319,10 +315,7 @@ runSuite('Item', async () => {
             },
             logFailure: finish => ({finish}),
         });
-        const starSource = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'favouriteButton.js'), 'utf8')
-            .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-
-        vm.runInContext(`${starSource}\nthis.Star = GPasteFavouriteButton;`, starContext);
+        loadShipped(starContext, {Star: 'GPasteFavouriteButton'}, 'favouriteButton.js');
 
         const star = new starContext.Star({set_favourite: (uuid, favourite, cancellable, callback) => sent.push([uuid, favourite, callback.finish])}, 'pinned');
 

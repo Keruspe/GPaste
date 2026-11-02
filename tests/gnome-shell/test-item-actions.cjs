@@ -5,9 +5,8 @@
 // that the keyboard reaching one of its buttons scrolls the row into view. Not
 // Shell rendering.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
-const {Signals} = require('./suite.cjs');
+const {Signals, loadShipped} = require('./suite.cjs');
 
 const revealed = [];
 
@@ -35,9 +34,7 @@ const context = vm.createContext({
     },
     ensureActorVisibleInScrollView: (scrollView, actor) => revealed.push({scrollView, actor}),
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-vm.runInContext(`${source}\nthis.ItemActions = GPasteItemActionsItem;`, context);
+loadShipped(context, {ItemActions: 'GPasteItemActionsItem'});
 
 const scrollView = {};
 const actions = new context.ItemActions(scrollView);

@@ -6,8 +6,8 @@
 // the shell, which hands it an activation token, and through GPaste only when
 // the shell does not know the tool. Not Shell rendering.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {loadShipped} = require('./suite.cjs');
 
 const launched = [];
 let known = true;
@@ -31,9 +31,7 @@ const context = vm.createContext({
         },
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export function ', 'function ');
-vm.runInContext(`${source}\nthis.addGPasteFooter = addGPasteFooter;`, context);
+loadShipped(context, {addGPasteFooter: 'addGPasteFooter'});
 
 const menu = {addMenuItem() {}};
 const {open} = context.addGPasteFooter(menu, {openPreferences() {}});

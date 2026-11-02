@@ -108,12 +108,15 @@ suite whose body awaits (`runSuite()`), it fails when that body stops on a
 promise that never settles, rather than exit 0 with its later assertions
 skipped.
 
-`suite.cjs`, beside the Node suites, holds what they share: `runSuite()`;
-`Signals`, the `connect()` and `emit()` an actor's double extends to have a
-signal emitted by hand; and `runShipped()`, which runs one function of a
-shipped file beside the one the suite was handed -- a helper of a module the
-suite does not load whole, as the rows' `widthWithoutRevealed()` from
-`dependencies.js`.
+`suite.cjs`, beside the Node suites, holds what they share rather than keep a
+copy each: `runSuite()`; `settle()`, which lets what a reply resolved by hand
+sets off run; `Signals`, the `connect()` and `emit()` an actor's double extends
+to have a signal emitted by hand; `loadShipped()`, which runs a shipped module
+in a suite's context, its imports left to the doubles there and its exports
+declared plainly; and `runShipped()`, which runs one function of a shipped
+file -- a helper of a module the suite does not load whole, as the rows'
+`widthWithoutRevealed()` from `dependencies.js`. Both find the file through
+`shipped()`: the one the suite was handed, or one beside it.
 
 `indicator` runs the shipped indicator the same way: its teardown, run once and
 chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --
