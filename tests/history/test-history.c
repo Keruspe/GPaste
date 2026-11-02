@@ -1032,7 +1032,8 @@ test_copy_refusals (void)
     g_assert_cmpstr (default_after, ==, default_before);
 
     /* A load waiting for another daemon's storage lock. */
-    g_autofree gchar *lock = g_build_filename (g_paste_util_get_history_dir_path (), "lock", NULL);
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
 
     g_paste_storage_backend_unlock ();
 
