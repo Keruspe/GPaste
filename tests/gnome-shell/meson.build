@@ -27,6 +27,9 @@ if node.found()
   test('state-switch', node,
     args: [files('test-state-switch.cjs'), meson.project_source_root() / 'src/gnome-shell/stateSwitch.js'],
   )
+  test('search-item', node,
+    args: [files('test-search-item.cjs'), meson.project_source_root() / 'src/gnome-shell/searchItem.js'],
+  )
   test('dependencies', node,
     args: [files('test-dependencies.cjs'), meson.project_source_root() / 'src/gnome-shell/dependencies.js'],
   )

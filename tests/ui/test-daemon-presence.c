@@ -522,6 +522,22 @@ wait_for_presence (GPasteClient        *client,
     g_paste_test_bus_wait_for_enum (client, "daemon-presence", presence);
 }
 
+/* The Pinned filter's star is drawn as the rows' are: empty while the filter
+ * is off, full while it shows only the pinned items. */
+static void
+test_pinned_filter_star (void)
+{
+    g_autoptr (GtkWidget) header = g_object_ref_sink (g_paste_ui_header_new ());
+    GtkToggleButton *button = g_paste_ui_header_get_favourites_button (ADW_HEADER_BAR (header));
+    GtkImage *star = GTK_IMAGE (gtk_button_get_child (GTK_BUTTON (button)));
+
+    g_assert_cmpstr (gtk_image_get_icon_name (star), ==, "non-starred-symbolic");
+    gtk_toggle_button_set_active (button, TRUE);
+    g_assert_cmpstr (gtk_image_get_icon_name (star), ==, "starred-symbolic");
+    gtk_toggle_button_set_active (button, FALSE);
+    g_assert_cmpstr (gtk_image_get_icon_name (star), ==, "non-starred-symbolic");
+}
+
 static AdwStatusPage *
 find_status_page (GtkWidget *widget)
 {
@@ -4140,6 +4156,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/daemon-presence/follow", test_follow);
     g_test_add_func ("/ui/daemon-presence/retried-client", test_retried_client);
     g_test_add_func ("/ui/daemon-presence/search-closed-away", test_search_closed_away);
+    g_test_add_func ("/ui/header/pinned-filter-star", test_pinned_filter_star);
     g_test_add_func ("/ui/daemon-presence/nothing-asked", test_nothing_asked);
     g_test_add_func ("/ui/daemon-presence/entry-focus-released", test_entry_focus_released);
     g_test_add_func ("/ui/daemon-presence/merge-entry-focus-released", test_merge_entry_focus_released);

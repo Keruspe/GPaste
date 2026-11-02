@@ -225,6 +225,9 @@ daemon refuses puts it back where the daemon still is, without asking again on
 the way, an accepted one leaves it where the click put it, the daemon moving it
 asks nothing back, and a refusal reaching a switch the menu has destroyed is
 only logged.
+`search-item` runs the shipped search item over St doubles: its Pinned filter's
+star is drawn empty while the filter is off and full while it is on, as the
+rows' stars are, and a reset leaves it empty.
 `test-history`'s `/history/set_active_refused` refuses the `track-changes` write
 the way a locked key does, by interposing `g_settings_set_boolean()`: the
 daemon's side of that call has to fail, the tracking left as it was, unless it
@@ -471,7 +474,9 @@ restart the menu withholds too, while a Shell owning its name apart leaves the
 standalone daemon its offer. Both paths assert that the watch's first answer
 has not arrived just after setup: no toast is offered yet, and the in-shell
 daemon's Restart action is disabled then. Some twenty seconds of it all, the
-suite runs under a 120-second Meson timeout.
+suite runs under a 120-second Meson timeout. The header's Pinned filter star is
+drawn as the rows' are, empty while the filter is off and full while it is on
+(`/ui/header/pinned-filter-star`).
 
 `test-ui-preferences` compiles the preferences' group and shortcut row in
 and drives them on the private Xvfb: a range row emptied, or holding no
