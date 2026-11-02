@@ -34,7 +34,9 @@
  * files and transactions, not key strength, and the MODERATE parameters every
  * store is written with cost a third of a second and 256 MiB a derivation. The
  * parameters stored are still those, and every derivation here goes through
- * this one, a read's as much as a write's, so the two still agree. */
+ * this one, a read's as much as a write's, so the two still agree. GPaste
+ * derives with Argon2id alone, and never with parameters its own check
+ * refuses, as tests/gpaste-test-pwhash.c says. */
 /* How many keys were derived, which is what a passphrase check costs. */
 static gint derivations;
 /* Every derivation failing while set, as one Argon2id's memory is refused
@@ -50,8 +52,8 @@ crypto_pwhash (unsigned char * const       out,
                const char * const          passwd,
                unsigned long long          passwdlen,
                const unsigned char * const salt,
-               unsigned long long          opslimit G_GNUC_UNUSED,
-               size_t                      memlimit G_GNUC_UNUSED,
+               unsigned long long          opslimit,
+               size_t                      memlimit,
                int                         alg)
 {
     typedef int (*Derive) (unsigned char *, unsigned long long, const char *, unsigned long long,
@@ -59,6 +61,8 @@ crypto_pwhash (unsigned char * const       out,
     Derive original = (Derive) dlsym (RTLD_NEXT, "crypto_pwhash");
 
     g_assert_nonnull (original);
+    g_assert_cmpint (alg, ==, crypto_pwhash_ALG_ARGON2ID13);
+    g_assert_true (g_paste_crypto_parameters_derivable (opslimit, memlimit));
     g_atomic_int_inc (&derivations);
     if (refuse_derivations)
         return -1;
@@ -4785,6 +4789,54 @@ test_passphrase_verify_underived (void)
 
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
+
+/* A file history whose header asks for more work than any key is derived for
+ * is refused before a key is derived for it, as an encrypted database asking
+ * for that is (test-history's absurd_kdf cases): a derivation attempted with
+ * those parameters would run for ever. Asking for what GPaste wrote, it reads
+ * back. */
+static void
+test_passphrase_unreasonable_underived (void)
+{
+    if (!g_test_subprocess ())
+    {
+        G_PASTE_TEST_TRAP_SUBPROCESS ("*Unreasonable key-derivation parameters*");
+        return;
+    }
+
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, "passphrase");
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+
+    g_assert_true (g_paste_storage_backend_write_history (backend, "unreasonable", items));
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("unreasonable", "xmls");
+    g_autoptr (GBytes) written = read_bytes (path);
+    gsize length = g_bytes_get_size (written);
+    g_autofree gchar *demanding = g_memdup2 (g_bytes_get_data (written, NULL), length);
+
+    /* The operations limit, past the magic and the salt. */
+    memset (demanding + 8 + crypto_pwhash_SALTBYTES, 0xff, 8);
+    g_assert_true (g_file_set_contents (path, demanding, (gssize) length, NULL));
+
+    gint before = g_atomic_int_get (&derivations);
+    g_autolist (GPasteItem) refused = NULL;
+    gsize size;
+
+    g_assert_false (g_paste_storage_backend_read_history (backend, "unreasonable", NULL, &refused, &size));
+    g_assert_null (refused);
+    g_assert_cmpint (g_atomic_int_get (&derivations), ==, before);
+
+    write_bytes (path, written);
+
+    g_autolist (GPasteItem) kept = NULL;
+
+    g_assert_true (g_paste_storage_backend_read_history (backend, "unreasonable", NULL, &kept, &size));
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (kept->data), ==, "precious");
+}
 #endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
@@ -8561,6 +8613,7 @@ main (int    argc,
     g_test_add_func ("/storage/passphrase-survives-damage", test_passphrase_survives_damage);
     g_test_add_func ("/storage/passphrase/verify-cost", test_passphrase_verify_cost);
     g_test_add_func ("/storage/passphrase/verify-underived", test_passphrase_verify_underived);
+    g_test_add_func ("/storage/passphrase/unreasonable-underived", test_passphrase_unreasonable_underived);
     g_test_add_func ("/storage/passphrase/set-again", test_passphrase_set_again);
     g_test_add_func ("/storage/passphrase/keyed-backend-reads-none", test_keyed_backend_reads_no_process_passphrase);
     g_test_add_func ("/storage/passphrase-survives-unreadable", test_passphrase_survives_unreadable);
