@@ -243,16 +243,14 @@ g_paste_daemon_methods_starts_as_text (const gchar *head,
     return length == G_PASTE_DAEMON_METHODS_HEAD_SIZE && !memchr (end, '\0', rest) && g_utf8_get_char_validated (end, (gssize) rest) == (gunichar) -2;
 }
 
-/* How many bytes of a file AddFile holds at most: "max-memory-usage", short of
- * what a gsize can count with the NUL after them and the one byte more that
- * tells a file at the cap from one past it -- on a 32-bit build, 4096 MiB or
- * more would wrap. */
+/* How many bytes of a file AddFile holds at most: the history's memory cap
+ * (g_paste_util_max_memory ()), short of what a gsize can count with the NUL
+ * after them and the one byte more that tells a file at the cap from one past
+ * it. */
 static gsize
 g_paste_daemon_methods_file_cap (const GPasteDaemonMethods *self)
 {
-    guint64 cap = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
-
-    return (gsize) MIN (cap, (guint64) G_MAXSIZE - 2);
+    return (gsize) MIN (g_paste_util_max_memory (self->settings), (guint64) G_MAXSIZE - 2);
 }
 
 /* Read whole and on the main loop, so only what is sure to end, at a size the
@@ -949,7 +947,7 @@ g_paste_daemon_methods_get_items (const GPasteDaemonMethods *self,
 {
     GPasteHistory *history = self->history;
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
-    guint64 cap = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+    guint64 cap = g_paste_util_max_memory (self->settings);
     g_autoptr (GHashTable) seen = g_hash_table_new (g_str_hash, g_str_equal);
     guint64 repeated = 0;
 

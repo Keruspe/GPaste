@@ -310,14 +310,14 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
         data->callback (self, bytes, data->user_data);
 }
 
-/* @mib in bytes, made in 64 bits and clamped there, before it narrows to a
- * gsize: on a 32-bit build, 4096 MiB or a multiple of it would wrap to 0, and
- * every transfer be cut at its first byte and dropped. The schema allows up to
- * 16383 MiB; no test builds 32-bit to show it. */
+/* The history's memory cap (g_paste_util_max_memory ()) clamped before it
+ * narrows to a gsize: on a 32-bit build, 4096 MiB or a multiple of it would
+ * wrap to 0, and every transfer be cut at its first byte and dropped. No test
+ * builds 32-bit to show it. */
 static gsize
-g_paste_clipboard_meta_transfer_limit (guint64 mib)
+g_paste_clipboard_meta_transfer_limit (guint64 bytes)
 {
-    return (gsize) MIN (mib * 1024 * 1024, (guint64) G_MAXSSIZE - 1);
+    return (gsize) MIN (bytes, (guint64) G_MAXSSIZE - 1);
 }
 
 static void
@@ -342,7 +342,7 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
      * left out, no item recording it: the price of the bound, which the GDK
      * backend, reading out of the compositor, need not pay -- no real secret
      * runs to megabytes. */
-    data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_settings_get_max_memory_usage (self->settings));
+    data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_util_max_memory (self->settings));
     data->callback = callback;
     data->user_data = user_data;
 

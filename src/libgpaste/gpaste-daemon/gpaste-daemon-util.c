@@ -434,3 +434,9 @@ g_paste_util_list_directory (GFile       *dir,
 
     return g_strv_builder_end (names);
 }
+
+guint64
+g_paste_util_max_memory (GPasteSettings *settings)
+{
+    return g_paste_settings_get_max_memory_usage (settings) * 1024 * 1024;
+}

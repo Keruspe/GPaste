@@ -635,20 +635,13 @@ g_paste_history_private_get_indexed_by_uuid (GPasteHistory *self,
     return item;
 }
 
-/* max-memory-usage in bytes, the setting counting MiB. */
-static guint64
-g_paste_history_max_memory (GPasteHistory *self)
-{
-    return g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
-}
-
 /* @spared is left out of every election, as in
  * g_paste_history_private_elect_new_biggest_sparing (). */
 static void
 g_paste_history_private_check_memory_usage_sparing (GPasteHistory *self,
                                                     GPasteItem    *spared)
 {
-    guint64 max_memory = g_paste_history_max_memory (self);
+    guint64 max_memory = g_paste_util_max_memory (self->settings);
 
     /* A head that alone weighs more than the cap -- an image selected after the
      * cap was lowered under its decoded size -- no eviction brings under it:
@@ -806,7 +799,7 @@ static gboolean
 g_paste_history_refuses (GPasteHistory *self,
                          GPasteItem    *item)
 {
-    return g_paste_item_get_size (item) > g_paste_history_max_memory (self);
+    return g_paste_item_get_size (item) > g_paste_util_max_memory (self->settings);
 }
 
 static void
@@ -1247,7 +1240,7 @@ _g_paste_history_replace (GPasteHistory *self,
      * follow: elected anew when it was tracking the replaced item, else told of
      * the replacement as an add tells it of an item leaving the head -- not two
      * walks of the history for every edit. */
-    if (self->size > g_paste_history_max_memory (self))
+    if (self->size > g_paste_util_max_memory (self->settings))
     {
         g_paste_history_private_elect_new_biggest_sparing (self, new);
         g_paste_history_private_check_memory_usage_sparing (self, new);
