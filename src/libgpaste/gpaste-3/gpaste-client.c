@@ -6,6 +6,7 @@
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
 #include <errno.h>
@@ -1558,13 +1559,25 @@ G_PASTE_CLIENT_METHOD (report_extension_state,
  * finishing it the ordinary way reports a failure for every restart that
  * worked. Matched with its domain: G_DBUS_ERROR_NO_REPLY is 4, and so is
  * G_IO_ERROR_NOT_DIRECTORY, which a bare code comparison would take for a
- * successful re-exec. */
+ * successful re-exec.
+ *
+ * No daemon to re-execute, the call starting none, is said in GPaste's words
+ * here too, for every caller to show: the bus's words name the owner the call
+ * went to ("Name ":1.42" does not exist"), which tells a user nothing. The
+ * domain and code stay, for g_paste_client_is_daemon_gone_error (). */
 static void
 g_paste_client_reexecute_propagate (GError  *err,
                                     GError **error)
 {
     if (err && !g_error_matches (err, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY))
     {
+        if (g_paste_client_is_daemon_gone_error (err))
+        {
+            g_autoptr (GError) gone = err;
+
+            err = g_error_new_literal (gone->domain, gone->code, g_paste_util_no_daemon_message ());
+        }
+
         g_propagate_error (error, err);
         g_paste_client_strip_remote_error (error);
     }
@@ -1580,7 +1593,10 @@ g_paste_client_reexecute_propagate (GError  *err,
  * Reexecute the #GPasteDaemon
  *
  * A standalone daemon that re-executes goes away without answering, so a call
- * left unanswered that way is a success and leaves @error unset.
+ * left unanswered that way is a success and leaves @error unset. The call
+ * starts no daemon: with none running it fails with
+ * %G_DBUS_ERROR_NAME_HAS_NO_OWNER, its message saying so in GPaste's words
+ * rather than the bus's.
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_sync (GPasteClient *self,
@@ -1591,8 +1607,15 @@ g_paste_client_reexecute_sync (GPasteClient *self,
 
     GError *err = NULL;
 
+    /* The one method sent so as to start no daemon: a re-exec is for one
+     * running, and one the bus started for it would find open the migration
+     * gate its caller opened just before
+     * (g_paste_util_open_storage_migration ()), running the migration while
+     * the caller reports the re-exec failed. Sent to a name nobody owns -- its
+     * owner gone, whether or not the client has heard of it yet -- it fails
+     * with NameHasNoOwner instead. */
     g_paste_daemon3_call_reexecute_sync (G_PASTE_DAEMON3 (self),
-                                         G_DBUS_CALL_FLAGS_NONE,
+                                         G_DBUS_CALL_FLAGS_NO_AUTO_START,
                                          G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                          NULL, /* cancellable */
                                          &err);
@@ -1607,7 +1630,8 @@ g_paste_client_reexecute_sync (GPasteClient *self,
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
  *
- * Reexecute the #GPasteDaemon
+ * Reexecute the #GPasteDaemon, starting none: see
+ * g_paste_client_reexecute_sync().
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute (GPasteClient       *self,
@@ -1617,8 +1641,9 @@ g_paste_client_reexecute (GPasteClient       *self,
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
+    /* As in g_paste_client_reexecute_sync (). */
     g_paste_daemon3_call_reexecute (G_PASTE_DAEMON3 (self),
-                                    G_DBUS_CALL_FLAGS_NONE,
+                                    G_DBUS_CALL_FLAGS_NO_AUTO_START,
                                     G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                     cancellable,
                                     callback,
@@ -1634,7 +1659,8 @@ g_paste_client_reexecute (GPasteClient       *self,
  * Reexecute the #GPasteDaemon
  *
  * As in g_paste_client_reexecute_sync(), a call the daemon left unanswered by
- * going away is a success and leaves @error unset.
+ * going away is a success and leaves @error unset, and one finding no daemon
+ * fails with %G_DBUS_ERROR_NAME_HAS_NO_OWNER.
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_finish (GPasteClient *self,

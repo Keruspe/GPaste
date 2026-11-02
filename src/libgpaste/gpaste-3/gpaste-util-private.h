@@ -39,4 +39,10 @@ gchar *g_paste_util_display_line (const gchar   *value,
 void g_paste_util_spawn_with_token (const gchar *app,
                                     const gchar *activation_token);
 
+/* What a caller is told when no GPaste daemon is there to answer it: a wait
+ * for one giving up (g_paste_util_wait_for_daemon ()), and a re-exec finding
+ * nobody owning the name (g_paste_client_reexecute_sync ()). Exported for the
+ * tests compiling gpaste-client.c in. */
+const gchar *g_paste_util_no_daemon_message (void);
+
 G_END_DECLS

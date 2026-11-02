@@ -7,6 +7,7 @@
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 
@@ -1341,6 +1342,62 @@ test_reexecute_answers (void)
     }
 }
 
+/* Whether nobody owns the name, asked of the bus on @connection synchronously:
+ * on a context of the call's own, so the default one, where a proxy hears of
+ * its owner leaving, is not run for it. */
+static gboolean
+name_unowned (GDBusConnection *connection)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) owner = g_dbus_connection_call_sync (connection, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                              "org.freedesktop.DBus", "GetNameOwner",
+                                                              g_variant_new ("(s)", G_PASTE_BUS_NAME), G_VARIANT_TYPE ("(s)"),
+                                                              G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
+
+    return g_error_matches (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+}
+
+/* A Reexecute starts no daemon: one sent to a name nobody owns fails with
+ * NameHasNoOwner, where a call the bus may start a daemon for fails with
+ * ServiceUnknown on this bus, which has none to start -- and so does one sent
+ * once the owner has gone but before the client hears of it, the presence
+ * still reading ready, which is what a caller opening the migration gate
+ * would have read last. Either says so in GPaste's words, as the wait for a
+ * daemon does, and is still a daemon gone. */
+static void
+test_reexecute_starts_nothing (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GAsyncResult) result = NULL;
+
+    g_assert_no_error (error);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    g_paste_client_reexecute (client, NULL, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
+    g_paste_client_reexecute_finish (client, result, &error);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, g_paste_util_no_daemon_message ());
+    g_assert_true (g_paste_client_is_daemon_gone_error (error));
+    g_clear_error (&error);
+
+    StandIn stand_in = { 0 };
+    g_autoptr (GPasteClient) served = ready_client (&stand_in);
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (served));
+    gint64 deadline = g_get_monotonic_time () + G_PASTE_TEST_BUS_WAIT_SECONDS * G_USEC_PER_SEC;
+
+    stand_in_stop (&stand_in);
+    while (!name_unowned (connection) && g_get_monotonic_time () < deadline)
+        g_usleep (10000);
+    g_assert_true (name_unowned (connection));
+    g_assert_cmpint (g_paste_client_get_daemon_presence (served), ==, G_PASTE_DAEMON_PRESENCE_READY);
+
+    g_paste_client_reexecute_sync (served, &error);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_true (g_paste_client_is_daemon_gone_error (error));
+}
+
 static void
 record_presence (GPasteClient *client,
                  GParamSpec   *pspec G_GNUC_UNUSED,
@@ -1711,6 +1768,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/calls/add-file-not-utf8", test_add_file_not_utf8);
     g_test_add_func ("/client/calls/add-file-null", test_add_file_null);
     g_test_add_func ("/client/calls/reexecute-answers", test_reexecute_answers);
+    g_test_add_func ("/client/calls/reexecute-starts-nothing", test_reexecute_starts_nothing);
     g_test_add_func ("/client/calls/doctor-answers", test_doctor_answers);
     g_test_add_func ("/client/calls/store-calls-wait", test_store_calls_wait);
     return g_paste_test_env_run ();

@@ -650,7 +650,14 @@ g_paste_migrate (Context *ctx,
      * Not opened at all for a daemon still starting, which no re-exec reaches,
      * nor for an owner that could not be told apart from one: one that reads
      * the gate open before this closes it again would run the migration,
-     * prompt included, while this reports it never asked. */
+     * prompt included, while this reports it never asked.
+     *
+     * Nor for a name nobody owns -- an owner the dispatch did not wait for (a
+     * GPaste 45 or 50, or one its question could not reach) gone since: a
+     * daemon something else is starting meanwhile would read the gate open.
+     * Refused at once when the presence shows it; when it does not yet, the
+     * re-exec fails, starting no daemon (g_paste_client_reexecute_sync ()),
+     * and the gate closes again. */
     guint64 revision;
 
     switch (daemon_starting_owner (ctx->client, error))
@@ -663,6 +670,15 @@ g_paste_migrate (Context *ctx,
         return EXIT_FAILURE;
     default:
         break;
+    }
+
+    /* Read once the question is answered, which a GPaste 45 or 50 may leave
+     * as it answers. Refused as the wait for a daemon refuses one gone
+     * (g_paste_util_wait_for_daemon ()). */
+    if (g_paste_client_get_daemon_presence (ctx->client) == G_PASTE_DAEMON_PRESENCE_ABSENT)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history."));
+        return EXIT_FAILURE;
     }
 
     if (!g_paste_util_open_storage_migration (&revision, error))

@@ -50,6 +50,11 @@ count_write (void       *cookie G_GNUC_UNUSED,
     return (ssize_t) size;
 }
 
+/* Whether nobody owns the name by the time the re-exec goes out, which fails
+ * it as the bus does a call starting no daemon, worded as libgpaste hands it
+ * out (/client/calls/reexecute-starts-nothing). */
+static gboolean owner_gone;
+
 /* The re-exec the CLI asks for, refused with whatever @reexec_error says: the
  * method is what the migration gate has to outlive, and reaching a daemon to
  * have it refuse for real would take one. */
@@ -58,6 +63,12 @@ fake_reexecute_daemon (GPasteClient *client G_GNUC_UNUSED,
                        GError      **error)
 {
     ++reexecs;
+    if (owner_gone)
+    {
+        g_set_error_literal (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER, "No GPaste daemon is serving a history.");
+        return FALSE;
+    }
+
     if (!reexec_error)
         return TRUE;
 
@@ -1775,8 +1786,14 @@ test_unknown_owner_unwaited (void)
 }
 
 /* An owner leaving as the dispatch asks about it fails the question, and no
- * wait follows: another daemon come to serve meanwhile is a daemon serving,
- * which migrate re-executes as any. */
+ * wait follows: migrate, finding nobody owning the name, refuses before it
+ * opens the gate, as the wait refuses a daemon gone -- and so it does when a
+ * GPaste 45 or 50 leaves as it answers migrate's own question. One leaving
+ * once nothing is asked any more leaves the presence reading as it did,
+ * ready: the re-exec then finds nobody owning the name, starting no daemon
+ * for it, and migrate closes the gate it opened again, passing on the
+ * re-exec's words, as daemon-reexec does. Another daemon come to serve
+ * meanwhile is a daemon serving, which migrate re-executes as any. */
 static void
 test_unknown_owner_left (void)
 {
@@ -1786,6 +1803,53 @@ test_unknown_owner_left (void)
 
     g_paste_settings_set_storage_backend_revision (settings, 37);
     follows = 0;
+    reexecs = 0;
+    signals_sent = 0;
+    owner_gone = TRUE;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    introspection_fails = TRUE;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+    introspection_fails = FALSE;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    introspected_legacy = TRUE;
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    introspected_legacy = FALSE;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_STARTING;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 1);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+
+    g_assert_cmpint (g_paste_dispatch (1, "daemon-reexec", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (reexecs, ==, 2);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+    owner_gone = FALSE;
+
     reexecs = 0;
     fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
     presence_after_question = G_PASTE_DAEMON_PRESENCE_READY;

@@ -932,7 +932,9 @@ g_paste_util_read_pid_file (const gchar *component)
  * A caller that must not block uses g_paste_client_reexecute().
  *
  * Errors are those of #GPasteClient's calls: %G_PASTE_ERROR for a daemon
- * refusing the re-exec, %G_DBUS_ERROR or %G_IO_ERROR for the transport.
+ * refusing the re-exec, %G_DBUS_ERROR or %G_IO_ERROR for the transport --
+ * %G_DBUS_ERROR_NAME_HAS_NO_OWNER with no daemon running, as the call starts
+ * none, said in GPaste's words (g_paste_client_reexecute_sync()).
  *
  * Returns: %TRUE if the daemon honoured the re-exec
  */
@@ -1107,6 +1109,13 @@ daemon_wait_answer (GTask  *task,
     g_object_unref (task);
 }
 
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE const gchar *
+g_paste_util_no_daemon_message (void)
+{
+    return _("No GPaste daemon is serving a history.");
+}
+
 static void
 on_daemon_wait_presence (GPasteClient *client,
                          GParamSpec   *pspec G_GNUC_UNUSED,
@@ -1118,7 +1127,7 @@ on_daemon_wait_presence (GPasteClient *client,
         daemon_wait_answer (user_data, NULL);
         break;
     case G_PASTE_DAEMON_PRESENCE_ABSENT:
-        daemon_wait_answer (user_data, g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history.")));
+        daemon_wait_answer (user_data, g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, g_paste_util_no_daemon_message ()));
         break;
     default:
         break;
