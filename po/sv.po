@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GPaste\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 08:30+0100\n"
+"POT-Creation-Date: 2026-11-02 16:40+0100\n"
 "PO-Revision-Date: 2021-08-17 10:34+0000\n"
 "Last-Translator: Luna Jernberg <droidbittin@gmail.com>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/gpaste/gpaste/sv/"
@@ -53,7 +53,7 @@ msgid "Clipboard;Copy;Paste;History;Manager;"
 msgstr ""
 
 #: data/desktop/org.gnome.GPaste.Ui.desktop.in.in:17
-#: src/gnome-shell/actions.js:51 src/ui/gpaste-ui-header.c:114
+#: src/gnome-shell/actions.js:51 src/ui/gpaste-ui-header.c:125
 #, fuzzy
 msgid "Preferences"
 msgstr "GPaste Inställningar"
@@ -417,64 +417,64 @@ msgstr "Visningsalternativ:"
 msgid "Merge options:"
 msgstr "Sammanfogningsalternativ:"
 
-#: src/client/gpaste-client.c:72 src/client/gpaste-client.c:1243
+#: src/client/gpaste-client.c:73 src/client/gpaste-client.c:1244
 msgid "display this help"
 msgstr "Visa denna hjälp"
 
-#: src/client/gpaste-client.c:73 src/client/gpaste-client.c:1241
+#: src/client/gpaste-client.c:74 src/client/gpaste-client.c:1242
 msgid "display the version"
 msgstr "Visa version"
 
 #. Translators: help for --favourites
-#: src/client/gpaste-client.c:75
+#: src/client/gpaste-client.c:76
 msgid "only display the pinned items"
 msgstr ""
 
 #. Translators: help for --timeout <seconds>
-#: src/client/gpaste-client.c:77
+#: src/client/gpaste-client.c:78
 msgid "seconds"
 msgstr ""
 
-#: src/client/gpaste-client.c:77
+#: src/client/gpaste-client.c:78
 msgid ""
 "how long a password stays on the clipboard, in seconds; 0 for as long as "
 "anything else"
 msgstr ""
 
 #. Translators: help for --use-index
-#: src/client/gpaste-client.c:79
+#: src/client/gpaste-client.c:80
 msgid "use the index of the item instead of its UUID"
 msgstr ""
 
 #. Translators: help for --oneline
-#: src/client/gpaste-client.c:81
+#: src/client/gpaste-client.c:82
 msgid "display each item on only one line"
 msgstr "Visa varje post på endast en rad"
 
 #. Translators: help for --raw
-#: src/client/gpaste-client.c:83
+#: src/client/gpaste-client.c:84
 #, fuzzy
 msgid "display each item alone, without its uuid or index"
 msgstr "Visa varje post rent (utan radnummer)"
 
 #. Translators: help for --reverse
-#: src/client/gpaste-client.c:85
+#: src/client/gpaste-client.c:86
 #, fuzzy
 msgid "display the items in reverse order"
 msgstr "Visa tjänstversion"
 
 #. Translators: help for --zero
-#: src/client/gpaste-client.c:87
+#: src/client/gpaste-client.c:88
 msgid "use a NUL character instead of a new line between each item"
 msgstr "Använd NULL-tecken istället för ny rad mellan varje post"
 
 #. Translators: help for --decoration <string>
 #. Translators: help for --separator <string>
-#: src/client/gpaste-client.c:89 src/client/gpaste-client.c:91
+#: src/client/gpaste-client.c:90 src/client/gpaste-client.c:92
 msgid "string"
 msgstr "Sträng"
 
-#: src/client/gpaste-client.c:89
+#: src/client/gpaste-client.c:90
 msgid ""
 "add the given decoration to the beginning and the end of each item before "
 "merging"
@@ -482,180 +482,180 @@ msgstr ""
 "Lägg till angiven dekoration i början och slutet på varje post, före "
 "sammanfogning"
 
-#: src/client/gpaste-client.c:91
+#: src/client/gpaste-client.c:92
 msgid "add the given separator between each item when merging"
 msgstr "Lägg till angiven separator mellan varje post vid sammanfogning"
 
-#: src/client/gpaste-client.c:199
+#: src/client/gpaste-client.c:200
 #, c-format
 msgid "Invalid timeout: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:246
+#: src/client/gpaste-client.c:247
 #, fuzzy, c-format
 msgid "Could not read the input: %s"
 msgstr "Kunde inte skapa historikmapp"
 
-#: src/client/gpaste-client.c:292
+#: src/client/gpaste-client.c:293
 msgid "Cannot use input carrying a NUL byte."
 msgstr ""
 
 #. Translators: %s is the program GPaste tried to start, then the reason it could not.
-#: src/client/gpaste-client.c:395
+#: src/client/gpaste-client.c:396
 #, fuzzy, c-format
 msgid "Couldn’t spawn %s: %s"
 msgstr "Kunde inte starta"
 
-#: src/client/gpaste-client.c:555
+#: src/client/gpaste-client.c:556
 msgid ""
 "The daemon is still starting, settling its storage: try again once it serves"
 msgstr ""
 
-#: src/client/gpaste-client.c:628
+#: src/client/gpaste-client.c:629
 msgid ""
 "GNOME Shell runs the daemon, which keeps the code it started with until you "
 "log out and back in"
 msgstr ""
 
-#: src/client/gpaste-client.c:630
+#: src/client/gpaste-client.c:631
 msgid "Successfully re-executed the daemon"
 msgstr "Tjänsten startades om korrekt"
 
-#: src/client/gpaste-client.c:668
+#: src/client/gpaste-client.c:669
 msgid ""
 "Could not tell whether the daemon is still starting, so no migration was "
 "asked for"
 msgstr ""
 
-#: src/client/gpaste-client.c:679 src/libgpaste/gpaste-3/gpaste-util.c:1116
+#: src/client/gpaste-client.c:680 src/libgpaste/gpaste-3/gpaste-util.c:1116
 #, fuzzy
 msgid "No GPaste daemon is serving a history."
 msgstr "GPaste Inställningar"
 
-#: src/client/gpaste-client.c:692
+#: src/client/gpaste-client.c:693
 #, fuzzy
 msgid "Successfully triggered the storage migration"
 msgstr "Tjänsten startades om korrekt"
 
-#: src/client/gpaste-client.c:709
+#: src/client/gpaste-client.c:710
 #, fuzzy
 msgid "Successfully triggered the passphrase change"
 msgstr "Tjänsten startades om korrekt"
 
-#: src/client/gpaste-client.c:731
+#: src/client/gpaste-client.c:732
 msgid ""
 "The running daemon cannot check the store: restart it with “gpaste-client "
 "daemon-reexec” first, or, if GNOME Shell runs it, log out and back in"
 msgstr ""
 
-#: src/client/gpaste-client.c:743
+#: src/client/gpaste-client.c:744
 msgid "Nothing to put right"
 msgstr ""
 
-#: src/client/gpaste-client.c:758
+#: src/client/gpaste-client.c:759
 #, fuzzy
 msgid "Couldn’t get the version of the daemon."
 msgstr "Starta om tjänsten"
 
-#: src/client/gpaste-client.c:781
+#: src/client/gpaste-client.c:782
 #, fuzzy
 msgid "Couldn’t get the name of the current history."
 msgstr "Hämta namnet på aktuell historik"
 
-#: src/client/gpaste-client.c:1208
+#: src/client/gpaste-client.c:1209
 #, fuzzy
 msgid "print the history with UUIDs"
 msgstr "Skriv ut historiken med index"
 
-#: src/client/gpaste-client.c:1209
+#: src/client/gpaste-client.c:1210
 #, fuzzy
 msgid "print the size of the current history"
 msgstr "Skriv ut historikstorleken"
 
-#: src/client/gpaste-client.c:1210
+#: src/client/gpaste-client.c:1211
 msgid "<pattern>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1210
+#: src/client/gpaste-client.c:1211
 #, fuzzy
 msgid "print the items of the history matching <pattern>"
 msgstr "Skriv ut historikstorleken"
 
-#: src/client/gpaste-client.c:1211
+#: src/client/gpaste-client.c:1212
 msgid "get the name of the current history"
 msgstr "Hämta namnet på aktuell historik"
 
-#: src/client/gpaste-client.c:1212
+#: src/client/gpaste-client.c:1213
 msgid "[<history>] <backup>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1212
+#: src/client/gpaste-client.c:1213
 msgid "back up <history>, the current one if not given, as <backup>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1213 src/client/gpaste-client.c:1227
+#: src/client/gpaste-client.c:1214 src/client/gpaste-client.c:1228
 msgid "<name>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1213
+#: src/client/gpaste-client.c:1214
 msgid "switch to another history"
 msgstr "Växla till en annan historik"
 
-#: src/client/gpaste-client.c:1214 src/client/gpaste-client.c:1229
+#: src/client/gpaste-client.c:1215 src/client/gpaste-client.c:1230
 msgid "[<name>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1214
+#: src/client/gpaste-client.c:1215
 msgid "delete the history <name>, the current one if not given"
 msgstr ""
 
-#: src/client/gpaste-client.c:1215
+#: src/client/gpaste-client.c:1216
 msgid "list available histories"
 msgstr "Lista tillgängliga historiker"
 
-#: src/client/gpaste-client.c:1216
+#: src/client/gpaste-client.c:1217
 msgid "[<text>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1216
+#: src/client/gpaste-client.c:1217
 #, fuzzy
 msgid "set text to clipboard, <text> read from stdin if absent"
 msgstr "Lägg till namn och lösenordspar till urklipp"
 
-#: src/client/gpaste-client.c:1217
+#: src/client/gpaste-client.c:1218
 #, fuzzy
 msgid "<name> [<password>]"
 msgstr "Lösenord"
 
-#: src/client/gpaste-client.c:1217
+#: src/client/gpaste-client.c:1218
 #, fuzzy
 msgid ""
 "add the <name> / <password> pair to the clipboard, <password> read from "
 "stdin if absent"
 msgstr "Lägg till namn och lösenordspar till urklipp"
 
-#: src/client/gpaste-client.c:1218 src/client/gpaste-client.c:1219
-#: src/client/gpaste-client.c:1221 src/client/gpaste-client.c:1224
-#: src/client/gpaste-client.c:1225 src/client/gpaste-client.c:1226
-#: src/client/gpaste-client.c:1239 src/client/gpaste-client.c:1240
+#: src/client/gpaste-client.c:1219 src/client/gpaste-client.c:1220
+#: src/client/gpaste-client.c:1222 src/client/gpaste-client.c:1225
+#: src/client/gpaste-client.c:1226 src/client/gpaste-client.c:1227
+#: src/client/gpaste-client.c:1240 src/client/gpaste-client.c:1241
 msgid "<uuid>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1218
+#: src/client/gpaste-client.c:1219
 #, fuzzy
 msgid "get the item <uuid> from the history"
 msgstr "Hämta den <number>:e posten från historiken"
 
-#: src/client/gpaste-client.c:1219
+#: src/client/gpaste-client.c:1220
 #, fuzzy
 msgid "set the item <uuid> from the history to the clipboard"
 msgstr "Skicka den <number>:e historikposten till urklipp"
 
-#: src/client/gpaste-client.c:1220
+#: src/client/gpaste-client.c:1221
 msgid "<uuid> [<contents>]"
 msgstr ""
 
-#: src/client/gpaste-client.c:1220
+#: src/client/gpaste-client.c:1221
 #, fuzzy
 msgid ""
 "replace the contents of the item <uuid> with <contents>, read from stdin if "
@@ -663,17 +663,17 @@ msgid ""
 msgstr ""
 "Ersätt innehållet i <number>:e historikposten med nytt angivet innehåll"
 
-#: src/client/gpaste-client.c:1221
+#: src/client/gpaste-client.c:1222
 msgid ""
 "drop the rich text flavours of the item <uuid>, keeping the plain text it "
 "shows"
 msgstr ""
 
-#: src/client/gpaste-client.c:1222
+#: src/client/gpaste-client.c:1223
 msgid "<uuid> … <uuid>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1222
+#: src/client/gpaste-client.c:1223
 #, fuzzy
 msgid ""
 "merge the items matching the UUIDs from the history and put the result in "
@@ -682,11 +682,11 @@ msgstr ""
 "Sammanfoga de <number>:e posterna från historiken och skicka resultatet till "
 "urklipp"
 
-#: src/client/gpaste-client.c:1223
+#: src/client/gpaste-client.c:1224
 msgid "<uuid> <name>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1223
+#: src/client/gpaste-client.c:1224
 #, fuzzy
 msgid ""
 "make the item <uuid> from the history a password named <name>, or update one "
@@ -694,122 +694,122 @@ msgid ""
 msgstr ""
 "Märk den <number>:e historikposten som varande lösenord med namnet <name>"
 
-#: src/client/gpaste-client.c:1224
+#: src/client/gpaste-client.c:1225
 #, fuzzy
 msgid "delete item <uuid> from the history"
 msgstr "Ta bort lösenordet <name> från historiken"
 
-#: src/client/gpaste-client.c:1225
+#: src/client/gpaste-client.c:1226
 msgid "pin item <uuid> so the history never drops it automatically"
 msgstr ""
 
-#: src/client/gpaste-client.c:1226
+#: src/client/gpaste-client.c:1227
 msgid "unpin item <uuid>, letting the history drop it again"
 msgstr ""
 
-#: src/client/gpaste-client.c:1227
+#: src/client/gpaste-client.c:1228
 msgid "delete the password <name> from the history"
 msgstr "Ta bort lösenordet <name> från historiken"
 
-#: src/client/gpaste-client.c:1228
+#: src/client/gpaste-client.c:1229
 msgid "<path>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1228
+#: src/client/gpaste-client.c:1229
 msgid "put the content of the file at <path> into the clipboard"
 msgstr "Skicka innehållet i filen <path>, till urklipp"
 
-#: src/client/gpaste-client.c:1229
+#: src/client/gpaste-client.c:1230
 msgid "empty the history <name>, the current one if not given"
 msgstr ""
 
-#: src/client/gpaste-client.c:1230
+#: src/client/gpaste-client.c:1231
 msgid "start tracking clipboard changes"
 msgstr "Börja övervaka urklippsändringar"
 
-#: src/client/gpaste-client.c:1231
+#: src/client/gpaste-client.c:1232
 msgid "stop tracking clipboard changes"
 msgstr "Sluta övervaka urklippsändringar"
 
-#: src/client/gpaste-client.c:1232
+#: src/client/gpaste-client.c:1233
 #, fuzzy
 msgid "re-execute the daemon (after upgrading it, for instance)"
 msgstr "Starta om tjänsten (efter uppgradering...)"
 
-#: src/client/gpaste-client.c:1233
+#: src/client/gpaste-client.c:1234
 msgid "migrate the history to a different storage backend"
 msgstr ""
 
-#: src/client/gpaste-client.c:1234
+#: src/client/gpaste-client.c:1235
 #, fuzzy
 msgid "change the passphrase of the encrypted history"
 msgstr "Hämta namnet på aktuell historik"
 
-#: src/client/gpaste-client.c:1235
+#: src/client/gpaste-client.c:1236
 msgid "check the history folder and every history, putting right what can be"
 msgstr ""
 
-#: src/client/gpaste-client.c:1236
+#: src/client/gpaste-client.c:1237
 msgid "launch the configuration tool"
 msgstr "Starta inställningsverktyget"
 
-#: src/client/gpaste-client.c:1237
+#: src/client/gpaste-client.c:1238
 msgid "launch the graphical tool"
 msgstr "Starta det grafiska verktyget"
 
-#: src/client/gpaste-client.c:1238
+#: src/client/gpaste-client.c:1239
 #, fuzzy
 msgid "make the GNOME Shell extension display the history"
 msgstr "Låt panelprogrammet eller tillägget visa historiken"
 
-#: src/client/gpaste-client.c:1239
+#: src/client/gpaste-client.c:1240
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service"
 msgstr "Ladda upp aktiv post till en pastebin-tjänst"
 
-#: src/client/gpaste-client.c:1240
+#: src/client/gpaste-client.c:1241
 #, fuzzy
 msgid "upload the item <uuid> to a pastebin service, and copy its address"
 msgstr "Ladda upp aktiv post till en pastebin-tjänst"
 
-#: src/client/gpaste-client.c:1242
+#: src/client/gpaste-client.c:1243
 msgid "display the daemon version"
 msgstr "Visa tjänstversion"
 
-#: src/client/gpaste-client.c:1244
+#: src/client/gpaste-client.c:1245
 msgid "display the about dialog"
 msgstr "Visa \"Om\""
 
-#: src/client/gpaste-client.c:1339
+#: src/client/gpaste-client.c:1340
 msgid "Usage:"
 msgstr "Användning:"
 
 #. Not a verb: the item comes in on stdin.
 #. Translators: the metavariable standing for any command the user pipes into GPaste.
-#: src/client/gpaste-client.c:1360
+#: src/client/gpaste-client.c:1361
 msgid "<command>"
 msgstr ""
 
-#: src/client/gpaste-client.c:1360
+#: src/client/gpaste-client.c:1361
 #, fuzzy
 msgid "copy the output of <command> to the clipboard"
 msgstr "Skicka utdata från vad som helst till urklipp"
 
-#: src/client/gpaste-client.c:1469
+#: src/client/gpaste-client.c:1470
 msgid "Cannot use arguments or input that are not valid UTF-8."
 msgstr ""
 
-#: src/client/gpaste-client.c:1495
+#: src/client/gpaste-client.c:1496
 #, c-format
 msgid "Invalid item index: %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:1552
+#: src/client/gpaste-client.c:1553
 #, c-format
 msgid "No item at index %s"
 msgstr ""
 
-#: src/client/gpaste-client.c:1713 src/client/gpaste-client.c:1715
+#: src/client/gpaste-client.c:1714 src/client/gpaste-client.c:1716
 #, fuzzy
 msgid "Could not write the output"
 msgstr "Kunde inte skapa historikmapp"
@@ -829,7 +829,7 @@ msgstr "Stoppsignal mottagen, avslutar"
 msgid "The passphrase is being changed: check again once that is done"
 msgstr ""
 
-#: src/daemon/gpaste-daemon.c:663
+#: src/daemon/gpaste-daemon.c:664
 msgid "Could not export our objects on the session bus, exiting"
 msgstr ""
 
@@ -837,13 +837,13 @@ msgstr ""
 #. * --replace`): flush the history and release the lock so the successor
 #. * loads our final state, then exit successfully so the systemd unit
 #. * does not land in the failed state.
-#: src/daemon/gpaste-daemon.c:683
+#: src/daemon/gpaste-daemon.c:684
 msgid "Replaced by another GPaste daemon, exiting"
 msgstr ""
 
 #. Never acquired: another owner holds the name and refused replacement (an
 #. * older daemon predating ALLOW_REPLACEMENT). This is a startup failure.
-#: src/daemon/gpaste-daemon.c:712
+#: src/daemon/gpaste-daemon.c:713
 msgid ""
 "Could not acquire the D-Bus name. Is another GPaste daemon already running?"
 msgstr ""
@@ -855,7 +855,7 @@ msgstr "GPaste"
 
 #. An icon names the button for the eye and for nothing else.
 #: src/gnome-shell/deleteButton.js:26 src/gnome-shell/historySwitcher.js:249
-#: src/gnome-shell/historySwitcher.js:819
+#: src/gnome-shell/historySwitcher.js:820
 #: src/libgpaste/gpaste-daemon/gpaste-storage-migration.c:3012
 #: src/ui/gpaste-ui-item.c:1040 src/ui/gpaste-ui-item.c:1110
 #: src/ui/gpaste-ui-panel-history.c:220 src/ui/gpaste-ui-panel.c:789
@@ -911,13 +911,13 @@ msgstr ""
 #: src/gnome-shell/historySwitcher.js:72
 #: src/libgpaste/gpaste-daemon/gpaste-prompt.c:1234
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:95
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:448
-#: src/ui/gpaste-ui-header.c:308 src/ui/gpaste-ui-panel.c:721
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:449
+#: src/ui/gpaste-ui-header.c:319 src/ui/gpaste-ui-panel.c:721
 msgid "Cancel"
 msgstr "Avbryt"
 
 #: src/gnome-shell/historySwitcher.js:247
-#: src/gnome-shell/historySwitcher.js:799
+#: src/gnome-shell/historySwitcher.js:800
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:341
 #: src/ui/gpaste-ui-panel.c:1000
 #, fuzzy
@@ -937,24 +937,24 @@ msgid "Switch to or create a history…"
 msgstr "Växla till en annan historik"
 
 #. Translators: %s is the name of the history being emptied.
-#: src/gnome-shell/historySwitcher.js:797
+#: src/gnome-shell/historySwitcher.js:798
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:337
 #, c-format, javascript-format
 msgid "Empty “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:798
+#: src/gnome-shell/historySwitcher.js:799
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:340
 msgid "Every item it holds is deleted for good."
 msgstr ""
 
 #. Translators: %s is the name of the history being deleted.
-#: src/gnome-shell/historySwitcher.js:817 src/ui/gpaste-ui-panel.c:785
+#: src/gnome-shell/historySwitcher.js:818 src/ui/gpaste-ui-panel.c:785
 #, c-format, javascript-format
 msgid "Delete “%s”?"
 msgstr ""
 
-#: src/gnome-shell/historySwitcher.js:818 src/ui/gpaste-ui-panel.c:788
+#: src/gnome-shell/historySwitcher.js:819 src/ui/gpaste-ui-panel.c:788
 msgid "The history and everything in it are deleted for good."
 msgstr ""
 
@@ -979,14 +979,14 @@ msgstr "Ladda upp"
 msgid "Type to search…"
 msgstr ""
 
-#: src/gnome-shell/searchItem.js:54 src/ui/gpaste-ui-header.c:303
+#: src/gnome-shell/searchItem.js:57 src/ui/gpaste-ui-header.c:314
 msgid "Show Only Pinned Items"
 msgstr ""
 
 #. Stateful and boolean, so it comes out as a check item.
 #: src/gnome-shell/stateSwitch.js:12
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-behaviour-page.c:58
-#: src/ui/gpaste-ui-header.c:107
+#: src/ui/gpaste-ui-header.c:118
 #, fuzzy
 msgid "Track Clipboard Changes"
 msgstr "Övervaka urklippsändringar"
@@ -1633,7 +1633,7 @@ msgid "Preview Size"
 msgstr ""
 
 #: src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-shortcuts-page.c:24
-#: src/ui/gpaste-ui-header.c:115
+#: src/ui/gpaste-ui-header.c:126
 msgid "Keyboard Shortcuts"
 msgstr "Tangentbordsgenvägar"
 
@@ -1666,11 +1666,11 @@ msgstr ""
 msgid "Could not empty the history"
 msgstr "Töm historiken"
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:975
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:976
 msgid "This item has a line too long to edit"
 msgstr ""
 
-#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:1130
+#: src/libgpaste/gpaste-gtk4/gpaste-gtk-util.c:1131
 #, fuzzy
 msgid "Password strength rating is not available in this build"
 msgstr "Lista tillgängliga historiker"
@@ -1694,16 +1694,16 @@ msgstr "Redigera"
 msgid "Save"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:77
+#: src/ui/gpaste-ui-header.c:88
 msgid "New Item…"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:78
+#: src/ui/gpaste-ui-header.c:89
 #, fuzzy
 msgid "New Password…"
 msgstr "Lösenord"
 
-#: src/ui/gpaste-ui-header.c:84
+#: src/ui/gpaste-ui-header.c:95
 msgid "New Item Kind"
 msgstr ""
 
@@ -1712,35 +1712,35 @@ msgstr ""
 #. * from that relation before the button's own label, which would never be
 #. * read. Unnamed, the split button would take one from its content -- the
 #. * dropdown's tooltip -- for both.
-#: src/ui/gpaste-ui-header.c:91 src/ui/gpaste-ui-header.c:92
+#: src/ui/gpaste-ui-header.c:102 src/ui/gpaste-ui-header.c:103
 msgid "New Item"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:110
+#: src/ui/gpaste-ui-header.c:121
 #, fuzzy
 msgid "Restart Daemon"
 msgstr "Starta om tjänsten"
 
-#: src/ui/gpaste-ui-header.c:116
+#: src/ui/gpaste-ui-header.c:127
 msgid "About GPaste"
 msgstr "Om GPaste"
 
-#: src/ui/gpaste-ui-header.c:123
+#: src/ui/gpaste-ui-header.c:134
 msgid "Main Menu"
 msgstr ""
 
-#: src/ui/gpaste-ui-header.c:280
+#: src/ui/gpaste-ui-header.c:291
 #, c-format
 msgid "%u selected"
 msgid_plural "%u selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/gpaste-ui-header.c:302
+#: src/ui/gpaste-ui-header.c:313
 msgid "Search"
 msgstr "Sök"
 
-#: src/ui/gpaste-ui-header.c:304
+#: src/ui/gpaste-ui-header.c:315
 msgid "Select Items to Merge"
 msgstr ""
 
@@ -2101,12 +2101,12 @@ msgstr ""
 msgid "Merge"
 msgstr ""
 
-#: src/ui/gpaste-ui-window.c:1844
+#: src/ui/gpaste-ui-window.c:1845
 #, fuzzy
 msgid "Histories"
 msgstr "Historikinställningar"
 
-#: src/ui/gpaste-ui-window.c:1845
+#: src/ui/gpaste-ui-window.c:1846
 #, fuzzy
 msgid "History"
 msgstr "Historikinställningar"
