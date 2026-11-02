@@ -216,8 +216,8 @@ runSuite('Item', async () => {
 
     // Rebound to a position, as the history list rebinds its rows, it acts on
     // nothing until the item there is what it shows; a reply a newer binding
-    // overtook paints nothing; and destroyed, the read it has out is
-    // cancelled.
+    // overtook paints nothing, whether that binding is to a position or to a
+    // uuid; and destroyed, the read it has out is cancelled.
     {
         const bus = client();
         const row = new context.Item(bus, 50, 1, -1, 'first');
@@ -227,6 +227,14 @@ runSuite('Item', async () => {
         row.activate();
         row._delete();
         assert.deepEqual(bus.sent, []);
+
+        const overtaken = bus.pending;
+
+        row.setIndex(3);
+        overtaken.resolve(item('older', 'stale'));
+        await new Promise(resolve => setImmediate(resolve));
+        assert.notEqual(row.label.clutter_text.text, 'stale');
+        assert.equal(row.uuid, null);
 
         row.setUuid('older');
 
