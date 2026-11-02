@@ -206,8 +206,10 @@ the daemon.
 doubles: the strength meter and its hint wear classes the shell's theme styles;
 locking hides a dialog up and unlocking shows it again; a question or a report
 asked while locked waits for the unlock; a shutdown dismisses a question still
-waiting, logs a report, and stops watching the session; the migration dialog
-names "Keep as is" only where it offers it; a passphrase asked for other
+waiting, logs a report, and stops watching the session; a dialog destroyed
+without being closed answers its request, once; the migration dialog names
+"Keep as is" only where it offers it, and with nothing picked its Apply is
+greyed out and answers nothing; a passphrase asked for other
 histories says what it is wanted for and offers no switch to remember it; what
 the switch answers is asked of `g_paste_prompt_remember_answer()`; a
 confirmation shows what its caller worded, Cancel its default, and answers yes

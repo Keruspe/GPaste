@@ -402,9 +402,11 @@ class GPasteMigrationDialog extends RequestDialog {
     }
 
     _onApply() {
-        // Nothing to apply, and Enter reaches this even with the button greyed
-        // out: it is the dialog's default action, which is a key binding rather
-        // than the button's own reactivity.
+        // Nothing to apply. The dialog's Enter binding skips a default button
+        // that is not reactive, but a greyed-out Apply is still the key focus
+        // the dialog opens with, and whether St clicks a focused button that is
+        // not reactive on a key press is St's business: with nothing picked,
+        // the answer is refused here, whatever asked for it (test-prompt.cjs).
         if (this._chosen === null)
             return;
 

@@ -270,11 +270,12 @@ const migrationPrompt = new context.Prompt();
 sessionMode.update(false);
 
 for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], [9, false, 'MIGRATION_DESCRIPTION_UNKEPT']]) {
+    const replied = [];
     const migration = {
         get_current: () => current,
         get_offered: () => [0, 1],
         can_keep: () => keep,
-        reply_migration() {},
+        reply_migration: (...answer) => replied.push(answer),
         dismiss() {},
     };
     const shownBefore = dialogs.length;
@@ -286,7 +287,30 @@ for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], 
 
     assert.equal(migrationContent.description, description);
     assert.equal(dialogs.at(-1).buttons.some(button => button.label === 'MIGRATION_KEEP'), keep);
+
+    // With nothing picked, Apply is greyed out, and answers nothing however
+    // it is reached (_onApply ()).
+    if (!keep) {
+        const apply = dialogs.at(-1).buttons.find(button => button.label === 'MIGRATION_ACCEPT');
+
+        assert.equal(apply.reactive, false);
+        apply.action();
+        assert.deepEqual(replied, []);
+    }
+
     dialogs.at(-1).close();
+}
+
+// Destroyed without being closed, a dialog still answers its request, once.
+{
+    const destroying = new context.Prompt();
+    const destroyed = request();
+
+    destroying.vfunc_passphrase(destroyed);
+    dialogs.at(-1).destroy();
+    assert.deepEqual(destroyed.answers, [null]);
+    destroying.shutdown();
+    assert.deepEqual(destroyed.answers, [null]);
 }
 
 migrationPrompt.shutdown();
