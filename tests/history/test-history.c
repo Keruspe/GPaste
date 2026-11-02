@@ -5798,7 +5798,8 @@ test_reload_twice_drops_password (void)
 /* A delete with no store to unlink -- the history in use never saved -- has
  * deleted the history all the same; one whose store went but whose images
  * could not all be swept is reported, the history gone and not gone back to,
- * which would make its store again. */
+ * which would make its store again -- and so is one whose store had gone
+ * already, the images it left being what went wrong. */
 static void
 test_delete_store_or_sweep (void)
 {
@@ -5854,6 +5855,27 @@ test_delete_store_or_sweep (void)
     g_assert_nonnull (error);
     g_assert_cmpuint (announced, ==, 1);
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+
+    g_autofree gchar *gone = g_paste_util_get_history_file_path ("delete-gone-unswept", "xml");
+    g_autofree gchar *gone_images = g_paste_file_backend_images_dir ("delete-gone-unswept");
+    g_autofree gchar *gone_kept = g_build_filename (gone_images, "kept.png", NULL);
+    g_autoptr (GError) gone_error = NULL;
+
+    g_assert_true (g_paste_history_switch (history, "delete-gone-unswept"));
+    g_assert_true (pump_until_loaded (history));
+    /* The store removed from under the daemon. */
+    g_assert_cmpint (g_unlink (gone), ==, 0);
+    g_assert_cmpint (g_mkdir_with_parents (gone_images, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (gone_kept, "png", -1, NULL));
+    g_assert_cmpint (g_chmod (gone_images, 0500), ==, 0);
+    announced = 0;
+    g_paste_daemon_methods_delete_history (&methods, "delete-gone-unswept", &gone_error);
+    g_assert_cmpint (g_chmod (gone_images, 0700), ==, 0);
+    g_assert_nonnull (gone_error);
+    g_assert_cmpuint (announced, ==, 1);
+    g_assert_true (g_file_test (gone_kept, G_FILE_TEST_EXISTS));
     g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
     g_assert_true (pump_until_loaded (history));
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);

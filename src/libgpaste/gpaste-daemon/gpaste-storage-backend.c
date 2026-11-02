@@ -700,7 +700,11 @@ _g_paste_storage_delete_history_images (const gchar *name,
 
     /* Never over the store's own failure: the first thing that went wrong is
      * what says why, and a caller that asked for no error still has to hear
-     * about images left on disk. */
+     * about images left on disk. A store that was not there is no failure:
+     * a caller takes it for a history deleted all the same
+     * (g_paste_history_delete_full ()), which with its images left it is not. */
+    if (error && g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (error);
     if (error && !*error)
         g_propagate_error (error, g_steal_pointer (&images_error));
     else
