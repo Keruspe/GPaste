@@ -124,26 +124,6 @@ typedef struct
     guint                n_backends;
 } MigrationDialog;
 
-/* Answering from "destroy" is what makes every way of losing the window an
- * answer: gtk_window_destroy() does not emit close-request, and neither does the
- * GtkApplication shutdown that tears the last window down when the daemon loses
- * its D-Bus name — so a dialog up at that moment would never answer, and the
- * caller's `done` would never run. Replying already claimed the request, so this
- * is a no-op on that path.
- *
- * "destroy" and not the teardown below: a destroy notify runs from finalize, so
- * anything still holding a reference on the window at that point (an animation,
- * an a11y peer, a queued frame callback) would defer the answer for as long as
- * it holds it — with the whole daemon startup waiting on it. */
-static void
-migration_dialog_dismiss (GtkWindow *window G_GNUC_UNUSED,
-                          gpointer   user_data)
-{
-    MigrationDialog *self = user_data;
-
-    g_paste_prompt_request_dismiss (self->request);
-}
-
 /* The widgets that carry @self are gone by now, so nothing can reach it again. */
 static void
 migration_dialog_free (gpointer data)
@@ -359,7 +339,19 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     g_signal_connect (import_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (cleanup_row, "notify::active", G_CALLBACK (on_state_changed), self);
-    g_signal_connect (self->window, "destroy", G_CALLBACK (migration_dialog_dismiss), self);
+    /* Answering from "destroy" is what makes every way of losing the window
+     * an answer: gtk_window_destroy() does not emit close-request, and neither
+     * does the GtkApplication shutdown that tears the last window down when
+     * the daemon loses its D-Bus name — so a dialog up at that moment would
+     * never answer, and the caller's `done` would never run. Replying already
+     * claimed the request, so this is a no-op on that path.
+     *
+     * "destroy" and not the teardown below: a destroy notify runs from
+     * finalize, so anything still holding a reference on the window at that
+     * point (an animation, an a11y peer, a queued frame callback) would defer
+     * the answer for as long as it holds it — with the whole daemon startup
+     * waiting on it. The request that teardown releases is there until then. */
+    g_signal_connect_swapped (self->window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), self->request);
     g_object_set_data_full (G_OBJECT (self->window), "gpaste-migration-dialog", self, migration_dialog_free);
 
     update_state (self);
@@ -390,17 +382,6 @@ typedef struct
      * strength meter and its rating/hint. */
     GtkWidget           *strength_row;
 } PassphraseDialog;
-
-/* See migration_dialog_dismiss(): answering from "destroy" is what makes every
- * way of losing the window an answer, without waiting on finalize. */
-static void
-passphrase_dialog_dismiss (GtkWindow *window G_GNUC_UNUSED,
-                           gpointer   user_data)
-{
-    PassphraseDialog *self = user_data;
-
-    g_paste_prompt_request_dismiss (self->request);
-}
 
 static void
 passphrase_dialog_free (gpointer data)
@@ -564,7 +545,10 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
     self->window = prompt_window_new (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE), 420, header, page);
 
-    g_signal_connect (self->window, "destroy", G_CALLBACK (passphrase_dialog_dismiss), self);
+    /* As in g_paste_prompt_adw_migration (): answering from "destroy" is what
+     * makes every way of losing the window an answer, without waiting on
+     * finalize. */
+    g_signal_connect_swapped (self->window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), self->request);
     g_object_set_data_full (G_OBJECT (self->window), "gpaste-passphrase-dialog", self, passphrase_dialog_free);
 
     gtk_window_present (self->window);
@@ -634,8 +618,8 @@ g_paste_prompt_adw_confirm (GPastePrompt        *prompt,
     GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
 
     g_object_set_data_full (G_OBJECT (window), "gpaste-confirm-request", g_object_ref (request), g_object_unref);
-    /* See migration_dialog_dismiss (): every way of losing the window but the
-     * accepting button declines, the request held above until then. */
+    /* As in g_paste_prompt_adw_migration (): every way of losing the window
+     * but the accepting button declines, the request held above until then. */
     g_signal_connect_swapped (window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), request);
     g_signal_connect_swapped (cancel, "clicked", G_CALLBACK (gtk_window_destroy), window);
     g_signal_connect (accept, "clicked", G_CALLBACK (on_confirm_accepted), window);
