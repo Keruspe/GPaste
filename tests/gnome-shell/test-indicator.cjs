@@ -739,8 +739,7 @@ runSuite('Indicator', async () => {
     uploaded._client.upload_and_copy_finish = () => 'https://paste.rs/x';
     uploaded._upload('a');
     assert.deepEqual(copied, []);
-    assert.equal(notified.length, 1);
-    assert.equal(notified[0].body, undefined);
+    assert.deepEqual(notified, [{title: 'The item was uploaded, and its address copied', body: undefined}]);
 
     // Nothing reaches the screen from an indicator torn down meanwhile, but a
     // failure still reaches the log.
