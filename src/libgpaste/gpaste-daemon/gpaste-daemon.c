@@ -686,10 +686,18 @@ g_paste_daemon_upload_done (GTask *task)
         return;
     }
 
+    /* termbin ends its url with a NUL as well as a newline, as a C string
+     * would: trailing NULs end the answer. One before anything else is still
+     * refused below, with the rest. */
+    gsize answered = data->answered;
+
+    while (answered && !data->answer[answered - 1])
+        --answered;
+
     /* Reported without quoting it, for the reason the exit above is: a command
      * that hands its own input back answers something that is not a url, and
      * that something is the item. */
-    if (!g_utf8_validate (data->answer, (gssize) data->answered, NULL))
+    if (!g_utf8_validate (data->answer, (gssize) answered, NULL))
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "The upload command answered something that is not a url.");
@@ -698,7 +706,7 @@ g_paste_daemon_upload_done (GTask *task)
 
     /* The command answers the url on stdout, with the newline it ended the line
      * with; anything else means it did not upload. */
-    g_autofree gchar *url = g_strstrip (g_strndup (data->answer, data->answered));
+    g_autofree gchar *url = g_strstrip (g_strndup (data->answer, answered));
 
     if (!*url)
     {
