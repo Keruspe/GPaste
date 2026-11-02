@@ -273,8 +273,9 @@ g_paste_client_item_result (GVariant *variant,
  * caller would show that as is -- a notification, the command line. Where the
  * error maps to a domain, GPaste's own or GDBus' or one GLib encodes, the
  * domain and code already say what the prefix does, so it goes; an unmapped
- * one keeps it, the name being all there is to tell it by. */
-static void
+ * one keeps it, the name being all there is to tell it by. Exported for the
+ * tests compiling gpaste-util.c in, as g_paste_client_is_following () is. */
+G_PASTE_VISIBLE void
 g_paste_client_strip_remote_error (GError **error)
 {
     if (error && *error && !g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR))

@@ -542,9 +542,6 @@ daemon_starting_owner (GPasteClient *client,
 
     if (asked.error)
     {
-        /* As GPasteClient's calls do (g_paste_client_strip_remote_error ()). */
-        if (!g_error_matches (asked.error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR))
-            g_dbus_error_strip_remote_error (asked.error);
         g_propagate_error (error, asked.error);
         return STARTING_UNKNOWN;
     }

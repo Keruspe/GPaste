@@ -102,11 +102,10 @@ static GPasteDaemonPresence presence_after_question = G_PASTE_DAEMON_PRESENCE_ST
 
 /* Whether the daemon's path serves a GPaste 45 or 50's interface, which
  * libgpaste is asked when its presence reads as starting, or whether the
- * question fails, as on a bus error, which GDBus words as a remote one: one
- * GLib maps to a domain unless @introspection_error names another. */
-static gboolean     introspected_legacy;
-static gboolean     introspection_fails;
-static const gchar *introspection_error = "org.freedesktop.DBus.Error.NoReply";
+ * question fails, as on a bus error -- worded as libgpaste hands it out,
+ * GDBus' prefix off (/client/presence/legacy-errors). */
+static gboolean introspected_legacy;
+static gboolean introspection_fails;
 
 static void
 fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
@@ -118,7 +117,7 @@ fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
 
     fake_presence = presence_after_question;
     if (introspection_fails)
-        g_task_return_error (task, g_dbus_error_new_for_dbus_error (introspection_error, "unanswered"));
+        g_task_return_new_error_literal (task, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY, "unanswered");
     else
         g_task_return_boolean (task, introspected_legacy);
 }
@@ -828,22 +827,10 @@ test_migrate_starting (void)
     reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
     g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
     g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY);
-    g_assert_nonnull (strstr (error->message, "no migration was asked for"));
-    g_assert_null (strstr (error->message, "GDBus.Error:"));
+    g_assert_nonnull (strstr (error->message, "no migration was asked for: unanswered"));
     g_assert_cmpuint (reexecs, ==, 0);
     g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
     g_clear_error (&error);
-
-    /* One whose error maps to no domain keeps its name, all there is to tell
-     * it by. */
-    introspection_error = "org.example.Foo";
-    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
-    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR);
-    g_assert_nonnull (strstr (error->message, "no migration was asked for: GDBus.Error:org.example.Foo: unanswered"));
-    g_assert_cmpuint (reexecs, ==, 0);
-    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
-    g_clear_error (&error);
-    introspection_error = "org.freedesktop.DBus.Error.NoReply";
     g_clear_error (&reexec_error);
     legacy_owner = TRUE;
     introspection_fails = FALSE;

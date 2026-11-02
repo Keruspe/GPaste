@@ -983,7 +983,10 @@ on_legacy_introspected (GObject      *source_object,
     g_autoptr (GVariant) answer = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
 
     if (!answer)
+    {
+        g_paste_client_strip_remote_error (&error);
         g_task_return_error (task, error);
+    }
     else
         g_task_return_boolean (task, g_paste_util_introspected_legacy (answer));
 }
@@ -1030,7 +1033,10 @@ g_paste_util_daemon_is_legacy (GPasteClient       *client,
  *
  * Finish g_paste_util_daemon_is_legacy (). Fails with %G_DBUS_ERROR or
  * %G_IO_ERROR when the daemon's path could not be asked -- no daemon there,
- * above all.
+ * above all. As with #GPasteClient's calls, an error that maps to a domain
+ * comes without GDBus' "GDBus.Error:" prefix, its domain and code saying what
+ * that did; one mapping to none keeps it, the name being all there is to tell
+ * it by.
  *
  * Returns: whether the daemon owning the name is a GPaste 45 or 50
  */

@@ -847,6 +847,55 @@ test_legacy (void)
     g_dbus_connection_close_sync (server, NULL, NULL);
 }
 
+/* The daemon path's Introspect answered with an error GLib maps to no domain,
+ * as an owner of the name that is no GPaste daemon could. */
+static GDBusMessage *
+refuse_introspect (GDBusConnection *connection,
+                   GDBusMessage    *message,
+                   gboolean         incoming,
+                   gpointer         user_data G_GNUC_UNUSED)
+{
+    if (!incoming || g_dbus_message_get_message_type (message) != G_DBUS_MESSAGE_TYPE_METHOD_CALL ||
+        g_strcmp0 (g_dbus_message_get_member (message), "Introspect"))
+        return message;
+
+    g_autoptr (GDBusMessage) owned = message;
+    g_autoptr (GDBusMessage) reply = g_dbus_message_new_method_error_literal (owned, "org.example.Foo", "not telling");
+
+    g_dbus_connection_send_message (connection, reply, G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL);
+
+    return NULL;
+}
+
+/* The question failing hands its error out as the client's calls do
+ * (g_paste_client_strip_remote_error ()), domain and code kept. */
+static void
+test_legacy_errors (void)
+{
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    guint owner;
+
+    g_assert_no_error (error);
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_ABSENT);
+    g_assert_false (legacy_asked (client, &error));
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_false (g_str_has_prefix (error->message, "GDBus.Error:"));
+    g_clear_error (&error);
+
+    g_autoptr (GDBusConnection) server = stand_in_connect (G_BUS_NAME_OWNER_FLAGS_NONE, &owner);
+    guint filter = g_dbus_connection_add_filter (server, refuse_introspect, NULL, NULL);
+
+    wait_for_presence (client, G_PASTE_DAEMON_PRESENCE_STARTING);
+    g_assert_false (legacy_asked (client, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR);
+    g_assert_cmpstr (error->message, ==, "GDBus.Error:org.example.Foo: not telling");
+
+    g_dbus_connection_remove_filter (server, filter);
+    g_bus_unown_name (owner);
+    g_dbus_connection_close_sync (server, NULL, NULL);
+}
+
 /* A client @stand_in serves. A call reaching the stand-in is made
  * asynchronously, its answer waited for (g_paste_test_env_wait_result_within ()):
  * the stand-in answers from this very main loop, so a synchronous call would
@@ -1649,6 +1698,7 @@ main (int argc, char **argv)
     g_test_add_func ("/client/presence/daemon-gone-error", test_daemon_gone_error);
     g_test_add_func ("/client/invalid-utf8-refused", test_invalid_utf8_refused);
     g_test_add_func ("/client/presence/legacy", test_legacy);
+    g_test_add_func ("/client/presence/legacy-errors", test_legacy_errors);
     g_test_add_func ("/client/presence/wait-for-daemon", test_wait_for_daemon);
     g_test_add_func ("/client/presence/wait-for-daemon-cleanup", test_wait_for_daemon_cleanup);
     g_test_add_func ("/client/presence/completion-serving-daemon", test_completion_serving_daemon);
