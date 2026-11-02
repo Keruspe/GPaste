@@ -2455,6 +2455,62 @@ test_file_legacy_images_sweep (void)
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, aliased_checksum);
 }
 
+/* A NUL a damaged GPaste 50 document holds ends no scan of it: the images it
+ * names past one are kept, as the read going on past it still names them. */
+static void
+test_file_legacy_images_past_nul (void)
+{
+    const gchar *name = "legacy-past-nul";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (70, 71, 72);
+    g_autoptr (GBytes) after_png = test_png_bytes_colored (73, 74, 75);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autoptr (GPasteItem) image = g_paste_image_item_new_from_bytes (png, date, NULL);
+    g_autoptr (GPasteItem) after_image = g_paste_image_item_new_from_bytes (after_png, date, NULL);
+    const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image));
+    const gchar *after_checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (after_image));
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *shared = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *file_name = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
+    g_autofree gchar *after_file_name = g_strconcat (after_checksum, ".png", NULL);
+    g_autofree gchar *after_legacy = g_build_filename (shared, after_file_name, NULL);
+    g_autofree gchar *head = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                              "<history version=\"2.0\">\n"
+                                              "  <item kind=\"Image\" uuid=\"5c7a3c3e-before\" date=\"1234567890\" checksum=\"%s\">\n"
+                                              "    <value><![CDATA[%s]]></value>\n"
+                                              "  </item>\n",
+                                              checksum, legacy);
+    g_autofree gchar *tail = g_strdup_printf ("  <item kind=\"Image\" uuid=\"5c7a3c3e-after\" date=\"1234567890\" checksum=\"%s\">\n"
+                                              "    <value><![CDATA[%s]]></value>\n"
+                                              "  </item>\n"
+                                              "</history>\n",
+                                              after_checksum, after_legacy);
+    g_autoptr (GString) history = g_string_new (head);
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+
+    /* Between the two items, where GMarkup reads it as blank. */
+    g_string_append_len (history, "\0\0\0\0", 4);
+    g_string_append (history, tail);
+    g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+    g_assert_true (g_file_set_contents (after_legacy, g_bytes_get_data (after_png, NULL), (gssize) g_bytes_get_size (after_png), NULL));
+    g_assert_true (g_file_set_contents (history_path, history->str, (gssize) history->len, NULL));
+
+    g_paste_file_backend_sweep_legacy_images ();
+    g_assert_true (g_file_test (legacy, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (after_legacy, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, after_checksum);
+}
+
 /* A GPaste 50 history holding one image, kept in
  * the images directory every history shared, referenced at @reference. */
 static gchar *
@@ -8473,6 +8529,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
     add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+    add_test ("/history/file_legacy_images_past_nul", test_file_legacy_images_past_nul);
     add_test ("/history/file_legacy_image_moved_home", test_file_legacy_image_moved_home);
     add_test ("/history/file_legacy_image_uncopied", test_file_legacy_image_uncopied);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);

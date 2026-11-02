@@ -698,29 +698,38 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
     }
 }
 
-/* The file names @text references under the shared images directory, into
- * @referenced: what follows each "/images/" up to the first character no
- * image's name holds. The path's tail alone: GPaste 50 spelt the data
- * directory as it was reached then, which a symlinked home or another
+/* The file names the @length bytes of @text reference under the shared images
+ * directory, into @referenced: what follows each "/images/" up to the first
+ * character no image's name holds. The path's tail alone: GPaste 50 spelt the
+ * data directory as it was reached then, which a symlinked home or another
  * XDG_DATA_HOME may no longer match. A match a per-history path or a text item
- * happens to contain only keeps a file. */
+ * happens to contain only keeps a file. Past a NUL too, each run up to one read
+ * as a string of its own, @text ending with one at @length as
+ * g_file_get_contents () leaves it: no GPaste writes one, but a damaged
+ * document may hold one, which GMarkup can read on past and which a repair by
+ * hand would leave the images after it named
+ * (/history/file_legacy_images_past_nul). */
 static void
 _g_paste_file_backend_collect_legacy_references (const gchar *text,
+                                                 gsize        length,
                                                  GHashTable  *referenced)
 {
     static const gchar marker[] = G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S;
 
-    for (const gchar *at = strstr (text, marker); at; at = strstr (at, marker))
+    for (const gchar *run = text; run < text + length; run += strlen (run) + 1)
     {
-        const gchar *name = at + strlen (marker);
-        const gchar *end = name;
+        for (const gchar *at = strstr (run, marker); at; at = strstr (at, marker))
+        {
+            const gchar *name = at + strlen (marker);
+            const gchar *end = name;
 
-        while (g_ascii_isalnum (*end) || *end == '.' || *end == '-' || *end == '_')
-            ++end;
+            while (g_ascii_isalnum (*end) || *end == '.' || *end == '-' || *end == '_')
+                ++end;
 
-        if (end > name)
-            g_hash_table_add (referenced, g_strndup (name, (gsize) (end - name)));
-        at = end;
+            if (end > name)
+                g_hash_table_add (referenced, g_strndup (name, (gsize) (end - name)));
+            at = end;
+        }
     }
 }
 
@@ -750,6 +759,7 @@ _g_paste_file_backend_collect_legacy_documents (const gchar *history_dir,
 
         g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
         g_autofree gchar *text = NULL;
+        gsize length = 0;
 
         if (g_paste_storage_is_special_file (path))
         {
@@ -757,12 +767,12 @@ _g_paste_file_backend_collect_legacy_documents (const gchar *history_dir,
             return FALSE;
         }
 
-        if (!g_file_get_contents (path, &text, NULL, &error))
+        if (!g_file_get_contents (path, &text, &length, &error))
         {
             g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
             return FALSE;
         }
-        _g_paste_file_backend_collect_legacy_references (text, referenced);
+        _g_paste_file_backend_collect_legacy_references (text, length, referenced);
     }
 
     return TRUE;
