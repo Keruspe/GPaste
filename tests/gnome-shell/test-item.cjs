@@ -49,7 +49,7 @@ class PopupMenuItem extends Signals {
 
 class Button extends Signals {
     setUuid(uuid) { this.uuid = uuid; }
-    setFavourite() {}
+    setFavourite(favourite) { this.favourite = favourite; }
     get_preferred_width() { return [16, 16]; }
 }
 
@@ -247,6 +247,23 @@ runSuite('Item', async () => {
 
         row.destroy();
         assert.equal(bus.cancellable.is_cancelled(), true);
+    }
+
+    // Rebound, a row stops showing the pin of the item it held, as it stops
+    // answering for it: the star a look keeps revealed meanwhile is an empty
+    // one.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+
+        await filled(row, bus, 'pinned', 'pinned', 0, true);
+        row.hover = true;
+        row.emit('notify::hover');
+        assert.equal(row._favouriteItem.favourite, true);
+        row.setIndex(2);
+        assert.equal(row._favouriteItem.visible, true);
+        assert.equal(row._favouriteItem.uuid, null);
+        assert.equal(row._favouriteItem.favourite, false);
     }
 
     // The menu key on the row's star or bin, which St emits popup-menu on,

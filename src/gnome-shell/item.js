@@ -321,11 +321,13 @@ export class GPasteItem extends PopupMenuItem {
 
     // The star is addressed by uuid, and with none it is inert. It is more than
     // inert: it is a badge on a pinned row, so a row that has stopped answering
-    // for its old item must stop showing that item's pin state too, or it
-    // claims one that belongs to something else. The bin goes through
+    // for its old item must stop showing that item's pin state too -- in the
+    // star's icon and name, which a look keeps revealed, as in the badge -- or
+    // it claims one that belongs to something else. The bin goes through
     // _delete (), which reads _shownUuid, so disarming it is clearing that.
     _disarmActions() {
         this._favouriteItem.setUuid(null);
+        this._favouriteItem.setFavourite(false);
         this._shownUuid = null;
         this._setFavourited(false);
     }

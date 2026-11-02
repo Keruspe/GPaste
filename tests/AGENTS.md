@@ -159,7 +159,8 @@ being `/util/display-line`'s, the row never reading a text's whole value -- and
 a larger size shows more of it again; a row rebound to another uuid selects and deletes
 nothing until that item is what it shows, then acts on it with a callback that
 logs a refusal, as the star does; a read that a newer binding, to a position or
-to a uuid, overtook paints nothing; the menu key on the star or the bin opens the
+to a uuid, overtook paints nothing; a rebound row's star shows no pin until its
+item is there, revealed or not; the menu key on the star or the bin opens the
 row's actions; a failed read goes to `debugFailure()` alone; and the pin and the
 bin a look at the row shows leave the width it asks for as it was, a pinned
 star counting either way.
