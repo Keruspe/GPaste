@@ -1887,7 +1887,7 @@ test_locked_refuses_unmade (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
