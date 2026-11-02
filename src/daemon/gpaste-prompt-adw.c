@@ -26,29 +26,11 @@ G_PASTE_DEFINE_TYPE_WITH_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
 
 /* Every text these dialogs show is plain -- the prompt's own wording in any
  * translation, a GError's message naming histories and paths -- while
- * libadwaita parses Pango markup in a group's title and description and in a
- * row's title and subtitle: one "&" or "<" and the label goes blank. The rows
- * and the banner are told their text is not markup; a group, which has no
- * such switch, is handed its text escaped. */
-static void
-set_group_text (GtkWidget   *group,
-                const gchar *title,
-                const gchar *description)
-{
-    if (title)
-    {
-        g_autofree gchar *escaped = g_markup_escape_text (title, -1);
-
-        adw_preferences_group_set_title (ADW_PREFERENCES_GROUP (group), escaped);
-    }
-
-    if (description)
-    {
-        g_autofree gchar *escaped = g_markup_escape_text (description, -1);
-
-        adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group), escaped);
-    }
-}
+ * libadwaita parses Pango markup in a group's title and description, a status
+ * page's description and a row's title and subtitle: one "&" or "<" and the
+ * label goes blank. The rows and the banner are told their text is not markup;
+ * a group and a status page, which have no such switch, are handed it escaped
+ * (g_paste_gtk_util_set_group_text (), g_paste_gtk_util_set_status_text ()). */
 
 /* Every prompt is a modal window of its own, @header over @content, rather than
  * an AdwDialog: the daemon has no window to put a dialog inside. Escape is
@@ -82,21 +64,18 @@ prompt_window_new (GPastePrompt *prompt,
     return GTK_WINDOW (window);
 }
 
-/* The page a report or a question warns with. Its description is Pango markup
- * (its title is not), and @description carries a GError's text or names
- * histories: names the user chose and paths from the filesystem. One "&" in
- * either makes the markup fail to parse, and the window would go up with an
- * empty description -- a warning that says nothing. */
+/* The page a report or a question warns with, @description carrying a
+ * GError's text or naming histories: names the user chose and paths from the
+ * filesystem, one "&" in which would otherwise leave a warning that says
+ * nothing. */
 static GtkWidget *
 warning_status_page_new (const gchar *title,
                          const gchar *description)
 {
     GtkWidget *status = adw_status_page_new ();
-    g_autofree gchar *escaped = g_markup_escape_text (description, -1);
 
     adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
-    adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
-    adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
+    g_paste_gtk_util_set_status_text (ADW_STATUS_PAGE (status), title, description);
 
     return status;
 }
@@ -280,10 +259,10 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     GtkWidget *backends = adw_preferences_group_new ();
 
-    set_group_text (backends,
-                    g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
-                    g_paste_prompt_text (g_paste_prompt_request_can_keep (self->request) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
-                                                                                         : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (backends),
+                                     g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
+                                     g_paste_prompt_text (g_paste_prompt_request_can_keep (self->request) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
+                                                                                                          : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
 
     /* Radios rather than a combo, as the shell prompt's exclusive checkboxes
      * are: no preselection when the backend in use is not on the list, since
@@ -521,7 +500,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 
-    set_group_text (group, NULL, description ? description : standing);
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (group), NULL, description ? description : standing);
 
     if (g_paste_prompt_request_offers_remember (request))
     {

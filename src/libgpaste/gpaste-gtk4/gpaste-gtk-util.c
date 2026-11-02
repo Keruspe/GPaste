@@ -196,6 +196,62 @@ g_paste_gtk_util_set_row_title (AdwPreferencesRow *row,
     adw_preferences_row_set_title (row, title);
 }
 
+/**
+ * g_paste_gtk_util_set_group_text:
+ * @group: an #AdwPreferencesGroup
+ * @title: (nullable): the title, as written, or %NULL to leave it as it is
+ * @description: (nullable): the description, as written, or %NULL to leave it
+ *               as it is
+ *
+ * Give @group @title and @description as written. libadwaita reads both as
+ * markup, as it does a row's (g_paste_gtk_util_set_row_title ()), but a group
+ * has no switch to turn that off, so they are escaped.
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_set_group_text (AdwPreferencesGroup *group,
+                                 const gchar         *title,
+                                 const gchar         *description)
+{
+    g_return_if_fail (ADW_IS_PREFERENCES_GROUP (group));
+
+    if (title)
+    {
+        g_autofree gchar *escaped = g_markup_escape_text (title, -1);
+
+        adw_preferences_group_set_title (group, escaped);
+    }
+
+    if (description)
+    {
+        g_autofree gchar *escaped = g_markup_escape_text (description, -1);
+
+        adw_preferences_group_set_description (group, escaped);
+    }
+}
+
+/**
+ * g_paste_gtk_util_set_status_text:
+ * @page: an #AdwStatusPage
+ * @title: the title, as written
+ * @description: (nullable): the description, as written, or %NULL for none
+ *
+ * Give @page @title and @description as written: the title is plain to
+ * libadwaita, but the description is markup with no switch to turn that off,
+ * so it is escaped, as a group's is (g_paste_gtk_util_set_group_text ()).
+ */
+G_PASTE_VISIBLE void
+g_paste_gtk_util_set_status_text (AdwStatusPage *page,
+                                  const gchar   *title,
+                                  const gchar   *description)
+{
+    g_return_if_fail (ADW_IS_STATUS_PAGE (page));
+
+    g_autofree gchar *escaped = (description) ? g_markup_escape_text (description, -1) : NULL;
+
+    adw_status_page_set_title (page, title);
+    adw_status_page_set_description (page, escaped);
+}
+
 typedef struct
 {
     GPasteClient *client;

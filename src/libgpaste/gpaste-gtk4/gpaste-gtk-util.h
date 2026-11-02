@@ -76,8 +76,14 @@ GtkWidget *g_paste_gtk_util_password_strength_row_new  (const gchar *title,
 void       g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
                                                         GtkEditable *source);
 
-void g_paste_gtk_util_set_row_title (AdwPreferencesRow *row,
-                                     const gchar       *title);
+void g_paste_gtk_util_set_row_title   (AdwPreferencesRow   *row,
+                                       const gchar         *title);
+void g_paste_gtk_util_set_group_text  (AdwPreferencesGroup *group,
+                                       const gchar         *title,
+                                       const gchar         *description);
+void g_paste_gtk_util_set_status_text (AdwStatusPage       *page,
+                                       const gchar         *title,
+                                       const gchar         *description);
 
 GtkWidget *g_paste_gtk_util_spin_row_new (gdouble min,
                                           gdouble max,

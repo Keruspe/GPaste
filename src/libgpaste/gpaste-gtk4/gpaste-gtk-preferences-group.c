@@ -383,9 +383,9 @@ g_paste_gtk_preferences_group_new (const gchar *title)
 {
     g_return_val_if_fail (title, NULL);
 
-    /* A group's title is markup to libadwaita, with no way to turn that off,
-     * so it is escaped (see g_paste_gtk_util_set_row_title ()). */
-    g_autofree gchar *escaped = g_markup_escape_text (title, -1);
+    GPasteGtkPreferencesGroup *self = g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, NULL);
 
-    return G_PASTE_GTK_PREFERENCES_GROUP (g_object_new (G_PASTE_TYPE_GTK_PREFERENCES_GROUP, "title", escaped, NULL));
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (self), title, NULL);
+
+    return self;
 }
