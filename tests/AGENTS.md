@@ -328,8 +328,10 @@ a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
 clicking it does, its accessible name and its tooltip alike, that a row handed to another item blanks its text and
-offers no action until that item is read, and that a row lays out a bounded part
-of a long item's text. It includes `gpaste-ui-panel.c` too, its switch and backup
+offers no action until that item is read, that a row lays out a bounded part
+of a long item's text, and that an image row keeps its thumbnail and hover
+preview at the size they are drawn, aspect kept, and drops an image it cannot
+decode. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
 that Switch or Create keeps its text until the switch is answered and moves
 the focus on to the search only while it is open, that Back Up

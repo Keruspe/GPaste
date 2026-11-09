@@ -35,6 +35,7 @@ struct _GPasteUiItem
     GtkLabel           *index_label;
     GtkInscription     *label;
     GtkPicture         *thumbnail;
+    GBytes             *image;           /* image items: the encoded image the thumbnail shows */
     GtkWidget          *swatch;          /* colour items: what the value looks like */
     GtkWidget          *tooltip_preview; /* cached hover preview, rebuilt on thumbnail change */
     /* Every action's availability follows the kind, so the row keeps that rather
@@ -255,71 +256,176 @@ g_paste_ui_item_apply_index (GPasteUiItem *self,
     }
 }
 
-static void
-g_paste_ui_item_set_thumbnail (GPasteUiItem *self,
-                               GdkTexture   *texture)
+/* Largest dimension, in pixels, of the hover preview. */
+#define G_PASTE_UI_ITEM_PREVIEW_SIZE 400
+
+/* @texture scaled down to @width by @height pixels, or @texture itself when it
+ * is no larger. A decoded screenshot is tens of megabytes, so a row keeps only
+ * the image it draws, at the size it draws it, and decodes the encoded bytes
+ * again for anything larger (g_paste_ui_item_on_thumbnail_query_tooltip ()).
+ * The cairo renderer needs no surface and draws in memory, so the full-size
+ * texture is let go of as soon as this returns. */
+static GdkTexture *
+g_paste_ui_item_scale_texture (GdkTexture *texture,
+                               gint        width,
+                               gint        height)
 {
-    gtk_picture_set_paintable (self->thumbnail, texture ? GDK_PAINTABLE (texture) : NULL);
-    /* The cached hover preview is tied to the old paintable; drop it. */
+    if (width >= gdk_texture_get_width (texture) && height >= gdk_texture_get_height (texture))
+        return g_object_ref (texture);
+
+    g_autoptr (GskRenderer) renderer = gsk_cairo_renderer_new ();
+
+    if (!gsk_renderer_realize_for_display (renderer, gdk_display_get_default (), NULL))
+        return g_object_ref (texture);
+
+    graphene_rect_t bounds = GRAPHENE_RECT_INIT (0, 0, width, height);
+    g_autoptr (GskRenderNode) node = gsk_texture_scale_node_new (texture, &bounds, GSK_SCALING_FILTER_TRILINEAR);
+    GdkTexture *scaled = gsk_renderer_render_texture (renderer, node, &bounds);
+
+    gsk_renderer_unrealize (renderer);
+
+    return scaled;
+}
+
+/* The size @texture is drawn at within @max_width by @max_height, its aspect
+ * kept and never enlarged. */
+static void
+g_paste_ui_item_fit (GdkTexture *texture,
+                     gint        max_width,
+                     gint        max_height,
+                     gint       *width,
+                     gint       *height)
+{
+    gint w = gdk_texture_get_width (texture);
+    gint h = gdk_texture_get_height (texture);
+    gdouble scale = MIN (1.0, MIN ((gdouble) max_width / w, (gdouble) max_height / h));
+
+    *width = MAX (1, (gint) (w * scale + 0.5));
+    *height = MAX (1, (gint) (h * scale + 0.5));
+}
+
+/* The row's image decoded, or NULL, with a debug line, when it cannot be: like
+ * a failed read (g_paste_ui_item_on_image_ready ()), nothing the user sees. */
+static GdkTexture *
+g_paste_ui_item_decode_image (GPasteUiItem *self)
+{
+    g_autoptr (GError) error = NULL;
+    GdkTexture *texture = gdk_texture_new_from_bytes (self->image, &error);
+
+    if (!texture)
+        g_debug ("Failed to decode image: %s", error->message);
+
+    return texture;
+}
+
+/* Draws the row's image as tall as images-preview-size, in device pixels: the
+ * thumbnail's height request is what makes the row that tall, and its width
+ * is the one the image's aspect gives that height (the picture's natural
+ * width), so the height alone bounds it. */
+static void
+g_paste_ui_item_show_image (GPasteUiItem *self)
+{
+    g_autoptr (GdkTexture) thumbnail = NULL;
+
+    if (self->image)
+    {
+        g_autoptr (GdkTexture) texture = g_paste_ui_item_decode_image (self);
+
+        if (texture)
+        {
+            gint size = MAX ((gint) g_paste_settings_get_images_preview_size (self->settings), 10) * gtk_widget_get_scale_factor (GTK_WIDGET (self));
+            gint width, height;
+
+            g_paste_ui_item_fit (texture, G_MAXINT, size, &width, &height);
+            thumbnail = g_paste_ui_item_scale_texture (texture, width, height);
+        }
+        else
+            g_clear_pointer (&self->image, g_bytes_unref);
+    }
+
+    gtk_picture_set_paintable (self->thumbnail, thumbnail ? GDK_PAINTABLE (thumbnail) : NULL);
+    /* The cached hover preview is tied to the old image; drop it. */
     g_clear_object (&self->tooltip_preview);
     g_paste_ui_item_on_images_preview_changed (self->settings, NULL, self);
 }
 
-/* Largest dimension, in pixels, of the hover preview. */
-#define G_PASTE_UI_ITEM_PREVIEW_SIZE 400
+static void
+g_paste_ui_item_set_image (GPasteUiItem *self,
+                           GBytes       *image)
+{
+    g_clear_pointer (&self->image, g_bytes_unref);
+    if (image)
+        self->image = g_bytes_ref (image);
+    g_paste_ui_item_show_image (self);
+}
 
-/* Enlarge the small inline thumbnail to a detail preview on hover: the inline
- * picture is deliberately tiny (images-preview-size), so show the full image,
- * capped and aspect-preserved, in a custom tooltip.
- * gtk_widget_set_size_request () only sets a minimum, so it cannot bound the
- * tooltip's natural size: the paintable must be re-rendered with a capped
- * intrinsic size instead. */
+/* The thumbnail is drawn for a size and a scale, so a change of either --
+ * images-preview-size, or the row's scale-factor -- draws it again. A row
+ * past dispose (), which took its settings, has nothing left to draw: its
+ * scale-factor can still change as it leaves its window. */
+static void
+g_paste_ui_item_on_image_size_changed (GObject    *object G_GNUC_UNUSED,
+                                       GParamSpec *pspec  G_GNUC_UNUSED,
+                                       gpointer    user_data)
+{
+    GPasteUiItem *self = user_data;
+
+    if (self->settings)
+        g_paste_ui_item_show_image (self);
+}
+
+/* The hover preview: the image again, capped at G_PASTE_UI_ITEM_PREVIEW_SIZE
+ * and aspect-preserved, since the inline picture is deliberately tiny
+ * (images-preview-size). gtk_widget_set_size_request () only sets a minimum,
+ * so it cannot bound the tooltip's natural size: the picture's paintable has
+ * the capped size as its intrinsic one instead, drawing a texture scaled for
+ * the display's scale. Built once per image and reused, query-tooltip firing
+ * repeatedly while hovering (cleared in show_image/dispose). */
+static GtkWidget *
+g_paste_ui_item_get_tooltip_preview (GPasteUiItem *self)
+{
+    if (self->tooltip_preview || !self->image)
+        return self->tooltip_preview;
+
+    g_autoptr (GdkTexture) texture = g_paste_ui_item_decode_image (self);
+
+    if (!texture)
+        return NULL;
+
+    gint scale = gtk_widget_get_scale_factor (GTK_WIDGET (self));
+    gint width, height;
+
+    g_paste_ui_item_fit (texture, G_PASTE_UI_ITEM_PREVIEW_SIZE, G_PASTE_UI_ITEM_PREVIEW_SIZE, &width, &height);
+
+    g_autoptr (GdkTexture) scaled = g_paste_ui_item_scale_texture (texture, width * scale, height * scale);
+    g_autoptr (GtkSnapshot) snapshot = gtk_snapshot_new ();
+
+    gdk_paintable_snapshot (GDK_PAINTABLE (scaled), GDK_SNAPSHOT (snapshot), width, height);
+
+    g_autoptr (GdkPaintable) preview = gtk_snapshot_to_paintable (snapshot, &GRAPHENE_SIZE_INIT (width, height));
+    GtkWidget *picture = gtk_picture_new_for_paintable (preview);
+
+    gtk_picture_set_content_fit (GTK_PICTURE (picture), GTK_CONTENT_FIT_CONTAIN);
+
+    return self->tooltip_preview = g_object_ref_sink (picture);
+}
+
+/* Enlarge the small inline thumbnail to a detail preview on hover; the inline
+ * thumbnail stays, being glanceable and keyboard- and touch-friendly. */
 static gboolean
-g_paste_ui_item_on_thumbnail_query_tooltip (GtkWidget  *widget,
+g_paste_ui_item_on_thumbnail_query_tooltip (GtkWidget  *widget   G_GNUC_UNUSED,
                                             gint        x        G_GNUC_UNUSED,
                                             gint        y        G_GNUC_UNUSED,
                                             gboolean    keyboard G_GNUC_UNUSED,
                                             GtkTooltip *tooltip,
                                             gpointer    user_data)
 {
-    GPasteUiItem *self = user_data;
-    GdkPaintable *paintable = gtk_picture_get_paintable (GTK_PICTURE (widget));
+    GtkWidget *preview = g_paste_ui_item_get_tooltip_preview (user_data);
 
-    if (!paintable)
+    if (!preview)
         return FALSE;
 
-    /* query-tooltip fires repeatedly while hovering; build the scaled preview
-     * once per thumbnail and reuse it (cleared in set_thumbnail/dispose). */
-    if (!self->tooltip_preview)
-    {
-        gint width = gdk_paintable_get_intrinsic_width (paintable);
-        gint height = gdk_paintable_get_intrinsic_height (paintable);
-        g_autoptr (GdkPaintable) scaled = NULL;
-
-        /* Re-render the paintable at the capped size: the result's intrinsic
-         * size is the one the tooltip lays out with, which set_size_request
-         * alone does not achieve here. */
-        if (width > 0 && height > 0)
-        {
-            gdouble scale = MIN (1.0, MIN ((gdouble) G_PASTE_UI_ITEM_PREVIEW_SIZE / width,
-                                           (gdouble) G_PASTE_UI_ITEM_PREVIEW_SIZE / height));
-            g_autoptr (GtkSnapshot) snapshot = gtk_snapshot_new ();
-
-            gdk_paintable_snapshot (paintable, GDK_SNAPSHOT (snapshot), width * scale, height * scale);
-            scaled = gtk_snapshot_to_paintable (snapshot, NULL);
-        }
-
-        GtkWidget *preview = gtk_picture_new_for_paintable ((scaled) ? scaled : paintable);
-
-        gtk_picture_set_content_fit (GTK_PICTURE (preview), GTK_CONTENT_FIT_CONTAIN);
-
-        if (!scaled)
-            gtk_widget_set_size_request (preview, G_PASTE_UI_ITEM_PREVIEW_SIZE, G_PASTE_UI_ITEM_PREVIEW_SIZE);
-
-        self->tooltip_preview = g_object_ref_sink (preview);
-    }
-
-    gtk_tooltip_set_custom (tooltip, self->tooltip_preview);
+    gtk_tooltip_set_custom (tooltip, preview);
 
     return TRUE;
 }
@@ -612,9 +718,9 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
         return;
 
     g_autoptr (GError) error = NULL;
-    g_autoptr (GdkTexture) texture = g_paste_gtk_util_get_image_finish (self->client, res, &error);
+    g_autoptr (GBytes) image = g_paste_client_get_image_finish (self->client, res, &error);
 
-    if (!texture)
+    if (!image)
     {
         /* A read the user did not ask for, made again each time the row is
          * bound -- each time it scrolls back into view -- so nothing the user
@@ -627,11 +733,11 @@ g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
 
         /* Rather than leave the row showing an image that is not the one it is
          * now bound to. */
-        g_paste_ui_item_set_thumbnail (self, NULL);
+        g_paste_ui_item_set_image (self, NULL);
         return;
     }
 
-    g_paste_ui_item_set_thumbnail (self, texture);
+    g_paste_ui_item_set_image (self, image);
 }
 
 static void
@@ -667,7 +773,7 @@ _g_paste_ui_item_ready (GPasteUiItem     *self,
     if (kind == G_PASTE_ITEM_KIND_IMAGE && g_paste_settings_get_images_preview (self->settings))
         g_paste_ui_item_read_image (self);
     else
-        g_paste_ui_item_set_thumbnail (self, NULL);
+        g_paste_ui_item_set_image (self, NULL);
 
     /* A colour needs no call of its own: the item's value is its colour, the
      * "[Color]" a user reads in front of it being ours to add rather than the
@@ -797,7 +903,7 @@ _g_paste_ui_item_set_index (GPasteUiItem *self,
         g_paste_ui_item_set_text (self, "");
         g_paste_ui_item_set_favourited (self, FALSE);
         g_paste_ui_color_swatch_set_color (self->swatch, NULL);
-        g_paste_ui_item_set_thumbnail (self, NULL);
+        g_paste_ui_item_set_image (self, NULL);
     }
 
     g_paste_ui_item_update_actions (self);
@@ -858,6 +964,7 @@ g_paste_ui_item_dispose (GObject *object)
     g_clear_object (&self->settings_signals);
     g_clear_object (&self->actions);
     g_clear_object (&self->tooltip_preview);
+    g_clear_pointer (&self->image, g_bytes_unref);
 
     /* A popover is a child of the widget it points at, and chaining up does not
      * take it with the box's own children. */
@@ -1130,6 +1237,8 @@ g_paste_ui_item_new (GPasteClient   *client,
     g_signal_connect (motion, "leave", G_CALLBACK (on_leave), self);
     gtk_widget_add_controller (widget, motion);
 
+    g_signal_connect (widget, "notify::scale-factor", G_CALLBACK (g_paste_ui_item_on_image_size_changed), self);
+
     GSignalGroup *settings_signals = self->settings_signals = g_signal_group_new (G_PASTE_TYPE_SETTINGS);
     g_signal_group_connect (settings_signals,
                             "notify::" G_PASTE_ELEMENT_SIZE_SETTING,
@@ -1141,7 +1250,7 @@ g_paste_ui_item_new (GPasteClient   *client,
                             self);
     g_signal_group_connect (settings_signals,
                             "notify::" G_PASTE_IMAGES_PREVIEW_SIZE_SETTING,
-                            G_CALLBACK (g_paste_ui_item_on_images_preview_changed),
+                            G_CALLBACK (g_paste_ui_item_on_image_size_changed),
                             self);
     g_signal_group_set_target (settings_signals, settings);
     g_paste_ui_item_set_text_size (settings, NULL, self);

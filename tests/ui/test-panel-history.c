@@ -348,6 +348,75 @@ test_item_long_text_bounded (void)
     gtk_window_destroy (GTK_WINDOW (window));
 }
 
+/* A screenshot, encoded as GetImage hands it over. */
+static GBytes *
+screenshot_png (void)
+{
+    gsize stride = 2880 * 4;
+    g_autofree guchar *pixels = g_malloc0 (stride * 1620);
+
+    for (gsize i = 3; i < stride * 1620; i += 4)
+        pixels[i] = 0xff;
+
+    g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&pixels), stride * 1620);
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (2880, 1620, GDK_MEMORY_R8G8B8A8, bytes, stride);
+
+    return gdk_texture_save_to_png_bytes (texture);
+}
+
+/* An image row keeps its thumbnail at the size it is drawn, as tall as
+ * images-preview-size, decoding the image again for a larger size and for the
+ * hover preview, aspect kept, and drops an image it cannot decode. */
+static void
+test_item_image_scaled (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPasteClient) client = g_paste_client_new_sync (&error);
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GtkWidget *window = gtk_window_new ();
+    g_autoptr (GtkWidget) item = g_object_ref_sink (g_paste_ui_item_new (client, settings, GTK_WINDOW (window), 0));
+    GPasteUiItem *row = G_PASTE_UI_ITEM (item);
+    g_autoptr (GBytes) png = screenshot_png ();
+    g_autoptr (GBytes) garbage = g_bytes_new_static ("not an image", 12);
+    gint scale = gtk_widget_get_scale_factor (item);
+
+    g_assert_no_error (error);
+    g_paste_settings_set_images_preview_size (settings, 50);
+    g_paste_ui_item_set_image (row, png);
+
+    GdkPaintable *thumbnail = gtk_picture_get_paintable (row->thumbnail);
+
+    g_assert_nonnull (thumbnail);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_width (thumbnail), ==, 89 * scale);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_height (thumbnail), ==, 50 * scale);
+
+    g_paste_settings_set_images_preview_size (settings, 100);
+    thumbnail = gtk_picture_get_paintable (row->thumbnail);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_width (thumbnail), ==, 178 * scale);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_height (thumbnail), ==, 100 * scale);
+
+    GtkWidget *preview = g_paste_ui_item_get_tooltip_preview (row);
+
+    g_assert_nonnull (preview);
+    g_assert_true (g_paste_ui_item_get_tooltip_preview (row) == preview);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_width (gtk_picture_get_paintable (GTK_PICTURE (preview))), ==, G_PASTE_UI_ITEM_PREVIEW_SIZE);
+    g_assert_cmpint (gdk_paintable_get_intrinsic_height (gtk_picture_get_paintable (GTK_PICTURE (preview))), ==, 225);
+
+    g_paste_ui_item_set_image (row, garbage);
+    g_assert_null (gtk_picture_get_paintable (row->thumbnail));
+    g_assert_null (row->image);
+    g_assert_null (g_paste_ui_item_get_tooltip_preview (row));
+
+    g_paste_settings_reset (settings, G_PASTE_IMAGES_PREVIEW_SIZE_SETTING);
+    gtk_window_destroy (GTK_WINDOW (window));
+}
+
 /* A sidebar listing "work" and "work_backup", in a window that hosts dialogs. */
 static GPasteUiPanel *
 panel_window (GPasteClient *client,
@@ -571,6 +640,7 @@ main (int argc, char **argv)
     g_test_add_func ("/ui/item/star-named", test_item_star_named);
     g_test_add_func ("/ui/item/rebound-blank", test_item_rebound_blank);
     g_test_add_func ("/ui/item/long-text-bounded", test_item_long_text_bounded);
+    g_test_add_func ("/ui/item/image-scaled", test_item_image_scaled);
     g_test_add_func ("/ui/panel/switch-name", test_panel_switch_name);
     g_test_add_func ("/ui/panel/backup-name", test_panel_backup_name);
     g_test_add_func ("/ui/panel/backup-window-gone", test_panel_backup_window_gone);
