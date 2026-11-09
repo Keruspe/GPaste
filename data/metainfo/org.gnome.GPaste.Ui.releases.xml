@@ -2,6 +2,33 @@
 <!-- SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause -->
 <releases>
+  <release type="stable" date="2026-11-02" version="51.3">
+    <description>
+      <p>Changes since 51.2:</p>
+      <ul>
+        <li>Upload to paste.c-net.org by default, paste.rs having stopped taking uploads</li>
+        <li>Explain the import, cleanup and remember options in GNOME Shell's storage dialogs</li>
+        <li>Have gpaste-client doctor offer to delete images no passphrase can read</li>
+        <li>Draw the Pinned filter's star empty or full, as each item's star is</li>
+        <li>Fix the graphical tool's searches, counts, status and merging going wrong</li>
+        <li>Fix the item and password editors losing, misplacing or undoing what was typed</li>
+        <li>Fix the graphical tool and the preferences staying behind on Wayland or opening apart from their launcher</li>
+        <li>Fix GNOME Shell's menu and search freezing, stuttering, stretching, or showing or acting on the wrong items</li>
+        <li>Fix copies and items vanishing, or another one than asked for being selected</li>
+        <li>Fix passwords staying on the clipboard too long, or another item taking their place</li>
+        <li>Fix histories deleted, backed up, emptied or switched wrongly, or listed with the wrong size</li>
+        <li>Fix storage and passphrase changes failing, leaving files behind, taking a wrong passphrase or being misreported</li>
+        <li>Fix gpaste-client doctor missing images left on another passphrase, which the next save deleted</li>
+        <li>Fix SQLite histories stalling, keeping evicted items or losing edits</li>
+        <li>Fix GPaste stopping, restarting or being replaced at the wrong time, and uploads left unanswered</li>
+        <li>Fix the preferences refusing some shortcuts, and some translations blanking labels</li>
+        <li>Fix the shell completions mangling, splitting or leaving out history names and paths, or slowing down</li>
+        <li>Fix gpaste-client passing escape sequences to the terminal, or giving wrong reasons for failures</li>
+        <li>Fix uploads through termbin being refused</li>
+        <li>Fix what was searched for being written to the debug log</li>
+      </ul>
+    </description>
+  </release>
   <release type="stable" date="2026-10-26" version="51.2">
     <description>
       <p>Changes since 51.1:</p>

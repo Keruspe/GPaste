@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-3/gpaste-keybindings.h>
+#include <gpaste-3/gpaste-macros.h>
 
 #define KEYBINDING(key, group, description, portal_label) { key, group, description, portal_label },
 static const GPasteKeybindingInfo keybindings[] = {

@@ -4,12 +4,12 @@
 
 # release.sh, run in a scratch repository with meson, ninja, appstreamcli and
 # msgattrib stood in for: the version it checks is meson.build's, not what a
-# build directory was last configured at; the soversions a release bumps go in
-# its commit; a file modified for anything else stops it before it commits, as
-# the tarball would -- one beside the catalogs and the notes included, and an
-# edit of the two meson.build files beyond the version and the soversions; and
-# a catalog msgattrib fails on stops it too, nothing stray in po/ committed on
-# the way.
+# build directory was last configured at; the soversions a release bumps, and
+# the notes and catalogs it is cut with, go in its commit; a file modified for
+# anything else stops it before it commits, as the tarball would -- one beside
+# the catalogs and the notes included, and an edit of the two meson.build files
+# beyond the version and the soversions; and a catalog msgattrib fails on stops
+# it too, nothing stray in po/ committed on the way.
 
 import os
 from pathlib import Path
@@ -59,6 +59,11 @@ GIT_ENV.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1',
 def git(repo, *args):
     return subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True, check=True,
                           env=GIT_ENV).stdout
+
+
+def committed(repo):
+    """The paths the release commit holds."""
+    return git(repo, 'show', '--name-only', '--format=', 'HEAD').splitlines()
 
 
 def scratch_repo(base):
@@ -122,14 +127,27 @@ def main():
         (repo / 'po/fr.po.orig').write_text('a leftover\n')
 
     def bumped_and_clean(repo):
-        committed = git(repo, 'show', '--name-only', '--format=', 'HEAD').split()
-        if 'src/libgpaste/meson.build' not in committed:
+        paths = committed(repo)
+        if 'src/libgpaste/meson.build' not in paths:
             return 'the soversion bump is not in the release commit'
-        if any(name.startswith('po/') and not name.endswith(('.po', '.pot', 'LINGUAS')) for name in committed):
-            return f'a stray file went in: {committed}'
+        if any(name.startswith('po/') and not name.endswith(('.po', '.pot', 'LINGUAS')) for name in paths):
+            return f'a stray file went in: {paths}'
         return None
 
+    # What a release is cut with, written beforehand: its notes, and a catalog.
+    notes = ('NEWS', 'README.md', 'data/metainfo/x.xml.in', 'data/metainfo/x.releases.xml', 'po/fr.po')
+
+    def notes_written(repo):
+        for name in notes:
+            (repo / name).write_text(name + ' for 9.9\n')
+
+    def notes_committed(repo):
+        paths = committed(repo)
+        missing = [name for name in notes if name not in paths]
+        return f'left out of the release commit: {missing}' if missing else None
+
     case('soversions', soversion_bump, '9.9', True, bumped_and_clean)
+    case('notes', notes_written, '9.9', True, notes_committed)
     case('version off meson.build',
          lambda repo: (repo / 'meson.build').write_text("project('x',\n  version: '10.0',\n)\n"), '10.0', True)
     case('another file modified', lambda repo: (repo / 'src/other.c').write_text('int y;\n'), '9.9', False)

@@ -109,6 +109,21 @@ secure_buffer_consume (SecureBuffer *buffer,
     buffer->len = left;
 }
 
+/* Move as much of what @buffer holds as @room bytes take into @dest, returning
+ * how much. */
+static gsize
+secure_buffer_take (SecureBuffer *buffer,
+                    gpointer      dest,
+                    gsize         room)
+{
+    gsize n = MIN (buffer->len, room);
+
+    memcpy (dest, buffer->data, n);
+    secure_buffer_consume (buffer, n);
+
+    return n;
+}
+
 static void
 secure_buffer_clear (SecureBuffer *buffer)
 {
@@ -138,6 +153,10 @@ struct _GPasteSecretStreamConverter
 
     SecureBuffer                in;  /* input not processed yet */
     SecureBuffer                out; /* output not handed back yet */
+
+    /* A failure that came after the call meeting it had made progress, which
+     * the next call reports: see convert (). */
+    GError                     *failure;
 };
 
 static void g_paste_secret_stream_converter_iface_init (GConverterIface *iface);
@@ -203,6 +222,25 @@ push_chunk (GPasteSecretStreamConverter *self,
 }
 
 /**
+ * g_paste_crypto_parameters_derivable:
+ * @opslimit: a stored Argon2id operations limit
+ * @memlimit: a stored Argon2id memory limit
+ *
+ * Whether g_paste_crypto_derive_key() takes these parameters rather than
+ * refuse them as the file's: what a store has to ask for to be one a wrong
+ * passphrase is refused over.
+ *
+ * Returns: whether the parameters are within the bounds a key is derived for
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_crypto_parameters_derivable (guint64 opslimit,
+                                     guint64 memlimit)
+{
+    return opslimit >= crypto_pwhash_OPSLIMIT_MIN && opslimit <= crypto_pwhash_OPSLIMIT_SENSITIVE &&
+           memlimit >= crypto_pwhash_MEMLIMIT_MIN && memlimit <= crypto_pwhash_MEMLIMIT_SENSITIVE;
+}
+
+/**
  * g_paste_crypto_derive_key:
  * @passphrase: the passphrase to derive from
  * @passphrase_len: its length
@@ -224,7 +262,12 @@ push_chunk (GPasteSecretStreamConverter *self,
  * here is what keeps that bound from being forgotten at a new call site.
  *
  * Fails with %G_IO_ERROR_INVALID_DATA for out-of-range parameters and
- * %G_IO_ERROR_FAILED when the derivation itself does not complete.
+ * %G_IO_ERROR_FAILED when the derivation itself does not complete. The first
+ * is the file's doing and says nothing of the passphrase, the second a check
+ * that could not be made (g_paste_storage_backend_set_unverifiable ()).
+ * Parameters below libsodium's own minimum, which crypto_pwhash () refuses as
+ * it refuses memory it cannot have, are the file's, and refused here first --
+ * no test shows it, the tests deriving at that minimum whatever is stored.
  *
  * Returns: whether @key was derived
  */
@@ -242,7 +285,7 @@ g_paste_crypto_derive_key (const gchar  *passphrase,
     g_return_val_if_fail (salt, FALSE);
     g_return_val_if_fail (key, FALSE);
 
-    if (opslimit > crypto_pwhash_OPSLIMIT_SENSITIVE || memlimit > crypto_pwhash_MEMLIMIT_SENSITIVE)
+    if (!g_paste_crypto_parameters_derivable (opslimit, memlimit))
     {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA,
                              "Unreasonable key-derivation parameters");
@@ -445,6 +488,17 @@ decrypt_process (GPasteSecretStreamConverter *self,
     return TRUE;
 }
 
+static gboolean
+process (GPasteSecretStreamConverter *self,
+         gboolean                     flush,
+         gboolean                     at_end,
+         GError                     **error)
+{
+    return (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
+        ? encrypt_process (self, flush, at_end, error)
+        : decrypt_process (self, error);
+}
+
 static GConverterResult
 g_paste_secret_stream_converter_convert (GConverter     *converter,
                                          const void     *inbuf,
@@ -459,8 +513,21 @@ g_paste_secret_stream_converter_convert (GConverter     *converter,
     GPasteSecretStreamConverter *self =
         G_PASTE_SECRET_STREAM_CONVERTER (converter);
 
-    *bytes_read = MIN (inbuf_size, secure_buffer_room (&self->in));
+    *bytes_read = 0;
     *bytes_written = 0;
+
+    if (self->failure)
+    {
+        /* What the call meeting it produced and had no room for goes first. */
+        *bytes_written = secure_buffer_take (&self->out, outbuf, outbuf_size);
+        if (*bytes_written)
+            return G_CONVERTER_CONVERTED;
+
+        g_propagate_error (error, g_steal_pointer (&self->failure));
+        return G_CONVERTER_ERROR;
+    }
+
+    *bytes_read = MIN (inbuf_size, secure_buffer_room (&self->in));
 
     /* Take what fits, then process what we can: input left over is handed in
      * again, so the end of the input, and a flush, only stand once the last of
@@ -471,29 +538,33 @@ g_paste_secret_stream_converter_convert (GConverter     *converter,
     gboolean all_in = (*bytes_read == inbuf_size);
     gboolean at_end = all_in && (flags & G_CONVERTER_INPUT_AT_END);
     gboolean flush = all_in && (flags & G_CONVERTER_FLUSH);
-    gboolean ok = (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-        ? encrypt_process (self, flush, at_end, error)
-        : decrypt_process (self, error);
-
-    if (!ok)
-        return G_CONVERTER_ERROR;
+    /* A call that errs has its progress thrown away by GConverter -- its input
+     * handed in again, its output dropped -- so one that took input or wrote
+     * output reports that, and keeps the failure for the next call: a stream
+     * damaged in its third frame reads its first two, rather than lose what the
+     * failing call had written of the second, and take the input it buffered a
+     * second time on a retry. */
+    g_autoptr (GError) failure = NULL;
+    gboolean ok = process (self, flush, at_end, &failure);
 
     /* Hand back as much produced output as fits, then process again: what the
      * output had no room for may now fit. */
-    while (self->out.len && *bytes_written < outbuf_size)
+    while (ok && self->out.len && *bytes_written < outbuf_size)
     {
-        gsize n = MIN (self->out.len, outbuf_size - *bytes_written);
+        *bytes_written += secure_buffer_take (&self->out, (guint8 *) outbuf + *bytes_written, outbuf_size - *bytes_written);
+        ok = process (self, flush, at_end, &failure);
+    }
 
-        memcpy ((guint8 *) outbuf + *bytes_written, self->out.data, n);
-        secure_buffer_consume (&self->out, n);
-        *bytes_written += n;
+    if (!ok)
+    {
+        if (*bytes_read || *bytes_written)
+        {
+            self->failure = g_steal_pointer (&failure);
+            return G_CONVERTER_CONVERTED;
+        }
 
-        ok = (self->direction == G_PASTE_SECRET_STREAM_ENCRYPT)
-            ? encrypt_process (self, flush, at_end, error)
-            : decrypt_process (self, error);
-
-        if (!ok)
-            return G_CONVERTER_ERROR;
+        g_propagate_error (error, g_steal_pointer (&failure));
+        return G_CONVERTER_ERROR;
     }
 
     /* Finished once nothing more can come: when decrypting, input past the
@@ -532,6 +603,7 @@ g_paste_secret_stream_converter_reset (GConverter *converter)
     self->header_done = FALSE;
     self->finished = FALSE;
     self->opened = FALSE;
+    g_clear_error (&self->failure);
     sodium_memzero (self->key, KEYBYTES);
     sodium_memzero (self->state, sizeof (*self->state));
     secure_buffer_clear (&self->in);
@@ -569,8 +641,9 @@ g_paste_secret_stream_converter_end_at_final (GPasteSecretStreamConverter *self)
  *
  * Whether the file at @path holds a stream's header and the whole first frame
  * past it: what a key is told wrong by, only the stream's own key
- * authenticating that frame. An empty placeholder, a foreign file and one cut
- * short in its first frame hold none, and refute no passphrase.
+ * authenticating that frame. An empty placeholder, a foreign file, one cut
+ * short in its first frame and one whose header asks for parameters no key is
+ * derived for hold none, and refute no passphrase.
  *
  * Returns: whether a wrong passphrase would be refused over the file
  */
@@ -584,16 +657,24 @@ g_paste_secret_stream_file_has_frame (const gchar *path)
     g_autoptr (GFileInputStream) stream = g_file_read (file, NULL, NULL);
     guchar head[STREAM_HEADER_LEN + 4];
     gsize length = 0;
-    GStatBuf stat_buf;
 
     if (!stream || !g_input_stream_read_all (G_INPUT_STREAM (stream), head, sizeof (head), &length, NULL, NULL) ||
-        length < sizeof (head) || memcmp (head, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN) ||
-        g_stat (path, &stat_buf))
+        length < sizeof (head) || memcmp (head, G_PASTE_SECRET_STREAM_MAGIC, G_PASTE_SECRET_STREAM_MAGIC_LEN))
         return FALSE;
 
+    /* The size of the file the frame length was read from, asked of the
+     * stream rather than of @path: a file renamed over the history meanwhile
+     * would pair one file's frame with another's size. */
+    g_autoptr (GFileInfo) info = g_file_input_stream_query_info (stream, G_FILE_ATTRIBUTE_STANDARD_SIZE, NULL, NULL);
+
+    if (!info)
+        return FALSE;
+
+    const guchar *limits = head + G_PASTE_SECRET_STREAM_MAGIC_LEN + SALTBYTES;
     guint32 clen = read_u32_le (head + STREAM_HEADER_LEN);
 
-    return clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) stat_buf.st_size >= sizeof (head) + clen;
+    return g_paste_crypto_parameters_derivable (read_u64_le (limits), read_u64_le (limits + 8)) &&
+           clen >= ABYTES && clen <= CHUNK_SIZE + ABYTES && (guint64) g_file_info_get_size (info) >= sizeof (head) + clen;
 }
 
 static void
@@ -608,6 +689,7 @@ g_paste_secret_stream_converter_finalize (GObject *object)
     g_paste_util_secure_free (self->state, sizeof (*self->state));
     g_paste_util_secure_free (self->in.data, self->in.capacity);
     g_paste_util_secure_free (self->out.data, self->out.capacity);
+    g_clear_error (&self->failure);
 
     G_OBJECT_CLASS (g_paste_secret_stream_converter_parent_class)->finalize (object);
 }

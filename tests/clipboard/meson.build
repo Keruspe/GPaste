@@ -1,17 +1,19 @@
 test_clipboard = executable(
   'test-clipboard',
-  sources: [ 'test-clipboard.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  sources: [ 'test-clipboard.c' ] + gpaste_test_pwhash_sources,
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
 )
 
 # The password countdowns under test are real GLib timeouts, 1 to 2 s each, and
-# they add up to over 20 s: too close to meson's 30 s default on a loaded machine.
-test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
+# they add up to well over a minute of wall clock whatever the machine: more
+# than twice meson's 30 s default, and the timeout leaves a loaded machine room
+# on top of that.
+test('clipboard', test_clipboard, depends: [gpaste_schemas, test_bus_supervisor], timeout: 240)
 
 clipboard_gdk_test = executable(
   'test-clipboard-gdk',
-  sources: [ 'test-clipboard-gdk.c', '../../src/daemon/gpaste-text-content-provider.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
+  sources: [ 'test-clipboard-gdk.c' ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('clipboard-gdk', clipboard_gdk_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -19,6 +21,20 @@ test('clipboard-gdk', clipboard_gdk_test, depends: [gpaste_schemas, test_bus_sup
 # The least an update needs of a provider, for the two suites that drive updates
 # with no backend under them, and for tests/daemon, whose daemon selects nothing.
 test_clipboard_provider_sources = files('gpaste-test-clipboard-provider.c')
+
+# The read guard's deadline. It compiles gpaste-clipboard-content.c in, the one
+# way to run the guard on an allowance of seconds rather than thirty, and stands
+# in for g_paste_clipboard_provider_select_item_full (), which a static
+# library's object defines again (library_static).
+if not library_static
+  test_read_guard = executable(
+    'test-read-guard',
+    sources: [ 'test-read-guard.c' ],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  )
+
+  test('read-guard', test_read_guard, depends: [gpaste_schemas, test_bus_supervisor])
+endif
 
 # The update API the X11 hints workaround reads through; goes with
 # src/daemon/gpaste-clipboard-x11-hints.c.
@@ -36,18 +52,20 @@ test('clipboard-hints', test_clipboard_hints, depends: [gpaste_schemas, test_bus
 test_clipboard_x11_hints = executable(
   'test-clipboard-x11-hints',
   sources: [ 'test-clipboard-x11-hints.c', '../../src/daemon/gpaste-clipboard-x11-hints.c' ] + test_clipboard_provider_sources,
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep, cc.find_library('dl') ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, gtk4x11_dep, xfixes_dep, cc.find_library('dl') ],
 )
 
 test('clipboard-x11-hints', test_clipboard_x11_hints, depends: [gpaste_schemas, test_bus_supervisor])
 
 # The mutter backend, against a MetaSelection of its own and with GTK never
-# initialised, as in gnome-shell.
+# initialised, as in gnome-shell. Told whether the library's own calls reach the
+# binary, which the wipes it counts need (test-clipboard-meta.c).
 if get_option('gnome-shell')
   test_clipboard_meta = executable(
     'test-clipboard-meta',
     sources: [ 'test-clipboard-meta.c' ],
-    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+    c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep, cc.find_library('dl') ],
   )
 
   test('clipboard-meta', test_clipboard_meta, depends: [gpaste_schemas, test_bus_supervisor])

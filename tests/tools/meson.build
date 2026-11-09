@@ -10,11 +10,13 @@ test(
   suite: 'gpaste',
 )
 
-test(
-  'gen-keybindings',
-  find_program('test-gen-keybindings.py'),
-  suite: 'gpaste',
+# The control center's file against the list it is generated from.
+test_keybindings_xml = executable(
+  'test-keybindings-xml',
+  sources: 'test-keybindings-xml.c',
+  dependencies: [ glib_dep, libgpaste_internal_dep ],
 )
+test('keybindings-xml', test_keybindings_xml, args: [ keybindings_xml ])
 
 test(
   'search-provider',
@@ -22,12 +24,20 @@ test(
   suite: 'gpaste',
 )
 
-# The extension's GPaste names are checked against the build's typelibs.
-if get_option('introspection')
+# The extension's GPaste names are checked against the build's typelibs, and its
+# Clutter and St ones against mutter's and the shell's where the extension is
+# built, which needs libmutter anyway. A static build's typelibs name no shared
+# library for GJS to load their types from, so only GLib's own names and
+# Pango's are checked there.
+if get_option('introspection') and not library_static
+  gi_constants_args = [meson.project_build_root() / 'src/libgpaste']
+  if get_option('gnome-shell')
+    gi_constants_args += [dependency('libmutter-51').get_variable(pkgconfig: 'typelibdir')]
+  endif
   test(
     'gi-constants',
     find_program('test-gi-constants.py'),
-    args: [meson.project_build_root() / 'src/libgpaste'],
+    args: gi_constants_args,
     depends: [libgpaste_gir, libgpaste_daemon_gir, libgpaste_gtk4_gir],
     suite: 'gpaste',
   )

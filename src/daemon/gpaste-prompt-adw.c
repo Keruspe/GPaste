@@ -26,36 +26,58 @@ G_PASTE_DEFINE_TYPE_WITH_INTERFACE (PromptAdw, prompt_adw, G_TYPE_OBJECT,
 
 /* Every text these dialogs show is plain -- the prompt's own wording in any
  * translation, a GError's message naming histories and paths -- while
- * libadwaita parses Pango markup in a group's title and description and in a
- * row's title and subtitle: one "&" or "<" and the label goes blank. The rows
- * and the banner are told their text is not markup; a group, which has no
- * such switch, is handed its text escaped. */
-static void
-set_group_text (GtkWidget   *group,
-                const gchar *title,
-                const gchar *description)
+ * libadwaita parses Pango markup in a group's title and description, a status
+ * page's description and a row's title and subtitle: one "&" or "<" and the
+ * label goes blank. The rows and the banner are told their text is not markup;
+ * a group and a status page, which have no such switch, are handed it escaped
+ * (g_paste_gtk_util_set_group_text (), g_paste_gtk_util_set_status_text ()). */
+
+/* Every prompt is a modal window of its own, @header over @content, rather than
+ * an AdwDialog: the daemon has no window to put a dialog inside. Escape is
+ * GtkWindow's own window.close, as its close button is, which the prompts that
+ * ask something turn into a dismissal from their "destroy" handler. */
+static GtkWindow *
+prompt_window_new (GPastePrompt *prompt,
+                   const gchar  *title,
+                   gint          width,
+                   GtkWidget    *header,
+                   GtkWidget    *content)
 {
-    if (title)
-    {
-        g_autofree gchar *escaped = g_markup_escape_text (title, -1);
+    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
+    GtkWidget *toolbar = adw_toolbar_view_new ();
+    GtkEventController *shortcuts = gtk_shortcut_controller_new ();
 
-        adw_preferences_group_set_title (ADW_PREFERENCES_GROUP (group), escaped);
-    }
+    gtk_window_set_title (GTK_WINDOW (window), title);
+    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
+    gtk_window_set_default_size (GTK_WINDOW (window), width, -1);
+    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
 
-    if (description)
-    {
-        g_autofree gchar *escaped = g_markup_escape_text (description, -1);
+    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
+    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
+    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
 
-        adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group), escaped);
-    }
+    gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (shortcuts),
+                                          gtk_shortcut_new (gtk_keyval_trigger_new (GDK_KEY_Escape, 0),
+                                                            gtk_named_action_new ("window.close")));
+    gtk_widget_add_controller (window, shortcuts);
+
+    return GTK_WINDOW (window);
 }
 
-static void
-set_row_title (GtkWidget   *row,
-               const gchar *title)
+/* The page a report or a question warns with, @description carrying a
+ * GError's text or naming histories: names the user chose and paths from the
+ * filesystem, one "&" in which would otherwise leave a warning that says
+ * nothing. */
+static GtkWidget *
+warning_status_page_new (const gchar *title,
+                         const gchar *description)
 {
-    adw_preferences_row_set_use_markup (ADW_PREFERENCES_ROW (row), FALSE);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), title);
+    GtkWidget *status = adw_status_page_new ();
+
+    adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
+    g_paste_gtk_util_set_status_text (ADW_STATUS_PAGE (status), title, description);
+
+    return status;
 }
 
 /*
@@ -81,26 +103,6 @@ typedef struct
     guint                n_backends;
 } MigrationDialog;
 
-/* Answering from "destroy" is what makes every way of losing the window an
- * answer: gtk_window_destroy() does not emit close-request, and neither does the
- * GtkApplication shutdown that tears the last window down when the daemon loses
- * its D-Bus name — so a dialog up at that moment would never answer, and the
- * caller's `done` would never run. Replying already claimed the request, so this
- * is a no-op on that path.
- *
- * "destroy" and not the teardown below: a destroy notify runs from finalize, so
- * anything still holding a reference on the window at that point (an animation,
- * an a11y peer, a queued frame callback) would defer the answer for as long as
- * it holds it — with the whole daemon startup waiting on it. */
-static void
-migration_dialog_dismiss (GtkWindow *window G_GNUC_UNUSED,
-                          gpointer   user_data)
-{
-    MigrationDialog *self = user_data;
-
-    g_paste_prompt_request_dismiss (self->request);
-}
-
 /* The widgets that carry @self are gone by now, so nothing can reach it again. */
 static void
 migration_dialog_free (gpointer data)
@@ -111,6 +113,8 @@ migration_dialog_free (gpointer data)
     g_free (self->backend_checks);
     g_free (self);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (MigrationDialog, migration_dialog_free)
 
 /* Which backend is picked, into @chosen. None is only until the user picks one,
  * when the backend in use is not on the list: nothing is picked for them. */
@@ -150,10 +154,9 @@ update_state (MigrationDialog *self)
     if (!backend_changes)
         adw_switch_row_set_active (self->cleanup_row, FALSE);
 
-    /* Deleting the old data without importing it first throws it away. */
     adw_banner_set_revealed (self->warning,
-                             adw_switch_row_get_active (self->cleanup_row) &&
-                             !adw_switch_row_get_active (self->import_row));
+                             g_paste_prompt_cleanup_warns (adw_switch_row_get_active (self->import_row),
+                                                           adw_switch_row_get_active (self->cleanup_row)));
 }
 
 static void
@@ -211,24 +214,6 @@ on_keep (GtkButton *button G_GNUC_UNUSED,
     gtk_window_destroy (self->window);
 }
 
-/* Escape closes the dialog like its close button; the teardown above is what
- * turns that into a dismissal. */
-static gboolean
-on_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                guint                  keyval,
-                guint                  keycode    G_GNUC_UNUSED,
-                GdkModifierType        state      G_GNUC_UNUSED,
-                gpointer               user_data)
-{
-    MigrationDialog *self = user_data;
-
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (self->window);
-    return GDK_EVENT_STOP;
-}
-
 static void
 g_paste_prompt_adw_migration (GPastePrompt        *prompt,
                               GPastePromptRequest *request)
@@ -238,14 +223,6 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     self->request = g_object_ref (request);
     self->current = g_paste_prompt_request_get_current (request);
     self->backends = g_paste_prompt_request_get_offered (request, &self->n_backends);
-
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE));
-    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (self->window, 480, -1);
-    gtk_window_set_modal (self->window, TRUE);
 
     GtkWidget *apply = self->apply = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_ACCEPT));
 
@@ -282,10 +259,10 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
 
     GtkWidget *backends = adw_preferences_group_new ();
 
-    set_group_text (backends,
-                    g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
-                    g_paste_prompt_text (g_paste_prompt_request_can_keep (self->request) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
-                                                                                         : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (backends),
+                                     g_paste_prompt_text (G_PASTE_PROMPT_TEXT_STORAGE_BACKEND),
+                                     g_paste_prompt_text (g_paste_prompt_request_can_keep (self->request) ? G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION
+                                                                                                          : G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT));
 
     /* Radios rather than a combo, as the shell prompt's exclusive checkboxes
      * are: no preselection when the backend in use is not on the list, since
@@ -301,7 +278,7 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
         GtkWidget *check = gtk_check_button_new ();
 
         self->backend_checks[i] = GTK_CHECK_BUTTON (check);
-        set_row_title (row, g_paste_prompt_storage_label (self->backends[i]));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (row), g_paste_prompt_storage_label (self->backends[i]));
         gtk_check_button_set_group (self->backend_checks[i], (i) ? self->backend_checks[0] : NULL);
         gtk_check_button_set_active (self->backend_checks[i], self->backends[i] == self->current);
         adw_action_row_add_prefix (ADW_ACTION_ROW (row), check);
@@ -313,13 +290,13 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     GtkWidget *import_row = adw_switch_row_new ();
 
     self->import_row = ADW_SWITCH_ROW (import_row);
-    set_row_title (import_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (import_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_IMPORT_SUBTITLE));
 
     GtkWidget *cleanup_row = adw_switch_row_new ();
 
     self->cleanup_row = ADW_SWITCH_ROW (cleanup_row);
-    set_row_title (cleanup_row, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP));
     adw_action_row_set_subtitle (ADW_ACTION_ROW (cleanup_row), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLEANUP_SUBTITLE));
 
     GtkWidget *group = adw_preferences_group_new ();
@@ -337,22 +314,24 @@ g_paste_prompt_adw_migration (GPastePrompt        *prompt,
     gtk_box_append (GTK_BOX (content), warning);
     gtk_box_append (GTK_BOX (content), page);
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
-
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), content);
-
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
+    self->window = prompt_window_new (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_TITLE), 480, header, content);
 
     g_signal_connect (import_row, "notify::active", G_CALLBACK (on_state_changed), self);
     g_signal_connect (cleanup_row, "notify::active", G_CALLBACK (on_state_changed), self);
-    g_signal_connect (window, "destroy", G_CALLBACK (migration_dialog_dismiss), self);
-    g_object_set_data_full (G_OBJECT (window), "gpaste-migration-dialog", self, migration_dialog_free);
-
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_key_pressed), self);
-    gtk_widget_add_controller (window, key_controller);
+    /* Answering from "destroy" is what makes every way of losing the window
+     * an answer: gtk_window_destroy() does not emit close-request, and neither
+     * does the GtkApplication shutdown that tears the last window down when
+     * the daemon loses its D-Bus name — so a dialog up at that moment would
+     * never answer, and the caller's `done` would never run. Replying already
+     * claimed the request, so this is a no-op on that path.
+     *
+     * "destroy" and not the teardown below: a destroy notify runs from
+     * finalize, so anything still holding a reference on the window at that
+     * point (an animation, an a11y peer, a queued frame callback) would defer
+     * the answer for as long as it holds it — with the whole daemon startup
+     * waiting on it. The request that teardown releases is there until then. */
+    g_signal_connect_swapped (self->window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), self->request);
+    g_object_set_data_full (G_OBJECT (self->window), "gpaste-migration-dialog", self, migration_dialog_free);
 
     update_state (self);
 
@@ -383,17 +362,6 @@ typedef struct
     GtkWidget           *strength_row;
 } PassphraseDialog;
 
-/* See migration_dialog_dismiss(): answering from "destroy" is what makes every
- * way of losing the window an answer, without waiting on finalize. */
-static void
-passphrase_dialog_dismiss (GtkWindow *window G_GNUC_UNUSED,
-                           gpointer   user_data)
-{
-    PassphraseDialog *self = user_data;
-
-    g_paste_prompt_request_dismiss (self->request);
-}
-
 static void
 passphrase_dialog_free (gpointer data)
 {
@@ -402,6 +370,8 @@ passphrase_dialog_free (gpointer data)
     g_clear_object (&self->request);
     g_free (self);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PassphraseDialog, passphrase_dialog_free)
 
 static void
 passphrase_update_ok (PassphraseDialog *self)
@@ -454,36 +424,12 @@ on_passphrase_ok (GtkButton *button G_GNUC_UNUSED,
                   gpointer   user_data)
 {
     PassphraseDialog *self = user_data;
-    GPasteStorageRemember remember = G_PASTE_STORAGE_REMEMBER_UNCHANGED;
-
-    /* Only report the choice: the keyring is written by whoever established that
-     * this passphrase is the right one, which cannot be known from here. */
-    if (self->remember && adw_switch_row_get_active (ADW_SWITCH_ROW (self->remember)))
-        remember = G_PASTE_STORAGE_REMEMBER_YES;
-    else if (self->remembered)
-        remember = G_PASTE_STORAGE_REMEMBER_NO;
+    gboolean switch_on = self->remember && adw_switch_row_get_active (ADW_SWITCH_ROW (self->remember));
+    GPasteStorageRemember remember = g_paste_prompt_remember_answer (switch_on, self->remembered);
 
     /* Reply while the entry text is still alive; the reply copies it. */
     g_paste_prompt_request_reply_passphrase (self->request, gtk_editable_get_text (self->entry), remember);
     gtk_window_destroy (self->window);
-}
-
-/* Escape closes the prompt like its close button; the teardown is what turns
- * that into a dismissal. */
-static gboolean
-on_passphrase_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                           guint                  keyval,
-                           guint                  keycode    G_GNUC_UNUSED,
-                           GdkModifierType        state      G_GNUC_UNUSED,
-                           gpointer               user_data)
-{
-    PassphraseDialog *self = user_data;
-
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (self->window);
-    return GDK_EVENT_STOP;
 }
 
 static void
@@ -496,15 +442,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
     self->request = g_object_ref (request);
 
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    self->window = GTK_WINDOW (window);
-    gtk_window_set_title (self->window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE));
-    gtk_window_set_icon_name (self->window, G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (self->window, 420, -1);
-    gtk_window_set_modal (self->window, TRUE);
-
-    GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_text (confirm ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT));
+    GtkWidget *ok = gtk_button_new_with_label (g_paste_prompt_request_get_accept_label (request));
 
     self->ok = ok;
     gtk_widget_add_css_class (ok, "suggested-action");
@@ -518,7 +456,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
     GtkWidget *entry = adw_password_entry_row_new ();
 
     self->entry = GTK_EDITABLE (entry);
-    set_row_title (entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE));
     g_signal_connect (entry, "changed", G_CALLBACK (on_passphrase_changed), self);
     /* Enter submits, as it does in the shell prompt: an unlock that only takes
      * the mouse is an unlock the daemon waits on for no reason. */
@@ -539,7 +477,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         GtkWidget *confirm_entry = adw_password_entry_row_new ();
 
         self->confirm_entry = GTK_EDITABLE (confirm_entry);
-        set_row_title (confirm_entry, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (confirm_entry), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM));
         g_signal_connect (confirm_entry, "changed", G_CALLBACK (on_passphrase_changed), self);
         /* Enter submits from here too: this is the field the user finishes
          * typing in, and the shell prompt takes it in both of its entries. */
@@ -555,22 +493,14 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), self->strength_row);
     }
 
-    /* Whatever the prompt has to say, said once. The standing explanation
-     * depends on which question is being asked, unless the request brings its
-     * own; an error joins it rather than replacing it, and the shell backend
-     * shows both the same way. */
-    const gchar *standing = g_paste_prompt_request_get_description (request);
-
-    if (!standing)
-    {
-        standing = confirm
-            ? g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION)
-            : g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
-    }
+    /* Whatever the prompt has to say, said once: an error joins the standing
+     * explanation rather than replacing it, and the shell backend shows both
+     * the same way. */
+    const gchar *standing = g_paste_prompt_request_get_shown_description (request);
     g_autofree gchar *description = error_message ? g_strconcat (error_message, "\n\n", standing, NULL)
                                                   : NULL;
 
-    set_group_text (group, NULL, description ? description : standing);
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (group), NULL, description ? description : standing);
 
     if (g_paste_prompt_request_offers_remember (request))
     {
@@ -578,7 +508,7 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
         gboolean starts_on;
 
         self->remember = remember;
-        set_row_title (remember, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
+        g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER));
         adw_action_row_set_subtitle (ADW_ACTION_ROW (remember), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_REMEMBER_SUBTITLE));
 
         g_paste_prompt_remember_state (g_paste_prompt_request_get_remember (request),
@@ -592,19 +522,13 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
 
     adw_preferences_page_add (ADW_PREFERENCES_PAGE (page), ADW_PREFERENCES_GROUP (group));
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
+    self->window = prompt_window_new (prompt, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_TITLE), 420, header, page);
 
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), page);
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
-
-    g_signal_connect (window, "destroy", G_CALLBACK (passphrase_dialog_dismiss), self);
-    g_object_set_data_full (G_OBJECT (window), "gpaste-passphrase-dialog", self, passphrase_dialog_free);
-
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
-
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_passphrase_key_pressed), self);
-    gtk_widget_add_controller (window, key_controller);
+    /* As in g_paste_prompt_adw_migration (): answering from "destroy" is what
+     * makes every way of losing the window an answer, without waiting on
+     * finalize. */
+    g_signal_connect_swapped (self->window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), self->request);
+    g_object_set_data_full (G_OBJECT (self->window), "gpaste-passphrase-dialog", self, passphrase_dialog_free);
 
     gtk_window_present (self->window);
 }
@@ -613,68 +537,75 @@ g_paste_prompt_adw_passphrase (GPastePrompt        *prompt,
  * The report
  */
 
-/* Escape closes it like its close button. Nothing is answered either way — a
- * report has no answer — so losing the window needs no teardown of its own. */
-static gboolean
-on_report_key_pressed (GtkEventControllerKey *controller G_GNUC_UNUSED,
-                       guint                  keyval,
-                       guint                  keycode    G_GNUC_UNUSED,
-                       GdkModifierType        state      G_GNUC_UNUSED,
-                       gpointer               user_data)
-{
-    if (keyval != GDK_KEY_Escape)
-        return GDK_EVENT_PROPAGATE;
-
-    gtk_window_close (user_data);
-    return GDK_EVENT_STOP;
-}
-
-/* A window rather than an AdwAlertDialog, for the same reason the two prompts
- * above are windows: the daemon has no window to put a dialog inside. */
+/* Nothing is answered however it goes -- a report has no answer -- so losing
+ * the window needs no teardown of its own. */
 static void
 g_paste_prompt_adw_report (GPastePrompt *prompt,
                            const gchar  *title,
                            const gchar  *message)
 {
-    GtkWidget *window = adw_application_window_new (G_PASTE_PROMPT_ADW (prompt)->application);
-
-    gtk_window_set_title (GTK_WINDOW (window), title);
-    gtk_window_set_icon_name (GTK_WINDOW (window), G_PASTE_ICON_NAME);
-    gtk_window_set_default_size (GTK_WINDOW (window), 420, -1);
-    gtk_window_set_modal (GTK_WINDOW (window), TRUE);
-
     GtkWidget *close = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CLOSE));
 
     gtk_widget_add_css_class (close, "suggested-action");
-    g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
 
     GtkWidget *header = adw_header_bar_new ();
 
     adw_header_bar_pack_end (ADW_HEADER_BAR (header), close);
 
-    GtkWidget *status = adw_status_page_new ();
-    /* The description is Pango markup (the title is not), and @message carries a
-     * GError's text: history names the user chose and paths from the filesystem.
-     * One "&" in either makes the markup fail to parse, and the window would go
-     * up with an empty description -- a report that reports nothing. */
-    g_autofree gchar *escaped = g_markup_escape_text (message, -1);
+    GtkWidget *status = warning_status_page_new (title, message);
+    GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
 
-    adw_status_page_set_icon_name (ADW_STATUS_PAGE (status), "dialog-warning-symbolic");
-    adw_status_page_set_title (ADW_STATUS_PAGE (status), title);
-    adw_status_page_set_description (ADW_STATUS_PAGE (status), escaped);
+    g_signal_connect_swapped (close, "clicked", G_CALLBACK (gtk_window_destroy), window);
+    gtk_window_present (window);
+}
 
-    GtkWidget *toolbar = adw_toolbar_view_new ();
+/*
+ * The confirmation
+ */
 
-    adw_toolbar_view_add_top_bar (ADW_TOOLBAR_VIEW (toolbar), header);
-    adw_toolbar_view_set_content (ADW_TOOLBAR_VIEW (toolbar), status);
-    adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), toolbar);
+static void
+on_confirm_accepted (GtkButton *button G_GNUC_UNUSED,
+                     gpointer   user_data)
+{
+    GtkWindow *window = user_data;
 
-    GtkEventController *key_controller = gtk_event_controller_key_new ();
+    g_paste_prompt_request_reply_confirm (g_object_get_data (G_OBJECT (window), "gpaste-confirm-request"));
+    gtk_window_destroy (window);
+}
 
-    g_signal_connect (key_controller, "key-pressed", G_CALLBACK (on_report_key_pressed), window);
-    gtk_widget_add_controller (window, key_controller);
+/* Cancel is the default and has the focus, the destructive answer at the other
+ * end of the header bar: the question takes the keyboard from wherever the user
+ * was typing, and an Enter meant for that must not be what goes through with
+ * it. Cancel, Escape and the window going decline. */
+static void
+g_paste_prompt_adw_confirm (GPastePrompt        *prompt,
+                            GPastePromptRequest *request)
+{
+    const gchar *title = g_paste_prompt_request_get_title (request);
+    GtkWidget *cancel = gtk_button_new_with_label (g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+    GtkWidget *accept = gtk_button_new_with_label (g_paste_prompt_request_get_accept_label (request));
 
-    gtk_window_present (GTK_WINDOW (window));
+    gtk_widget_add_css_class (accept, "destructive-action");
+
+    GtkWidget *header = adw_header_bar_new ();
+
+    adw_header_bar_set_show_end_title_buttons (ADW_HEADER_BAR (header), FALSE);
+    adw_header_bar_pack_start (ADW_HEADER_BAR (header), cancel);
+    adw_header_bar_pack_end (ADW_HEADER_BAR (header), accept);
+
+    GtkWidget *status = warning_status_page_new (title, g_paste_prompt_request_get_description (request));
+    GtkWindow *window = prompt_window_new (prompt, title, 420, header, status);
+
+    g_object_set_data_full (G_OBJECT (window), "gpaste-confirm-request", g_object_ref (request), g_object_unref);
+    /* As in g_paste_prompt_adw_migration (): every way of losing the window
+     * but the accepting button declines, the request held above until then. */
+    g_signal_connect_swapped (window, "destroy", G_CALLBACK (g_paste_prompt_request_dismiss), request);
+    g_signal_connect_swapped (cancel, "clicked", G_CALLBACK (gtk_window_destroy), window);
+    g_signal_connect (accept, "clicked", G_CALLBACK (on_confirm_accepted), window);
+
+    gtk_window_set_default_widget (window, cancel);
+    gtk_window_set_focus (window, cancel);
+    gtk_window_present (window);
 }
 
 static void
@@ -683,6 +614,7 @@ g_paste_prompt_adw_prompt_iface_init (GPastePromptInterface *iface)
     iface->passphrase = g_paste_prompt_adw_passphrase;
     iface->migration = g_paste_prompt_adw_migration;
     iface->report = g_paste_prompt_adw_report;
+    iface->confirm = g_paste_prompt_adw_confirm;
 }
 
 static void

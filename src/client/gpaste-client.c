@@ -16,23 +16,111 @@
 
 typedef struct
 {
-    GPasteClient *client;
-    gint          argc;
-    const gchar **args;
-    gchar        *pipe_data;
-    gboolean      help;
-    gboolean      version;
-    gboolean      favourites;
-    gboolean      oneline;
-    gboolean      raw;
-    gboolean      reverse;
-    gboolean      use_index;
-    gboolean      zero;
-    guint         timeout;
-    gboolean      timeout_given;
-    const gchar  *decoration;
-    const gchar  *separator;
+    GPasteClient     *client;
+    gint              argc;
+    const gchar     **args;
+    gchar            *pipe_data;
+    gboolean          help;
+    gboolean          version;
+    gboolean          favourites;
+    gboolean          oneline;
+    gboolean          raw;
+    gboolean          reverse;
+    gboolean          use_index;
+    gboolean          zero;
+    guint             timeout;
+    const gchar      *decoration;
+    const gchar      *separator;
+    guint             given;      /* the options on the command line, by option_bit () */
+    /* The item a single --use-index looked up, for a verb reading it whole
+     * not to read it again; owned by g_paste_dispatch (). */
+    GPasteClientItem *indexed;
 } Context;
+
+/* The --help headings the options are listed under, in that order. */
+typedef enum
+{
+    OPTION_GROUP_GENERAL,
+    OPTION_GROUP_CONVENIENCE,
+    OPTION_GROUP_DISPLAY,
+    OPTION_GROUP_MERGE,
+    N_OPTION_GROUPS
+} OptionGroup;
+
+static const gchar *option_groups[N_OPTION_GROUPS] = {
+    [OPTION_GROUP_GENERAL]     = N_ ("General options:"),
+    [OPTION_GROUP_CONVENIENCE] = N_ ("Convenience options:"),
+    [OPTION_GROUP_DISPLAY]     = N_ ("Display options:"),
+    [OPTION_GROUP_MERGE]       = N_ ("Merge options:"),
+};
+
+typedef struct
+{
+    const gchar *name;    /* the long form */
+    gchar        letter;  /* the short form, which commands[] names it by */
+    gint         has_arg; /* no_argument or required_argument */
+    const gchar *arg;     /* what --help shows it takes, or NULL; untranslated */
+    OptionGroup  group;
+    const gchar *doc;     /* untranslated */
+} Option;
+
+/* Every option, in the order --help lists them. getopt's table and
+ * letters are built from it, and commands[] names the ones each verb
+ * reads by their letters: tests/completions holds bash's completion and
+ * the man page to it. The general ones are described in the words of the
+ * verbs they do the work of. */
+static const Option options[] = {
+    { "help",       'h', no_argument,       NULL,           OPTION_GROUP_GENERAL,     N_ ("display this help") },
+    { "version",    'v', no_argument,       NULL,           OPTION_GROUP_GENERAL,     N_ ("display the version") },
+    /* Translators: help for --favourites */
+    { "favourites", 'f', no_argument,       NULL,           OPTION_GROUP_CONVENIENCE, N_ ("only display the pinned items") },
+    /* Translators: help for --timeout <seconds> */
+    { "timeout",    't', required_argument, N_ ("seconds"), OPTION_GROUP_CONVENIENCE, N_ ("how long a password stays on the clipboard, in seconds; 0 for as long as anything else") },
+    /* Translators: help for --use-index */
+    { "use-index",  'i', no_argument,       NULL,           OPTION_GROUP_CONVENIENCE, N_ ("use the index of the item instead of its UUID") },
+    /* Translators: help for --oneline */
+    { "oneline",    'o', no_argument,       NULL,           OPTION_GROUP_DISPLAY,     N_ ("display each item on only one line") },
+    /* Translators: help for --raw */
+    { "raw",        'r', no_argument,       NULL,           OPTION_GROUP_DISPLAY,     N_ ("display each item alone, without its uuid or index") },
+    /* Translators: help for --reverse */
+    { "reverse",    'e', no_argument,       NULL,           OPTION_GROUP_DISPLAY,     N_ ("display the items in reverse order") },
+    /* Translators: help for --zero */
+    { "zero",       'z', no_argument,       NULL,           OPTION_GROUP_DISPLAY,     N_ ("use a NUL character instead of a new line between each item") },
+    /* Translators: help for --decoration <string> */
+    { "decoration", 'd', required_argument, N_ ("string"),  OPTION_GROUP_MERGE,       N_ ("add the given decoration to the beginning and the end of each item before merging") },
+    /* Translators: help for --separator <string> */
+    { "separator",  's', required_argument, N_ ("string"),  OPTION_GROUP_MERGE,       N_ ("add the given separator between each item when merging") },
+};
+
+G_STATIC_ASSERT (G_N_ELEMENTS (options) <= sizeof (guint) * 8);
+
+/* The bit of Context's @given standing for the option @letter names: one per
+ * row of options[], none for a letter naming no option. */
+static guint
+option_bit (gint letter)
+{
+    for (guint i = 0; i < G_N_ELEMENTS (options); ++i)
+    {
+        if (options[i].letter == letter)
+            return 1u << i;
+    }
+
+    return 0;
+}
+
+/* Whether any of the options @letters names is on the command line. */
+static gboolean
+options_given (const Context *ctx,
+               const gchar   *letters)
+{
+    for (const gchar *letter = letters; *letter; ++letter)
+    {
+        if (ctx->given & option_bit (*letter))
+            return TRUE;
+    }
+
+    return FALSE;
+}
 
 /*
  * Utility functions
@@ -58,23 +146,21 @@ parse_cmdline (int     *argc,
                Context *ctx,
                GError **error)
 {
-    struct option long_options[] = {
-        { "decoration", required_argument, NULL,  'd'  },
-        { "favourites", no_argument,       NULL,  'f'  },
-        { "help",       no_argument,       NULL,  'h'  },
-        { "oneline",    no_argument,       NULL,  'o'  },
-        { "raw",        no_argument,       NULL,  'r'  },
-        { "reverse",    no_argument,       NULL,  'e'  },
-        { "separator",  required_argument, NULL,  's'  },
-        { "timeout",    required_argument, NULL,  't'  },
-        { "use-index",  no_argument,       NULL,  'i'  },
-        { "version",    no_argument,       NULL,  'v'  },
-        { "zero",       no_argument,       NULL,  'z'  },
-        { NULL,         no_argument,       NULL,  '\0' }
-    };
+    /* Both ending with an entry of zeroes, as getopt wants them. */
+    struct option long_options[G_N_ELEMENTS (options) + 1] = { 0 };
+    gchar letters[2 * G_N_ELEMENTS (options) + 1] = { 0 };
+    gchar *letter = letters;
     gint64 c;
 
-    while ((c = getopt_long (*argc, *argv, "d:fhores:t:ivz", long_options, NULL)) != -1)
+    for (guint i = 0; i < G_N_ELEMENTS (options); ++i)
+    {
+        long_options[i] = (struct option) { options[i].name, options[i].has_arg, NULL, options[i].letter };
+        *letter++ = options[i].letter;
+        if (options[i].has_arg == required_argument)
+            *letter++ = ':';
+    }
+
+    while ((c = getopt_long (*argc, *argv, letters, long_options, NULL)) != -1)
     {
         switch (c)
         {
@@ -116,7 +202,6 @@ parse_cmdline (int     *argc,
             }
 
             ctx->timeout = (guint) timeout;
-            ctx->timeout_given = TRUE;
             break;
         }
         case 'i':
@@ -132,6 +217,8 @@ parse_cmdline (int     *argc,
             ctx->help = TRUE;
             return FALSE;
         }
+
+        ctx->given |= option_bit (c);
     }
 
     *argc -= optind;
@@ -221,37 +308,62 @@ extract_pipe_data (gchar   **data,
  * does not -- a lone one, writing over its line, is shown. Anywhere else it is
  * written as it is, a script reading the bytes the item holds.
  *
- * Whether stdout is a terminal is asked once, a listing printing many items,
- * and what lies between two such characters is written in one go. */
+ * Whether the stream is a terminal is asked once, a listing printing many
+ * items, and what lies between two such characters is written in one go.
+ *
+ * stderr too: what the daemon refuses with quotes a history name, which any
+ * client of the session bus, or any writer of the settings, picked. */
 static void
-print_text (const gchar *text)
+print_text_to (FILE        *stream,
+               const gchar *text)
 {
-    static gint terminal = -1;
+    static gint terminal[2] = { -1, -1 };
+    gboolean error_stream = stream == stderr;
 
-    if (terminal < 0)
-        terminal = isatty (STDOUT_FILENO);
+    if (terminal[error_stream] < 0)
+        terminal[error_stream] = isatty ((error_stream) ? STDERR_FILENO : STDOUT_FILENO);
 
-    if (!terminal)
+    if (!terminal[error_stream])
     {
-        fputs (text, stdout);
+        fputs (text, stream);
         return;
     }
 
-    const gchar *run = text;
+    /* The text may not be UTF-8 -- a refusal quoting an option's value echoes
+     * it as typed -- and is walked as GLib makes it valid, a byte that is not
+     * part of a character shown as U+FFFD, as a control character is: a copy
+     * made for such a text alone. */
+    g_autofree gchar *valid = (g_utf8_validate (text, -1, NULL)) ? NULL : g_utf8_make_valid (text, -1);
+    const gchar *run = (valid) ? valid : text;
 
-    for (const gchar *c = text; *c; c = g_utf8_next_char (c))
+    for (const gchar *c = run; *c; c = g_utf8_next_char (c))
     {
         gunichar u = g_utf8_get_char (c);
 
         if (u == '\n' || u == '\t' || (u == '\r' && c[1] == '\n') || !g_unichar_iscntrl (u))
             continue;
 
-        fwrite (run, 1, (gsize) (c - run), stdout);
-        fputs ("\xef\xbf\xbd", stdout);
+        fwrite (run, 1, (gsize) (c - run), stream);
+        fputs ("\xef\xbf\xbd", stream);
         run = g_utf8_next_char (c);
     }
 
-    fputs (run, stdout);
+    fputs (run, stream);
+}
+
+static void
+print_text (const gchar *text)
+{
+    print_text_to (stdout, text);
+}
+
+/* @text as print_text_to () writes it, ending a line. */
+static void
+print_line_to (FILE        *stream,
+               const gchar *text)
+{
+    print_text_to (stream, text);
+    fputc ('\n', stream);
 }
 
 static void
@@ -330,16 +442,6 @@ g_paste_flag_action (Context *ctx,
     return -1;
 }
 
-/* Whether a flag was given that, on a line with no verb, only the history
- * listing reads: g_paste_history () and print_history_line () read every one of
- * them, and the add that a verb-less line can also be reads none. A flag either
- * of those two comes to read belongs here, and in the client test's list and
- * the man page's DESCRIPTION with it (see dispatch_reads_stdin ()). */
-static gboolean
-listing_flags_given (const Context *ctx)
-{
-    return ctx->favourites || ctx->oneline || ctx->raw || ctx->reverse || ctx->use_index || ctx->zero;
-}
 
 static gint
 g_paste_history (Context *ctx,
@@ -411,16 +513,26 @@ on_legacy_asked (GObject      *source_object G_GNUC_UNUSED,
     asked->done = TRUE;
 }
 
-/* Whether a daemon of this version owns the name, still starting when its
- * presence says so: a GPaste 45 or 50 reads as starting too, the presence
- * following this interface alone, and is told apart by what the daemon's path
- * serves (g_paste_util_daemon_is_legacy (), the main context run for it). One
- * that cannot be asked is not known to be either. */
-static gboolean
-daemon_still_starting (GPasteClient *client)
+/* Who owns the name, asked while the presence reads as starting and
+ * STARTING_NONE otherwise: a daemon of this version still starting, or a
+ * GPaste 45 or 50, which reads as starting too, the presence following this
+ * interface alone -- told apart by what the daemon's path serves
+ * (g_paste_util_daemon_is_legacy (), the main context run for it) -- or one
+ * the question could not reach, which may be either: @error then says why. */
+typedef enum
+{
+    STARTING_NONE,
+    STARTING_CURRENT,
+    STARTING_LEGACY,
+    STARTING_UNKNOWN,
+} StartingOwner;
+
+static StartingOwner
+daemon_starting_owner (GPasteClient *client,
+                       GError      **error)
 {
     if (g_paste_client_get_daemon_presence (client) != G_PASTE_DAEMON_PRESENCE_STARTING)
-        return FALSE;
+        return STARTING_NONE;
 
     LegacyAsked asked = { 0 };
 
@@ -428,11 +540,13 @@ daemon_still_starting (GPasteClient *client)
     while (!asked.done)
         g_main_context_iteration (NULL, TRUE);
 
-    gboolean current = !asked.error && !asked.legacy;
+    if (asked.error)
+    {
+        g_propagate_error (error, asked.error);
+        return STARTING_UNKNOWN;
+    }
 
-    g_clear_error (&asked.error);
-
-    return current;
+    return (asked.legacy) ? STARTING_LEGACY : STARTING_CURRENT;
 }
 
 static void
@@ -467,13 +581,41 @@ reexec_fallback (GPasteClient *client,
      * unknown method, which GDBus words as an object missing at a path: what
      * is the matter is said instead. */
     if (!triggered && error && g_error_matches (*error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD) &&
-        daemon_still_starting (client))
+        daemon_starting_owner (client, NULL) == STARTING_CURRENT)
     {
         g_clear_error (error);
         set_still_starting (error);
     }
 
     return triggered;
+}
+
+/* Whether GNOME Shell runs the daemon @client talks to: its name and the
+ * Shell's own are owned by one connection. Such a daemon answers a re-exec
+ * without restarting anything, the Shell keeping the code it loaded, which the
+ * graphical tool knows too (g_paste_ui_window_restart_can_help ()). An owner
+ * that cannot be asked is not known to be the Shell. */
+static gboolean
+daemon_in_shell (GPasteClient *client)
+{
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (client));
+    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (client));
+
+    if (!connection || !owner)
+        return FALSE;
+
+    g_autoptr (GVariant) reply = g_dbus_connection_call_sync (connection, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                                              "org.freedesktop.DBus", "GetNameOwner",
+                                                              g_variant_new ("(s)", "org.gnome.Shell"), G_VARIANT_TYPE ("(s)"),
+                                                              G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
+    const gchar *shell = NULL;
+
+    if (!reply)
+        return FALSE;
+
+    g_variant_get (reply, "(&s)", &shell);
+
+    return g_paste_str_equal (owner, shell);
 }
 
 static gint
@@ -483,7 +625,10 @@ g_paste_daemon_reexec (Context *ctx,
     if (!reexec_fallback (ctx->client, g_paste_util_reexecute_daemon (ctx->client, error), error))
         return EXIT_FAILURE;
 
-    printf ("%s\n", _("Successfully re-executed the daemon"));
+    if (daemon_in_shell (ctx->client))
+        printf ("%s\n", _("GNOME Shell runs the daemon, which keeps the code it started with until you log out and back in"));
+    else
+        printf ("%s\n", _("Successfully re-executed the daemon"));
 
     return EXIT_SUCCESS;
 }
@@ -502,14 +647,37 @@ g_paste_migrate (Context *ctx,
      * re-exec happening by another route, and a gate closed before it would hand
      * the successor nothing to migrate while this printed a success.
      *
-     * Not opened at all for a daemon still starting, which no re-exec reaches:
-     * one that reads the gate open before this closes it again would run the
-     * migration, prompt included, while this reports it never asked. */
+     * Not opened at all for a daemon still starting, which no re-exec reaches,
+     * nor for an owner that could not be told apart from one: one that reads
+     * the gate open before this closes it again would run the migration,
+     * prompt included, while this reports it never asked.
+     *
+     * Nor for a name nobody owns -- an owner the dispatch did not wait for (a
+     * GPaste 45 or 50, or one its question could not reach) gone since: a
+     * daemon something else is starting meanwhile would read the gate open.
+     * Refused at once when the presence shows it; when it does not yet, the
+     * re-exec fails, starting no daemon (g_paste_client_reexecute_sync ()),
+     * and the gate closes again. */
     guint64 revision;
 
-    if (daemon_still_starting (ctx->client))
+    switch (daemon_starting_owner (ctx->client, error))
     {
+    case STARTING_CURRENT:
         set_still_starting (error);
+        return EXIT_FAILURE;
+    case STARTING_UNKNOWN:
+        g_prefix_error (error, "%s: ", _("Could not tell whether the daemon is still starting, so no migration was asked for"));
+        return EXIT_FAILURE;
+    default:
+        break;
+    }
+
+    /* Read once the question is answered, which a GPaste 45 or 50 may leave
+     * as it answers. Refused as the wait for a daemon refuses one gone
+     * (g_paste_util_wait_for_daemon ()). */
+    if (g_paste_client_get_daemon_presence (ctx->client) == G_PASTE_DAEMON_PRESENCE_ABSENT)
+    {
+        g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history."));
         return EXIT_FAILURE;
     }
 
@@ -568,12 +736,9 @@ g_paste_doctor (Context *ctx,
         return EXIT_FAILURE;
 
     /* A line names files of the history directory, another user's among them:
-     * through print_text (), as an item is. */
+     * through print_text_to (), as an item is. */
     for (GStrv line = report; *line; ++line)
-    {
-        print_text (*line);
-        putchar ('\n');
-    }
+        print_line_to (stdout, *line);
 
     if (!*report)
         printf ("%s\n", _("Nothing to put right"));
@@ -595,7 +760,9 @@ g_paste_daemon_version (Context *ctx,
         return EXIT_FAILURE;
     }
 
-    printf ("%s\n", v);
+    /* What a daemon answers goes out through print_text_to (): one of an
+     * older GPaste, still running after an update, checks none of it. */
+    print_line_to (stdout, v);
 
     return EXIT_SUCCESS;
 }
@@ -641,8 +808,7 @@ g_paste_get_history (Context *ctx,
         return EXIT_FAILURE;
 
     /* A name is a file's, which any process of the session may choose. */
-    print_text (name);
-    putchar ('\n');
+    print_line_to (stdout, name);
 
     return EXIT_SUCCESS;
 }
@@ -756,7 +922,7 @@ g_paste_add (Context *ctx,
 static guint
 password_timeout (Context *ctx)
 {
-    if (ctx->timeout_given)
+    if (options_given (ctx, "t"))
         return ctx->timeout;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
@@ -846,7 +1012,7 @@ static gint
 g_paste_get (Context *ctx,
              GError **error)
 {
-    g_autoptr (GPasteClientItem) item = g_paste_client_get_item_sync (ctx->client, ctx->args[0], error);
+    g_autoptr (GPasteClientItem) item = (ctx->indexed) ? g_object_ref (ctx->indexed) : g_paste_client_get_item_sync (ctx->client, ctx->args[0], error);
 
     if (*error)
         return EXIT_FAILURE;
@@ -953,7 +1119,8 @@ g_paste_upload (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s\n", url);
+    /* As g_paste_daemon_version () prints what the daemon answers. */
+    print_line_to (stdout, url);
 
     return EXIT_SUCCESS;
 }
@@ -969,7 +1136,7 @@ g_paste_upload_and_copy (Context *ctx,
     if (*error)
         return EXIT_FAILURE;
 
-    printf ("%s\n", url);
+    print_line_to (stdout, url);
 
     return EXIT_SUCCESS;
 }
@@ -982,7 +1149,7 @@ g_paste_make_password (Context *ctx,
      * password keeps the countdown it carries -- the settings' default would
      * cancel a running one -- and a text item becoming one takes that default
      * anyway, which is what the sentinel asks the daemon for. */
-    guint timeout = (ctx->timeout_given) ? ctx->timeout : G_PASTE_PASSWORD_TIMEOUT_UNCHANGED;
+    guint timeout = (options_given (ctx, "t")) ? ctx->timeout : G_PASTE_PASSWORD_TIMEOUT_UNCHANGED;
     g_autofree gchar *uuid = g_paste_client_make_password_sync (ctx->client, ctx->args[0], ctx->args[1], timeout, error);
 
     return (*error) ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -1001,14 +1168,15 @@ g_paste_merge (Context *ctx,
  * Main
  */
 
-/* What a verb needs of the daemon: nothing; a client, for one that copes with
- * a daemon not serving (yet, or ever: one older than this interface); or a
- * daemon serving, waited for. */
+/* What a verb needs of the daemon: nothing; one serving, waited for; or the
+ * same, bar a GPaste 45 or 50, which never serves this interface and is what
+ * the re-exec verbs reach by signal, unwaited for (g_paste_dispatch () says
+ * which owners those are). */
 typedef enum
 {
     CLIENT_NONE,
-    CLIENT_ANY,
     CLIENT_READY,
+    CLIENT_READY_OR_LEGACY,
 } ClientNeed;
 
 typedef struct
@@ -1020,6 +1188,7 @@ typedef struct
     ClientNeed   needs_client;
     gboolean     reads_pipe;   /* takes its last argument from stdin when it is absent */
     gint         item_args;    /* leading item arguments, G_MAXINT for all */
+    const gchar *options;      /* the letters of the options it reads, the --use-index @item_args imply aside */
     const gchar *args;         /* what --help shows after the verb */
     const gchar *doc;          /* untranslated */
     gint       (*handler) (Context *ctx,
@@ -1027,53 +1196,53 @@ typedef struct
 } Command;
 
 /* Every verb GPaste answers to, in the order --help lists them. Carrying the
- * usage and the description here rather than in a second list is what stops a
- * verb from being added without them; tests/completions checks the shell
- * completions and the man page against it. */
+ * usage, the description and the options here rather than in a second list is
+ * what stops a verb from being added without them; tests/completions checks the
+ * shell completions and the man page against it. */
 static const Command commands[] = {
         /* The verb-less forms, first: a flag with no verb at all, then a piped-in
          * item or, with nothing at all, the history. */
-        { 0, NULL, NULL, G_MAXINT, CLIENT_NONE,   FALSE, 0,        NULL, NULL, g_paste_flag_action },
-        { 0, NULL, NULL, 0,        CLIENT_READY,  TRUE,  0,        NULL, NULL, g_paste_add         },
-        { 0, NULL, NULL, 0,        CLIENT_READY,  FALSE, 0,        NULL, NULL, g_paste_history     },
+        { 0, NULL, NULL, G_MAXINT, CLIENT_NONE,            FALSE, 0,        "hv",     NULL, NULL, g_paste_flag_action },
+        { 0, NULL, NULL, 0,        CLIENT_READY,           TRUE,  0,        "",       NULL, NULL, g_paste_add         },
+        { 0, NULL, NULL, 0,        CLIENT_READY,           FALSE, 0,        "fiorez", NULL, NULL, g_paste_history     },
 
-        { 1, "history",           "h",               0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("print the history with UUIDs"),                                                            g_paste_history },
-        { 1, "history-size",      "hs",              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("print the size of the current history"),                                                   g_paste_history_size },
-        { 2, "search",            NULL,              0,        CLIENT_READY,  FALSE, 0,        N_ ("<pattern>"),             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
-        { 1, "get-history",       "gh",              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("get the name of the current history"),                                                     g_paste_get_history },
-        { 2, "backup-history",    "bh",              1,        CLIENT_READY,  FALSE, 0,        N_ ("[<history>] <backup>"),  N_ ("back up <history>, the current one if not given, as <backup>"),                            g_paste_backup_history },
-        { 2, "switch-history",    "sh",              0,        CLIENT_READY,  FALSE, 0,        N_ ("<name>"),                N_ ("switch to another history"),                                                               g_paste_switch_history },
-        { 1, "delete-history",    "dh",              1,        CLIENT_READY,  FALSE, 0,        N_ ("[<name>]"),              N_ ("delete the history <name>, the current one if not given"),                                 g_paste_delete_history },
-        { 1, "list-histories",    "lh",              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("list available histories"),                                                                g_paste_list_histories },
-        { 1, "add",               "a",               1,        CLIENT_READY,  TRUE,  0,        N_ ("[<text>]"),              N_ ("set text to clipboard, <text> read from stdin if absent"),                                 g_paste_add },
-        { 2, "add-password",      "ap",              1,        CLIENT_READY,  TRUE,  0,        N_ ("<name> [<password>]"),   N_ ("add the <name> / <password> pair to the clipboard, <password> read from stdin if absent"), g_paste_add_password },
-        { 2, "get",               "g",               0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
-        { 2, "select",            "s set",           0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
-        { 2, "replace",           NULL,              1,        CLIENT_READY,  TRUE,  1,        N_ ("<uuid> [<contents>]"),   N_ ("replace the contents of the item <uuid> with <contents>, read from stdin if absent"),      g_paste_replace },
-        { 2, "strip-rich-text",   "srt",             0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
-        { 3, "merge",             "m",               G_MAXINT, CLIENT_READY,  FALSE, G_MAXINT, N_ ("<uuid> … <uuid>"),       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
-        { 3, "make-password",     "mp",              0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid> <name>"),         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
-        { 2, "delete",            "d del rm remove", 0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
-        { 2, "favourite",         "fav",             0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
-        { 2, "unfavourite",       "unfav",           0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
-        { 2, "delete-password",   "dp",              0,        CLIENT_READY,  FALSE, 0,        N_ ("<name>"),                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
-        { 2, "file",              "f",               0,        CLIENT_READY,  FALSE, 0,        N_ ("<path>"),                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
-        { 1, "empty",             "e",               1,        CLIENT_READY,  FALSE, 0,        N_ ("[<name>]"),              N_ ("empty the history <name>, the current one if not given"),                                  g_paste_empty },
-        { 1, "start",             "d daemon",        0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("start tracking clipboard changes"),                                                        g_paste_start },
-        { 1, "stop",              "q quit",          0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
-        { 1, "daemon-reexec",     "dr",              0,        CLIENT_ANY,    FALSE, 0,        NULL,                         N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
-        { 1, "migrate",           NULL,              0,        CLIENT_ANY,    FALSE, 0,        NULL,                         N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
-        { 1, "change-passphrase", NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
-        { 1, "doctor",            NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("check the history folder and every history, putting right what can be"),                   g_paste_doctor },
-        { 1, "preferences",       "p settings",      0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("launch the configuration tool"),                                                           g_paste_preferences },
-        { 1, "ui",                NULL,              0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("launch the graphical tool"),                                                               g_paste_ui },
-        { 1, "show-history",      NULL,              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },
-        { 2, "upload",            "u",               0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
-        { 2, "upload-and-copy",   "uc",              0,        CLIENT_READY,  FALSE, 1,        N_ ("<uuid>"),                N_ ("upload the item <uuid> to a pastebin service, and copy its address"),                      g_paste_upload_and_copy },
-        { 1, "version",           "v",               0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("display the version"),                                                                     g_paste_version },
-        { 1, "daemon-version",    "dv",              0,        CLIENT_READY,  FALSE, 0,        NULL,                         N_ ("display the daemon version"),                                                              g_paste_daemon_version },
-        { 1, "help",              NULL,              0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("display this help"),                                                                       g_paste_help },
-        { 1, "about",             NULL,              0,        CLIENT_NONE,   FALSE, 0,        NULL,                         N_ ("display the about dialog"),                                                                g_paste_about },
+        { 1, "history",           "h",               0,        CLIENT_READY,           FALSE, 0,        "fiorez", NULL,                         N_ ("print the history with UUIDs"),                                                            g_paste_history },
+        { 1, "history-size",      "hs",              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("print the size of the current history"),                                                   g_paste_history_size },
+        { 2, "search",            NULL,              0,        CLIENT_READY,           FALSE, 0,        "fiorez", N_ ("<pattern>"),             N_ ("print the items of the history matching <pattern>"),                                       g_paste_search },
+        { 1, "get-history",       "gh",              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("get the name of the current history"),                                                     g_paste_get_history },
+        { 2, "backup-history",    "bh",              1,        CLIENT_READY,           FALSE, 0,        "",       N_ ("[<history>] <backup>"),  N_ ("back up <history>, the current one if not given, as <backup>"),                            g_paste_backup_history },
+        { 2, "switch-history",    "sh",              0,        CLIENT_READY,           FALSE, 0,        "",       N_ ("<name>"),                N_ ("switch to another history"),                                                               g_paste_switch_history },
+        { 1, "delete-history",    "dh",              1,        CLIENT_READY,           FALSE, 0,        "",       N_ ("[<name>]"),              N_ ("delete the history <name>, the current one if not given"),                                 g_paste_delete_history },
+        { 1, "list-histories",    "lh",              0,        CLIENT_READY,           FALSE, 0,        "z",      NULL,                         N_ ("list available histories"),                                                                g_paste_list_histories },
+        { 1, "add",               "a",               1,        CLIENT_READY,           TRUE,  0,        "",       N_ ("[<text>]"),              N_ ("set text to clipboard, <text> read from stdin if absent"),                                 g_paste_add },
+        { 2, "add-password",      "ap",              1,        CLIENT_READY,           TRUE,  0,        "t",      N_ ("<name> [<password>]"),   N_ ("add the <name> / <password> pair to the clipboard, <password> read from stdin if absent"), g_paste_add_password },
+        { 2, "get",               "g",               0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("get the item <uuid> from the history"),                                                    g_paste_get },
+        { 2, "select",            "s set",           0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("set the item <uuid> from the history to the clipboard"),                                   g_paste_select },
+        { 2, "replace",           NULL,              1,        CLIENT_READY,           TRUE,  1,        "",       N_ ("<uuid> [<contents>]"),   N_ ("replace the contents of the item <uuid> with <contents>, read from stdin if absent"),      g_paste_replace },
+        { 2, "strip-rich-text",   "srt",             0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("drop the rich text flavours of the item <uuid>, keeping the plain text it shows"),          g_paste_strip_rich_text },
+        { 3, "merge",             "m",               G_MAXINT, CLIENT_READY,           FALSE, G_MAXINT, "ds",     N_ ("<uuid> … <uuid>"),       N_ ("merge the items matching the UUIDs from the history and put the result in the clipboard"), g_paste_merge },
+        { 3, "make-password",     "mp",              0,        CLIENT_READY,           FALSE, 1,        "t",      N_ ("<uuid> <name>"),         N_ ("make the item <uuid> from the history a password named <name>, or update one that is"),    g_paste_make_password },
+        { 2, "delete",            "d del rm remove", 0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("delete item <uuid> from the history"),                                                     g_paste_delete },
+        { 2, "favourite",         "fav",             0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("pin item <uuid> so the history never drops it automatically"),                             g_paste_favourite },
+        { 2, "unfavourite",       "unfav",           0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("unpin item <uuid>, letting the history drop it again"),                                    g_paste_unfavourite },
+        { 2, "delete-password",   "dp",              0,        CLIENT_READY,           FALSE, 0,        "",       N_ ("<name>"),                N_ ("delete the password <name> from the history"),                                             g_paste_delete_password },
+        { 2, "file",              "f",               0,        CLIENT_READY,           FALSE, 0,        "",       N_ ("<path>"),                N_ ("put the content of the file at <path> into the clipboard"),                                g_paste_file },
+        { 1, "empty",             "e",               1,        CLIENT_READY,           FALSE, 0,        "",       N_ ("[<name>]"),              N_ ("empty the history <name>, the current one if not given"),                                  g_paste_empty },
+        { 1, "start",             "d daemon",        0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("start tracking clipboard changes"),                                                        g_paste_start },
+        { 1, "stop",              "q quit",          0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("stop tracking clipboard changes"),                                                         g_paste_stop },
+        { 1, "daemon-reexec",     "dr",              0,        CLIENT_READY_OR_LEGACY, FALSE, 0,        "",       NULL,                         N_ ("re-execute the daemon (after upgrading it, for instance)"),                                g_paste_daemon_reexec },
+        { 1, "migrate",           NULL,              0,        CLIENT_READY_OR_LEGACY, FALSE, 0,        "",       NULL,                         N_ ("migrate the history to a different storage backend"),                                      g_paste_migrate },
+        { 1, "change-passphrase", NULL,              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("change the passphrase of the encrypted history"),                                          g_paste_change_passphrase },
+        { 1, "doctor",            NULL,              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("check the history folder and every history, putting right what can be"),                   g_paste_doctor },
+        { 1, "preferences",       "p settings",      0,        CLIENT_NONE,            FALSE, 0,        "",       NULL,                         N_ ("launch the configuration tool"),                                                           g_paste_preferences },
+        { 1, "ui",                NULL,              0,        CLIENT_NONE,            FALSE, 0,        "",       NULL,                         N_ ("launch the graphical tool"),                                                               g_paste_ui },
+        { 1, "show-history",      NULL,              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("make the GNOME Shell extension display the history"),                                      g_paste_show_history },
+        { 2, "upload",            "u",               0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("upload the item <uuid> to a pastebin service"),                                            g_paste_upload },
+        { 2, "upload-and-copy",   "uc",              0,        CLIENT_READY,           FALSE, 1,        "",       N_ ("<uuid>"),                N_ ("upload the item <uuid> to a pastebin service, and copy its address"),                      g_paste_upload_and_copy },
+        { 1, "version",           "v",               0,        CLIENT_NONE,            FALSE, 0,        "",       NULL,                         N_ ("display the version"),                                                                     g_paste_version },
+        { 1, "daemon-version",    "dv",              0,        CLIENT_READY,           FALSE, 0,        "",       NULL,                         N_ ("display the daemon version"),                                                              g_paste_daemon_version },
+        { 1, "help",              NULL,              0,        CLIENT_NONE,            FALSE, 0,        "",       NULL,                         N_ ("display this help"),                                                                       g_paste_help },
+        { 1, "about",             NULL,              0,        CLIENT_NONE,            FALSE, 0,        "",       NULL,                         N_ ("display the about dialog"),                                                                g_paste_about },
 };
 
 /* Whether a command line takes its content from a pipe. Three verbs fall back
@@ -1095,6 +1264,25 @@ command_reads_stdin (const Command *command,
                      gint           argc)
 {
     return command->reads_pipe && argc == command->argc;
+}
+
+/* Whether an option was given that, on a line with no verb, only the history
+ * listing reads: those its row names, which the add a verb-less line can also be
+ * reads none of. An option the listing comes to read goes in that row, and in
+ * the client test's list and the man page's DESCRIPTION with it (see
+ * dispatch_reads_stdin ()). */
+static gboolean
+listing_flags_given (const Context *ctx)
+{
+    for (guint64 i = 0; i < G_N_ELEMENTS (commands); ++i)
+    {
+        const Command *c = &commands[i];
+
+        if (!c->verb && c->handler == g_paste_history)
+            return options_given (ctx, c->options);
+    }
+
+    g_return_val_if_reached (FALSE);
 }
 
 /* @verb is the canonical name or any of the aliases. */
@@ -1172,38 +1360,23 @@ show_help (FILE *out)
     /* Translators: the metavariable standing for any command the user pipes into GPaste. */
     fprintf (out, "  %s | %s: %s\n", _("<command>"), progname, _("copy the output of <command> to the clipboard"));
 
-    fprintf (out, "\n");
-    fprintf (out, "%s\n", _("General options:"));
-    /* The verbs' own words: each option does what its verb does. */
-    fprintf (out, "  -h, --help: %s\n", _("display this help"));
-    fprintf (out, "  -v, --version: %s\n", _("display the version"));
+    for (guint group = 0; group < N_OPTION_GROUPS; ++group)
+    {
+        fprintf (out, "\n");
+        fprintf (out, "%s\n", _(option_groups[group]));
 
-    fprintf (out, "\n");
-    fprintf (out, "%s\n", _("Convenience options:"));
-    /* Translators: help for --favourites */
-    fprintf (out, "  -f, --favourites: %s\n", _("only display the pinned items"));
-    /* Translators: help for --timeout */
-    fprintf (out, "  -t, --timeout: %s\n", _("how long a password stays on the clipboard, in seconds; 0 for as long as anything else"));
-    /* Translators: help for --use-index */
-    fprintf (out, "  -i, --use-index: %s\n", _("use the index of the item instead of its UUID"));
+        for (guint i = 0; i < G_N_ELEMENTS (options); ++i)
+        {
+            const Option *o = &options[i];
 
-    fprintf (out, "\n");
-    fprintf (out, "%s\n", _("Display options:"));
-    /* Translators: help for --oneline */
-    fprintf (out, "  -o, --oneline: %s\n", _("display each item on only one line"));
-    /* Translators: help for --raw */
-    fprintf (out, "  -r, --raw: %s\n", _("display each item raw (without line numbers)"));
-    /* Translators: help for --reverse */
-    fprintf (out, "  -e, --reverse: %s\n", _("display the items in reverse order"));
-    /* Translators: help for --zero */
-    fprintf (out, "  -z, --zero: %s\n", _("use a NUL character instead of a new line between each item"));
-
-    fprintf (out, "\n");
-    fprintf (out, "%s\n", _("Merge options:"));
-    /* Translators: help for --decoration <string> */
-    fprintf (out, "  -d, --decoration <%s>: %s\n", _("string"), _("add the given decoration to the beginning and the end of each item before merging"));
-    /* Translators: help for --separator <string> */
-    fprintf (out, "  -s, --separator <%s>: %s\n", _("string"), _("add the given separator between each item when merging"));
+            if (o->group != group)
+                continue;
+            if (o->arg)
+                fprintf (out, "  -%c, --%s <%s>: %s\n", o->letter, o->name, _(o->arg), _(o->doc));
+            else
+                fprintf (out, "  -%c, --%s: %s\n", o->letter, o->name, _(o->doc));
+        }
+    }
 }
 
 /* Whether this command line can reach a command that reads a pipe, tried with
@@ -1275,22 +1448,23 @@ read_pipe_for (gint         argc,
 
 /* Whether every string a command line carries -- its arguments, what is
  * piped in for one, merge's decoration and separator -- is UTF-8, as a D-Bus
- * string has to be. GLib would otherwise send "[Invalid UTF-8]" in its place,
- * and the daemon act on that: switch to a history of that name, or store a
- * password under it. A path is no exception: AddFile takes it as a string and
- * opens the file the string names, so one that is not UTF-8 cannot reach the
- * daemon at all, and converting it would name a file that is not there. */
+ * string has to be. GPasteClient refuses one that is not before sending it;
+ * asked here, before the client is even built, it starts no daemon for a
+ * command that would be refused. A path is no exception: AddFile takes it as a
+ * string and opens the file the string names, so one that is not UTF-8 cannot
+ * reach the daemon at all, and converting it would name a file that is not
+ * there. */
 static gboolean
 check_utf8 (const Context *ctx,
             GError       **error)
 {
-    const gchar *options[] = { ctx->pipe_data, ctx->decoration, ctx->separator };
+    const gchar *values[] = { ctx->pipe_data, ctx->decoration, ctx->separator };
     gboolean valid = TRUE;
 
     for (gint i = 0; valid && i < ctx->argc; ++i)
         valid = g_utf8_validate (ctx->args[i], -1, NULL);
-    for (guint i = 0; valid && i < G_N_ELEMENTS (options); ++i)
-        valid = !options[i] || g_utf8_validate (options[i], -1, NULL);
+    for (guint i = 0; valid && i < G_N_ELEMENTS (values); ++i)
+        valid = !values[i] || g_utf8_validate (values[i], -1, NULL);
 
     if (!valid)
         g_set_error_literal (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, _("Cannot use arguments or input that are not valid UTF-8."));
@@ -1340,9 +1514,10 @@ item_indexes (const Command *command,
  * single index cannot be caught that way, and its own lookup spares reading
  * the listing, which carries the text of every item. */
 static GStrv
-resolve_item_args (const Context *ctx,
-                   GArray        *indexes,
-                   GError       **error)
+resolve_item_args (const Context     *ctx,
+                   GArray            *indexes,
+                   GPasteClientItem **indexed,
+                   GError           **error)
 {
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
@@ -1354,6 +1529,7 @@ resolve_item_args (const Context *ctx,
             return NULL;
 
         g_strv_builder_add (builder, g_paste_client_item_get_uuid (item));
+        *indexed = g_steal_pointer (&item);
     }
     else
     {
@@ -1368,11 +1544,13 @@ resolve_item_args (const Context *ctx,
         {
             guint64 index = g_array_index (indexes, guint64, i);
 
-            /* The error GetItemAtIndex answers past the end, so that one index
-             * or several report it alike. */
+            /* The domain and code GetItemAtIndex answers past the end, so that
+             * a script tells one index or several past it alike. */
             if (index >= length)
             {
-                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, "No item at index %" G_GUINT64_FORMAT, index);
+                g_autofree gchar *named = g_strdup_printf ("%" G_GUINT64_FORMAT, index);
+
+                g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_INDEX, _("No item at index %s"), named);
                 return NULL;
             }
 
@@ -1469,19 +1647,45 @@ g_paste_dispatch (gint         argc,
                     return EXIT_FAILURE;
             }
 
-            if (c->needs_client == CLIENT_READY && !wait_for_daemon (ctx->client, error))
+            /* The re-exec verbs wait too: a daemon of this version still
+             * starting -- the one building the client started, above all --
+             * has nothing exported to re-exec yet. Not for a GPaste 45 or 50,
+             * nor for an owner that question could not reach: both verbs ask
+             * again, daemon-reexec signalling such a daemon
+             * (reexec_fallback ()) and migrate refusing an owner it still
+             * cannot tell apart (g_paste_migrate ()), where a wait would fail
+             * on one, or give up on it two minutes later.
+             *
+             * What waiting costs them is accepted, for verbs meant for a daemon
+             * already running: the wait asks again whether a GPaste 45 or 50
+             * owns the name, as it does for any caller, and a daemon this
+             * started is re-executed once it serves, settling its storage a
+             * second time -- a passphrase the keyring does not hold asked for
+             * again. */
+            gboolean waits = c->needs_client == CLIENT_READY;
+
+            if (c->needs_client == CLIENT_READY_OR_LEGACY)
+            {
+                StartingOwner owner = daemon_starting_owner (ctx->client, NULL);
+
+                waits = owner != STARTING_LEGACY && owner != STARTING_UNKNOWN;
+            }
+
+            if (waits && !wait_for_daemon (ctx->client, error))
                 return EXIT_FAILURE;
 
             Context command_ctx = *ctx;
             g_auto (GStrv) resolved = NULL;
+            g_autoptr (GPasteClientItem) indexed = NULL;
 
             if (indexes)
             {
-                resolved = resolve_item_args (ctx, indexes, error);
+                resolved = resolve_item_args (ctx, indexes, &indexed, error);
                 if (!resolved)
                     return EXIT_FAILURE;
 
                 command_ctx.args = (const gchar **) resolved;
+                command_ctx.indexed = indexed;
             }
 
             gint ret = c->handler (&command_ctx, error);
@@ -1491,6 +1695,27 @@ g_paste_dispatch (gint         argc,
     }
 
     return -1;
+}
+
+/* Whether what was printed to @output reached it, said on stderr when it did
+ * not. errno says why only when the flush is what fails: a write failing
+ * earlier, which ferror () remembers, left it to every call since to write
+ * over, and a flush with nothing left to write leaves it as it was. */
+static gboolean
+output_written (FILE *output)
+{
+    gboolean flushed = !fflush (output);
+    gint saved_errno = errno;
+
+    if (flushed && !ferror (output))
+        return TRUE;
+
+    if (!flushed)
+        g_printerr ("%s: %s\n", _("Could not write the output"), g_strerror (saved_errno));
+    else
+        g_printerr ("%s\n", _("Could not write the output"));
+
+    return FALSE;
 }
 
 gint
@@ -1540,7 +1765,7 @@ main (gint argc, gchar *argv[])
          * for a bug, and which G_DEBUG=fatal-criticals turns into a crash. */
         if (error)
         {
-            g_printerr ("%s\n", error->message);
+            print_line_to (stderr, error->message);
             status = EXIT_FAILURE;
         }
     }
@@ -1548,7 +1773,7 @@ main (gint argc, gchar *argv[])
      * says which there are; one whose value is wrong is named here. */
     else if (error)
     {
-        g_printerr ("%s\n", error->message);
+        print_line_to (stderr, error->message);
         status = EXIT_FAILURE;
     }
     else
@@ -1560,13 +1785,8 @@ main (gint argc, gchar *argv[])
     /* What a command prints is what it is run for -- a script saving an item,
      * a backup reading the history -- so output that could not be written is
      * a failure: a full disk, a closed pipe. */
-    if (fflush (stdout) || ferror (stdout))
-    {
-        gint saved_errno = errno;
-
-        g_printerr ("%s: %s\n", _("Could not write the output"), g_strerror (saved_errno));
+    if (!output_written (stdout))
         status = EXIT_FAILURE;
-    }
 
     return status;
 }

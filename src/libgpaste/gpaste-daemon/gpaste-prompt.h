@@ -74,6 +74,13 @@ G_DECLARE_INTERFACE (GPastePrompt, g_paste_prompt, G_PASTE, PROMPT, GObject)
  * happen — a passphrase that did not change, old data that was not deleted —
  * where a log line would leave them believing it did. Its default implementation
  * is that log line, so a backend that skips it loses the dialog, not the report.
+ *
+ * @confirm asks whether to go through with something that cannot be undone,
+ * such as deleting what nothing can read: a request whose title, description
+ * and accept label the caller words, answered by
+ * g_paste_prompt_request_reply_confirm() or dismissed. Being last, it is the
+ * one a backend written against an older contract does not know of, and its
+ * default dismissal leaves everything where it is.
  */
 struct _GPastePromptInterface
 {
@@ -86,13 +93,20 @@ struct _GPastePromptInterface
     void (*report)     (GPastePrompt        *self,
                         const gchar         *title,
                         const gchar         *message);
+    void (*confirm)    (GPastePrompt        *self,
+                        GPastePromptRequest *request);
 };
 
 /* What the prompt was asked. Only the getters matching the vfunc that received
  * the request are meaningful. */
 gboolean              g_paste_prompt_request_get_confirm       (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_title         (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_description   (GPastePromptRequest *self);
 const gchar          *g_paste_prompt_request_get_error_message (GPastePromptRequest *self);
+/* What a passphrase dialog says, worked out once for both: its standing
+ * explanation and the label of the button accepting the passphrase. */
+const gchar          *g_paste_prompt_request_get_shown_description (GPastePromptRequest *self);
+const gchar          *g_paste_prompt_request_get_accept_label      (GPastePromptRequest *self);
 GPasteStorageRemember g_paste_prompt_request_get_remember      (GPastePromptRequest *self);
 gboolean              g_paste_prompt_request_offers_remember   (GPastePromptRequest *self);
 const GPasteStorage  *g_paste_prompt_request_get_offered       (GPastePromptRequest *self,
@@ -109,6 +123,7 @@ void g_paste_prompt_request_reply_migration  (GPastePromptRequest *self,
                                               GPasteStorage        chosen,
                                               gboolean             import,
                                               gboolean             cleanup);
+void g_paste_prompt_request_reply_confirm    (GPastePromptRequest *self);
 void g_paste_prompt_request_dismiss          (GPastePromptRequest *self);
 
 /* The answer comes back as a #GPastePassphrase — secure memory with its own
@@ -153,6 +168,18 @@ gboolean g_paste_prompt_migration_finish (GPastePrompt   *self,
                                           gboolean       *import,
                                           gboolean       *cleanup,
                                           GError        **error);
+
+/* Ask whether to go through with what cannot be undone: %TRUE once the user
+ * accepted, %FALSE for a dismissal, @error left unset. */
+void     g_paste_prompt_confirm_async  (GPastePrompt       *self,
+                                        const gchar        *title,
+                                        const gchar        *description,
+                                        const gchar        *accept_label,
+                                        GAsyncReadyCallback callback,
+                                        gpointer            user_data);
+gboolean g_paste_prompt_confirm_finish (GPastePrompt *self,
+                                        GAsyncResult *result,
+                                        GError      **error);
 
 /* Tell the user something did not happen. Nothing comes back: this is the end of
  * a concern, not a question, and the caller has already put everything back the
@@ -214,15 +241,26 @@ typedef enum
     G_PASTE_PROMPT_TEXT_CLOSE,
     G_PASTE_PROMPT_TEXT_CANCEL,
     /* G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION for a dialog offering no "Keep
-     * as is": the backend in use is one this build cannot open. After CANCEL
-     * rather than beside MIGRATION_DESCRIPTION, so that the values before it
-     * keep their numbers. */
+     * as is": the backend in use is one this build cannot open. After CANCEL,
+     * out of its group: beside MIGRATION_DESCRIPTION it would renumber every
+     * value after it, which waits for a release bumping libgpaste-daemon's
+     * soversion (see its ABI policy in src/libgpaste/meson.build). */
     G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,
     /* What g_paste_prompt_other_passphrase_async() is asked with: a format
      * string, its %s the names of the histories the passphrase is wanted for,
      * so only C reads it. */
     G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,
     G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,
+    /* What a change of passphrase the last process did not finish is reported
+     * with, after REKEY_SPLIT_DESCRIPTION: format strings, their %s the quoted
+     * names of the histories on the new passphrase, and of the one it was
+     * changing, so only C reads them. */
+    G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,
+    G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,
+    /* REKEY_FAILED_DESCRIPTION for a change of passphrase finding every
+     * history on another passphrase than the one in use. After the others,
+     * out of its group, as MIGRATION_DESCRIPTION_UNKEPT is. */
+    G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION,
 } GPastePromptText;
 
 #define G_PASTE_TYPE_PROMPT_TEXT (g_paste_prompt_text_get_type ())
@@ -239,6 +277,8 @@ gboolean g_paste_prompt_can_import      (GPasteStorage current,
                                          GPasteStorage chosen);
 gboolean g_paste_prompt_backend_changes (GPasteStorage current,
                                          GPasteStorage chosen);
+gboolean g_paste_prompt_cleanup_warns   (gboolean      import,
+                                         gboolean      cleanup);
 
 /* Whether this build can remember a passphrase at all (libsecret): the build's
  * half of what g_paste_prompt_request_offers_remember () answers a prompt
@@ -248,13 +288,16 @@ gboolean g_paste_prompt_backend_changes (GPasteStorage current,
  * g_paste_prompt_remember_state ()'s, below. */
 gboolean g_paste_prompt_keyring_available      (void);
 
-/* Where the "Remember this passphrase" switch should start, and whether leaving
- * it off means anything. Both answers come from one keyring lookup, and both
- * backends ask here rather than working it out again: this is the subtlest rule
- * in the prompt, and a copy of it per language is a copy that drifts. */
-void g_paste_prompt_remember_state (GPasteStorageRemember requested,
-                                    gboolean             *starts_on,
-                                    gboolean             *can_forget);
+/* Where the "Remember this passphrase" switch should start, whether leaving it
+ * off means anything -- both from one keyring lookup -- and what it answers once
+ * the passphrase is given. Both backends ask here rather than working it out
+ * again: this is the subtlest rule in the prompt, and a copy of it per language
+ * is a copy that drifts. */
+void                  g_paste_prompt_remember_state  (GPasteStorageRemember requested,
+                                                      gboolean             *starts_on,
+                                                      gboolean             *can_forget);
+GPasteStorageRemember g_paste_prompt_remember_answer (gboolean switch_on,
+                                                      gboolean can_forget);
 
 /* The scale g_paste_prompt_passphrase_strength() rates on, so a meter is built
  * against the contract rather than against a number copied out of it. It is the

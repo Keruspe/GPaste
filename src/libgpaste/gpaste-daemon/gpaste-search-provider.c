@@ -91,13 +91,9 @@ on_search_ready (GObject      *source_object G_GNUC_UNUSED,
     }
 
     g_autoptr (GError) error = NULL;
-    g_autolist (GPasteClientItem) results = g_paste_client_search_finish (self->client, res, &error);
+    g_autolist (GPasteClientItem) results = g_paste_client_search_text_finish (self->client, res, &error);
 
-    /* A phrase past what a search takes is the user's to type, not a failure
-     * to journal at every keystroke: it finds nothing. */
-    if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT))
-        g_debug ("GPaste search refused: %s", error->message);
-    else if (error)
+    if (error)
         g_warning ("GPaste search failed: %s", error->message);
 
     /* The shell's interface takes identifiers and asks for their metas
@@ -170,10 +166,7 @@ g_paste_search_provider_search (GPasteSearchProvider  *self,
     data->invocation = invocation;
     data->complete = complete;
 
-    /* As text, as in g_paste_ui_history_filter (). */
-    g_autofree gchar *pattern = g_regex_escape_string (search, -1);
-
-    g_paste_client_search (self->client, pattern, self->search, on_search_ready, data);
+    g_paste_client_search_text (self->client, search, self->search, on_search_ready, data);
 
     return TRUE;
 }
@@ -227,7 +220,9 @@ append_meta (GVariantBuilder  *builder,
              GPasteClientItem *item)
 {
     g_auto (GVariantBuilder) dict = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
-    g_autofree gchar *result = g_paste_util_one_line (g_paste_client_item_get_display_string (item));
+    /* Cut as the graphical tool's row is: gnome-shell lays the name out whole
+     * in an ellipsizing label, on its main thread, for every result. */
+    g_autofree gchar *result = g_paste_client_item_get_display_line (item, G_PASTE_UTIL_SHOWN_CHARS);
 
     append_dict_entry (&dict, "id", g_paste_client_item_get_uuid (item));
     append_dict_entry (&dict, "name", result);
@@ -362,6 +357,8 @@ g_paste_search_provider_handle_launch_search (GPasteSearchProvider  *self,
 {
     g_autofree gchar *search = g_paste_search_provider_join_terms (terms);
 
+    /* With no activation token: the overview hands none over, a timestamp
+     * alone (see app_get_platform_data () in gpaste-util.c). */
     g_paste_util_activate_ui ("search", g_variant_new_string (search));
 
     g_paste_shell_search_provider2_complete_launch_search (self->skeleton, invocation);
@@ -434,6 +431,12 @@ g_paste_search_provider_class_init (GPasteSearchProviderClass *klass)
  * every GPaste result (gnome-shell's js/ui/search.js, _ensureResultActors ());
  * GetItems fails the whole batch over the gone one, so what the search found it
  * with is all that is left to describe it by.
+ *
+ * Nothing secret outlives a password's removal by it: what is kept is a
+ * #GPasteClientItem, the item as a listing sends it -- the string a user is
+ * shown, which for a password is its name (g_paste_daemon_methods_item_variant
+ * ()) -- and the cleartext never crosses the bus to be kept at all. A password
+ * deleted after a search leaves its name here until the next one.
  *
  * Only for a removal: any other update may have replaced an item under a new
  * uuid -- a text item made a password, say -- and describing the uuid gone

@@ -99,8 +99,9 @@ g_paste_ui_history_show_status (GPasteUiHistory *self,
     adw_status_page_set_paintable (self->status_page, NULL);
     gtk_widget_set_visible (self->retry_button, FALSE);
     adw_status_page_set_icon_name (self->status_page, icon);
-    adw_status_page_set_title (self->status_page, title);
-    adw_status_page_set_description (self->status_page, description);
+    /* Each description shown here is a translation, which an & or a < would
+     * leave blank as markup (/ui/daemon-presence/status-plain). */
+    g_paste_gtk_util_set_status_text (self->status_page, title, description);
     gtk_widget_set_visible (GTK_WIDGET (self->status_page), TRUE);
     gtk_widget_set_visible (GTK_WIDGET (self->scroll), FALSE);
 }
@@ -422,8 +423,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
 
     self->loading = FALSE;
 
-    /* A failed size says nothing about the rows already shown. With none, show
-     * an error and a way to retry rather than leaving a loading page up. */
+    /* A failed size says nothing about the rows already shown, when they are
+     * the history's. With none, show an error and a way to retry rather than
+     * leaving a loading page up -- and the same when they are a search's or the
+     * pinned items', this refresh being the one leaving that view: under no
+     * filter they would read as the history, Ctrl+0 pasting a search result
+     * (/ui/daemon-presence/size-fails-leaving-search). */
     if (error)
     {
         /* Its daemon gone, the presence says so and lists again: no failure
@@ -433,8 +438,12 @@ g_paste_ui_history_refresh_history (GObject      *source_object G_GNUC_UNUSED,
             return;
 
         g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
-        if (!self->size)
-            g_paste_ui_history_show_load_error (self);
+        if (self->size && !g_paste_ui_history_model_lists_uuids (self->model))
+            return;
+
+        self->size = 0;
+        g_paste_ui_history_model_set_size (self->model, 0);
+        g_paste_ui_history_show_load_error (self);
         return;
     }
 
@@ -642,15 +651,32 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
 
     g_autoptr (GError) error = NULL;
     g_autolist (GPasteClientItem) items = (cdata->searched)
-        ? g_paste_client_search_finish (self->client, res, &error)
+        ? g_paste_client_search_text_finish (self->client, res, &error)
         : g_paste_client_get_favourites_finish (self->client, res, &error);
 
     /* Its daemon gone, no answer that nothing matched: the page stays as it is
      * until the presence lists again (g_paste_client_is_daemon_gone_error ();
-     * /ui/daemon-presence/listing-daemon-gone). Any other failure reads as no
-     * match: the daemon answered, and what it said was not a list. */
+     * /ui/daemon-presence/listing-daemon-gone). Any other failure -- the call
+     * refused, timed out, or answered with what the client cannot read -- is
+     * no answer either, and is reported as the size read reports one: the rows
+     * of the view being left go, under an error and a way to retry, rather
+     * than "No Results" or "No Pinned Items" the daemon never said
+     * (/ui/daemon-presence/filter-fails). */
     if (g_paste_client_is_daemon_gone_error (error))
         return;
+
+    if (error)
+    {
+        if (cdata->searched)
+            g_warning ("Could not search the history: %s", error->message);
+        else
+            g_warning ("Could not list the pinned items: %s", error->message);
+
+        self->size = 0;
+        g_paste_ui_history_model_set_uuids (self->model, NULL);
+        g_paste_ui_history_show_load_error (self);
+        return;
+    }
 
     g_autoptr (GStrvBuilder) uuids = g_strv_builder_new ();
 
@@ -689,13 +715,62 @@ on_filter_ready (GObject      *source_object G_GNUC_UNUSED,
         g_paste_ui_history_activate_position (self, 0);
 }
 
+/* The sidebar's count of the current history, which a filtered view sizes
+ * nothing for: the copies and deletions that list it again would otherwise
+ * leave the count where it was until the filter went
+ * (/ui/daemon-presence/filtered-count). */
+static void
+on_filtered_size_ready (GObject      *source_object G_GNUC_UNUSED,
+                        GAsyncResult *res,
+                        gpointer      user_data)
+{
+    g_autoptr (DisplayCallbackData) cdata = user_data;
+    GPasteUiHistory *self = cdata->self;
+
+    if (!self->client || g_cancellable_is_cancelled (cdata->cancellable))
+        return;
+
+    g_autoptr (GError) error = NULL;
+    guint64 size = g_paste_client_get_history_size_finish (self->client, res, &error);
+
+    if (error)
+    {
+        if (!g_paste_client_is_daemon_gone_error (error))
+            g_warning ("Could not get the size of history \"%s\": %s", cdata->name, error->message);
+        return;
+    }
+
+    /* Another history's size, a switch having landed meanwhile, as in
+     * g_paste_ui_history_refresh_history (). */
+    g_autofree gchar *current = g_paste_client_get_history_name (self->client);
+
+    if (self->panel && g_paste_str_equal (current, cdata->name))
+        g_paste_ui_panel_update_history_length (self->panel, cdata->name, size);
+}
+
 /* List by uuid rather than by position: a search asks the daemon to match, the
  * favourites filter asks it for the pinned items, and with both on the matches
- * are sifted for the flag they carry. */
+ * are sifted for the flag they carry. The history is sized alongside, for the
+ * sidebar alone, on the same cancellable: superseded together. Sized on every
+ * refresh, a pause in the typing included, though few of them can move the
+ * count: telling which can would take a flag every path moving it has to set,
+ * one it missed leaving the count stale, to save a call the typing's pause
+ * already spaces out. */
 static void
 g_paste_ui_history_filter (GPasteUiHistory *self)
 {
     DisplayCallbackData *cdata = display_callback_data_new (self, 0);
+    g_autofree gchar *name = g_paste_client_get_history_name (self->client);
+
+    if (name)
+    {
+        DisplayCallbackData *sized = g_new0 (DisplayCallbackData, 1);
+
+        sized->self = g_object_ref (self);
+        sized->cancellable = g_object_ref (cdata->cancellable);
+        sized->name = g_steal_pointer (&name);
+        g_paste_client_get_history_size (self->client, sized->cancellable, on_filtered_size_ready, sized);
+    }
 
     /* This supersedes any positional refresh in flight, and that one now bails
      * before clearing the flag it set. Nothing here grows lazily, so taking the
@@ -707,15 +782,8 @@ g_paste_ui_history_filter (GPasteUiHistory *self)
 
     cdata->searched = (self->search != NULL);
 
-    /* What is typed is text, and Search takes a regular expression: escaped,
-     * as Search in org.gnome.GPaste3.xml asks of a front end. '(' would not
-     * compile otherwise, and '.' would match what was not typed. */
     if (cdata->searched)
-    {
-        g_autofree gchar *pattern = g_regex_escape_string (self->search, -1);
-
-        g_paste_client_search (self->client, pattern, cdata->cancellable, on_filter_ready, cdata);
-    }
+        g_paste_client_search_text (self->client, self->search, cdata->cancellable, on_filter_ready, cdata);
     else
         g_paste_client_get_favourites (self->client, cdata->cancellable, on_filter_ready, cdata);
 }
@@ -906,11 +974,11 @@ g_paste_ui_history_activate_position (GPasteUiHistory *self,
         return FALSE;
 
     GtkWidget *widget = (item) ? g_paste_ui_history_item_get_widget (item) : NULL;
+    /* The item the row shows first, then the one the model holds there. */
+    const gchar *uuid = (widget) ? g_paste_ui_item_get_uuid (G_PASTE_UI_ITEM (widget)) : NULL;
 
-    if (widget && g_paste_ui_item_activate (G_PASTE_UI_ITEM (widget)))
-        return TRUE;
-
-    const gchar *uuid = (item) ? g_paste_ui_history_item_get_uuid (item) : NULL;
+    if (!uuid && item)
+        uuid = g_paste_ui_history_item_get_uuid (item);
 
     if (uuid)
         g_paste_ui_history_select_uuid (self, uuid);
@@ -1106,20 +1174,6 @@ pick_clear (gpointer data)
     g_free (((Pick *) data)->uuid);
 }
 
-/* Where @position sits in the pick order, or -1 when it is not picked. */
-static gint
-g_paste_ui_history_picked_at (GPasteUiHistory *self,
-                              guint            position)
-{
-    for (guint i = 0; i < self->selection->len; ++i)
-    {
-        if (g_array_index (self->selection, Pick, i).position == position)
-            return (gint) i;
-    }
-
-    return -1;
-}
-
 /* Keep the picks in step with the selection model's own bitset, which
  * #GtkMultiSelection splices on every items-changed: what the splice removed
  * loses its bit, and what sat after it moves by the difference. The picks name
@@ -1230,23 +1284,45 @@ on_selection_changed (GtkSelectionModel *model,
                       gpointer           user_data)
 {
     GPasteUiHistory *self = user_data;
+    guint end = position + n_items;
 
-    for (guint i = position; i < position + n_items; ++i)
+    /* In one pass over the picks and one over the range, rather than a look
+     * among the picks for every position of it: a select-all reaches every
+     * row, and a history can hold tens of thousands. The picks unselected go,
+     * those left keeping their order, which the merge depends on; the rows
+     * picked anew go after them, in the order they sit in. */
+    g_autoptr (GtkBitset) picked = gtk_bitset_new_empty ();
+    g_autoptr (GArray) kept = g_array_sized_new (FALSE, FALSE, sizeof (Pick), self->selection->len);
+
+    g_array_set_clear_func (kept, pick_clear);
+    for (guint i = 0; i < self->selection->len; ++i)
     {
-        gint at = g_paste_ui_history_picked_at (self, i);
+        Pick *pick = &g_array_index (self->selection, Pick, i);
+        gboolean in_range = (pick->position >= position && pick->position < end);
 
-        if (gtk_selection_model_is_selected (model, i))
-        {
-            if (at < 0)
-            {
-                Pick pick = { i, g_strdup (g_paste_ui_history_shown_uuid (self, i)) };
+        if (in_range && !gtk_selection_model_is_selected (model, pick->position))
+            continue;
+        if (in_range)
+            gtk_bitset_add (picked, pick->position);
 
-                g_array_append_val (self->selection, pick);
-            }
-        }
-        else if (at >= 0)
-            g_array_remove_index (self->selection, at);
+        Pick moved = { pick->position, g_steal_pointer (&pick->uuid) };
+
+        g_array_append_val (kept, moved);
     }
+
+    for (guint i = position; i < end; ++i)
+    {
+        if (!gtk_bitset_contains (picked, i) && gtk_selection_model_is_selected (model, i))
+        {
+            Pick pick = { i, g_strdup (g_paste_ui_history_shown_uuid (self, i)) };
+
+            g_array_append_val (kept, pick);
+        }
+    }
+
+    /* What went is freed with the array it was in, the rest having moved. */
+    g_array_unref (g_steal_pointer (&self->selection));
+    self->selection = g_steal_pointer (&kept);
 
     g_signal_emit (self, signals[SELECTION_CHANGED], 0, self->selection->len);
 }

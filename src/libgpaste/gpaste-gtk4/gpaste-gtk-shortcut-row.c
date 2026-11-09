@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-gtk4/gpaste-gtk-shortcut-row.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-3/gpaste-keyval.h>
 
 enum
@@ -135,18 +136,56 @@ g_paste_gtk_shortcut_row_stop_capture (GPasteGtkShortcutRow *self)
     adw_action_row_set_subtitle (ADW_ACTION_ROW (self), "");
 }
 
+/* Whether @keyval still does its ordinary job with Shift held: typing -- a
+ * capital, a "!", a line break -- or moving the cursor, which Shift turns into
+ * selecting. */
+static gboolean
+g_paste_gtk_shortcut_row_shift_keeps_meaning (guint keyval)
+{
+    if (gdk_keyval_to_unicode (keyval))
+        return TRUE;
+
+    switch (keyval)
+    {
+    case GDK_KEY_Left:
+    case GDK_KEY_Right:
+    case GDK_KEY_Up:
+    case GDK_KEY_Down:
+    case GDK_KEY_Home:
+    case GDK_KEY_End:
+    case GDK_KEY_Page_Up:
+    case GDK_KEY_Page_Down:
+    case GDK_KEY_Insert:
+    case GDK_KEY_KP_Left:
+    case GDK_KEY_KP_Right:
+    case GDK_KEY_KP_Up:
+    case GDK_KEY_KP_Down:
+    case GDK_KEY_KP_Home:
+    case GDK_KEY_KP_End:
+    case GDK_KEY_KP_Page_Up:
+    case GDK_KEY_KP_Page_Down:
+    case GDK_KEY_KP_Begin:
+    case GDK_KEY_KP_Insert:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 /* A modifier-less key would be grabbed globally and break ordinary typing, so
  * only a bare key meaningful alone is accepted (the function keys); everything
- * else needs a real modifier. Shift is none: with it a key still types -- a
- * capital, a "!" -- or selects, and a grab of Shift+A would take every capital
- * A from every application. */
+ * else needs a real modifier. Shift is none with a key it leaves doing its job
+ * (g_paste_gtk_shortcut_row_shift_keeps_meaning ()): a grab of Shift+A would
+ * take every capital A from every application. With one that types nothing and
+ * moves nothing -- Print, Pause, Menu -- it is a modifier like any other. */
 static gboolean
 g_paste_gtk_shortcut_row_accepts (guint           keyval,
                                   GdkModifierType mods)
 {
     gboolean standalone_ok = keyval >= GDK_KEY_F1 && keyval <= GDK_KEY_F35;
+    gboolean shift_counts = (mods & GDK_SHIFT_MASK) && !g_paste_gtk_shortcut_row_shift_keeps_meaning (keyval);
 
-    return gtk_accelerator_valid (keyval, mods) && ((mods & ~GDK_SHIFT_MASK) || standalone_ok);
+    return gtk_accelerator_valid (keyval, mods) && ((mods & ~GDK_SHIFT_MASK) || shift_counts || standalone_ok);
 }
 
 static gboolean
@@ -312,7 +351,10 @@ g_paste_gtk_shortcut_row_new (const gchar *title)
 {
     g_return_val_if_fail (title, NULL);
 
-    GtkWidget *self = g_object_new (G_PASTE_TYPE_GTK_SHORTCUT_ROW, "title", title, NULL);
+    GtkWidget *self = g_object_new (G_PASTE_TYPE_GTK_SHORTCUT_ROW, NULL);
+
+    /* Plain, the capture prompt in its subtitle included. */
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (self), title);
 
     return self;
 }

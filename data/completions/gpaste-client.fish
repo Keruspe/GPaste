@@ -39,9 +39,16 @@ function __gpaste_histories
     # promises to be instant because it asks no daemon.
     set -l names
 
-    for file in $dir/*.xml $dir/*.xmls $dir/*.db $dir/*.dbs
+    # A name may start with a dot, which fish's * never matches by itself. A
+    # line break or a tab is one a completion cannot hold, fish taking each
+    # line of it for a candidate and what follows a tab for its description:
+    # such a name is left out rather than offered in pieces. Kept whole to be
+    # looked at -- one regex on the one path, collected -- where a command
+    # substitution splitting it at a line break would hide that from the check.
+    for file in $dir/*.xml $dir/*.xmls $dir/*.db $dir/*.dbs $dir/.*.xml $dir/.*.xmls $dir/.*.db $dir/.*.dbs
         test -f $file; or continue
-        set -l name (string replace -r '\.[^.]*$' '' (basename $file))
+        set -l name (string replace -r '(?s)^.*/(.*)\.[^./]*$' '$1' -- $file | string collect)
+        string match -qr '[\n\t]' -- $name; and continue
         contains -- $name $names; or set -a names $name
     end
 
@@ -54,8 +61,10 @@ end
 function __gpaste_items
     __gpaste_daemon_running; or return
 
-    # A control character as U+FFFD, as the zsh completion shows one.
+    # Each line cut to what a description shows first, as the zsh completion
+    # cuts it, and a control character as U+FFFD, as it shows one.
     gpaste-client history --oneline $argv </dev/null 2>/dev/null \
+        | string sub -l 256 \
         | string replace -ra '\p{Cc}' '�' \
         | string replace -r '^([^:]+): ' '$1\t'
 end
@@ -67,6 +76,74 @@ function __gpaste_uuids_or_indexes
     else
         __gpaste_items
     end
+end
+
+# The verb on the line, and how many of its arguments come before the word
+# being completed, read as getopt_long reads the line, as the bash completion
+# does: options anywhere, the value -d, -s or -t takes skipped (the next word
+# for one ending a bundle, -ft 30, and none for one given inline, -t30 or
+# --timeout=30), every word after a lone -- an argument, and the first bare
+# word the verb. Prints nothing while no verb is typed.
+function __gpaste_verb_and_position
+    set -l verb
+    set -l position 0
+    set -l skip 0
+    set -l options 1
+
+    for token in (commandline -opc)[2..-1]
+        if test $skip = 1
+            set skip 0
+            continue
+        end
+
+        if test $options = 1
+            switch $token
+                case --
+                    set options 0
+                    continue
+                case --decoration --separator --timeout
+                    set skip 1
+                    continue
+                case '--*'
+                    continue
+                case '-*'
+                    # A bundle whose first value-taking letter ends it has
+                    # that letter's value in the next word; one with more
+                    # after it holds the value itself.
+                    string match -qr '^-[^dst]*[dst]$' -- $token; and set skip 1
+                    continue
+            end
+        end
+
+        if test -z "$verb"
+            set verb $token
+        else
+            set position (math $position + 1)
+        end
+    end
+
+    test -n "$verb"; and printf '%s\n%s\n' $verb $position
+end
+
+# Whether no verb is on the line yet, for the verbs to be offered.
+function __gpaste_no_verb
+    set -l found (__gpaste_verb_and_position)
+    test (count $found) -eq 0
+end
+
+# Whether the verb on the line is one of $argv -- the word an argument spells
+# being no verb -- and, with --first, the word being completed its first
+# argument.
+function __gpaste_verb_is
+    set -l found (__gpaste_verb_and_position)
+    test (count $found) -eq 2; or return 1
+
+    if test "$argv[1]" = --first
+        test $found[2] -eq 0; or return 1
+        set -e argv[1]
+    end
+
+    contains -- $found[1] $argv
 end
 
 complete -c gpaste-client -f
@@ -89,7 +166,7 @@ function __gpaste_subcommand
     set -l description $argv[-1]
 
     for name in $argv[1..-2]
-        complete -c gpaste-client -n __fish_use_subcommand -a $name -d $description
+        complete -c gpaste-client -n __gpaste_no_verb -a $name -d $description
     end
 end
 
@@ -133,15 +210,14 @@ __gpaste_subcommand version v                          'Display the version'
 
 # Arguments. backup-history takes <history> <backup name>, the history being
 # optional, so only its first argument names a history.
-complete -c gpaste-client -n '__fish_seen_subcommand_from empty e delete-history dh switch-history sh backup-history bh' \
+complete -c gpaste-client -n '__gpaste_verb_is --first empty e delete-history dh switch-history sh backup-history bh' \
     -a '(__gpaste_histories)' -d History
 
-complete -c gpaste-client -n '__fish_seen_subcommand_from file f' -F
+complete -c gpaste-client -n '__gpaste_verb_is --first file f' -F
 
-# Every argument of these verbs is offered items, where merge alone takes one
-# in each: the contents of replace and the name of make-password are offered
-# them too, unlike in bash and zsh. Telling the first argument from the next
-# would mean counting the words before the cursor, less the options and the
-# values -d, -s and -t take, for a completion the user only has to type past.
-complete -c gpaste-client -n '__fish_seen_subcommand_from get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp merge m favourite fav unfavourite unfav' \
+# The item an item verb acts on is its first argument, the contents of replace
+# and the name of make-password coming after it, as in bash and zsh; merge
+# takes an item in every position.
+complete -c gpaste-client -n '__gpaste_verb_is --first get g select set s delete del d remove rm upload u upload-and-copy uc replace strip-rich-text srt make-password mp favourite fav unfavourite unfav' \
     -a '(__gpaste_uuids_or_indexes)'
+complete -c gpaste-client -n '__gpaste_verb_is merge m' -a '(__gpaste_uuids_or_indexes)'

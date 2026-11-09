@@ -3,9 +3,11 @@
 
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-update-enums.h>
+#include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
-#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-history-private.h>
+#include <gpaste-daemon/gpaste-password-item-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 
 /* Here and not in gpaste-macros.h beside g_paste_weak_ref_free (), which is an
@@ -38,6 +40,34 @@ pending_password_free (gpointer data)
 }
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (PendingPassword, pending_password_free)
+
+/* What a selection's records said when it changed under a read: the password it
+ * was carrying, how long that was armed for and whether it was running out
+ * (expiring ()), the timeout edits waiting for it (@pending_passwords, as on
+ * _Clipboard) and the strips it was owed, the one a read refused first
+ * (@refreshes, held weakly as on _Clipboard). A copy whose owner served it
+ * whole before leaving, overtaken before it concluded, is judged against these
+ * (judge_overtaken ()): by the time it concludes, a publication may have
+ * dropped all of them, or a read concluding first retired them. */
+typedef struct
+{
+    GPasteItem *password;
+    guint       password_timeout;
+    gboolean    password_expiring;
+    GSList     *pending_passwords;
+    GSList     *refreshes;
+} FrozenRecords;
+
+static void
+frozen_records_free (FrozenRecords *frozen)
+{
+    g_clear_object (&frozen->password);
+    g_slist_free_full (frozen->pending_passwords, pending_password_free);
+    g_slist_free_full (frozen->refreshes, g_paste_weak_ref_free);
+    g_free (frozen);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (FrozenRecords, frozen_records_free)
 
 typedef struct
 {
@@ -88,8 +118,11 @@ typedef struct
      * password on the clipboard are two exposures with two deadlines, and a
      * route that reaches one of them has nothing to say about the other's.
      *
-     * @password_timeout is how long that countdown was armed for, which the item
-     * alone no longer says once MakePassword has written a new one over it. */
+     * @password_timeout is how long that countdown was armed for, which is what
+     * arm_password_at () compares an arriving twin's duration against. The item
+     * cannot say it: g_paste_history_private_merge_into_head () writes a newer
+     * duration onto the very object recorded here, which would then read as
+     * already armed for it. */
     gboolean                 password_expired;
     guint                    password_timeout_id;
     guint                    password_timeout;
@@ -162,8 +195,8 @@ typedef struct
      * the read's own (see g_paste_clipboard_update_conclude ()).
      *
      * Never cleared on the strength of what a selection is believed to carry: the
-     * only such belief available is the text cache, which holds the last read
-     * that landed, and a record standing is precisely a read that did not.
+     * only such belief available is the text cache, and a text landing beside a
+     * hint the read could not check says nothing of the secret being gone.
      *
      * Retired only by a read that came back with an answer: unlike @password
      * there is no item here to ask selection_holds () about -- this is the case
@@ -173,6 +206,11 @@ typedef struct
      * would drop it over the secret still sitting there, which is the whole of
      * what it is for. */
     gboolean                 sensitive;
+
+    /* Where the next change freezes the records above (freeze_records ()): the
+     * slot of the read the latest change started, when that read records
+     * copies, %NULL otherwise and once that read's data goes. */
+    FrozenRecords          **freeze_into;
 } _Clipboard;
 
 struct _GPasteClipboardsManager
@@ -273,9 +311,9 @@ return_expiry_on_idle (gpointer user_data)
 }
 
 static void
-return_expiry_task (GTask    *task,
-                    gboolean  timed_out,
-                    gboolean  unresolved)
+return_expiry_task (GTask   *task,
+                    gboolean timed_out,
+                    gboolean unresolved)
 {
     ExpiryWait *wait = g_task_get_task_data (task);
 
@@ -356,7 +394,9 @@ g_paste_clipboards_manager_expiry_timed_out (gpointer user_data)
  * owns the _Clipboard records and everything the reply then reaches for, so a ref
  * on it is what makes @clip still be there when that reply lands. @track says
  * whether the item an update brings back is one to keep, and means nothing to a
- * sync, which brings back none. */
+ * sync, which brings back none. @frozen is what @clip's records said when the
+ * change after the one an update is for came (freeze_records ()), %NULL while
+ * none has, when they said nothing, and for a read recording no copy. */
 typedef struct
 {
     GPasteClipboardsManager *manager;
@@ -366,11 +406,15 @@ typedef struct
     _Clipboard              *source;
     guint64                  source_generation;
     guint64                  destination_generation;
+    FrozenRecords           *frozen;
 } GPasteClipboardsManagerUpdateData;
 
 static void
 g_paste_clipboards_manager_update_data_free (GPasteClipboardsManagerUpdateData *data)
 {
+    if (data->clip->freeze_into == &data->frozen)
+        data->clip->freeze_into = NULL;
+    g_clear_pointer (&data->frozen, frozen_records_free);
     g_clear_object (&data->manager);
     g_free (data);
 }
@@ -494,6 +538,56 @@ g_paste_clipboards_manager_refuse_refresh (_Clipboard *clip,
     clip->refused_refresh = g_paste_weak_ref_new (item);
 }
 
+/* Whether @text, what a read found a selection carrying, is @item's value:
+ * selection_holds () asks it of the provider's cache, judge_overtaken () of what
+ * an overtaken copy found. */
+static gboolean
+g_paste_clipboards_manager_holds (const gchar *text,
+                                  GPasteItem  *item)
+{
+    return text && g_paste_str_equal (text, g_paste_item_get_real_value (item));
+}
+
+/* The stripped snapshot @refresh names while the history still lists it, %NULL
+ * once that entry is gone or another object stands under its uuid: a strip
+ * puts nothing anywhere that the history no longer holds. */
+static GPasteItem *
+g_paste_clipboards_manager_owed_strip (_Clipboard *clip,
+                                       GWeakRef   *refresh)
+{
+    g_autoptr (GPasteItem) plain = g_weak_ref_get (refresh);
+
+    if (!plain || g_paste_history_get_by_uuid (clip->manager->history, g_paste_item_get_uuid (plain)) != plain)
+        return NULL;
+
+    return g_steal_pointer (&plain);
+}
+
+/* The strip among @refreshes, tried in order, that a read finding @text on the
+ * selection and building @item is owed: the first the history still lists
+ * whose value @text holds -- none for a read that found a password, whose plain
+ * text would publish it without its hint. What finish_refresh () acts on, and
+ * judge_overtaken () substitutes alone. */
+static GPasteItem *
+g_paste_clipboards_manager_held_strip (_Clipboard  *clip,
+                                       GSList      *refreshes,
+                                       const gchar *text,
+                                       GPasteItem  *item)
+{
+    if (item && G_PASTE_IS_PASSWORD_ITEM (item))
+        return NULL;
+
+    for (GSList *l = refreshes; l; l = l->next)
+    {
+        g_autoptr (GPasteItem) plain = g_paste_clipboards_manager_owed_strip (clip, l->data);
+
+        if (plain && g_paste_clipboards_manager_holds (text, plain))
+            return g_steal_pointer (&plain);
+    }
+
+    return NULL;
+}
+
 /* A strip can arrive before the selection's text is known. Only publish the
  * requested snapshot while it is still the history's item, and substitute it
  * for the read's item so that stale formats cannot enter the history again.
@@ -532,18 +626,6 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
     g_autoslist (GWeakRef) pending = g_steal_pointer (&clip->pending_refreshes);
     g_autoptr (GWeakRef) refused = g_steal_pointer (&clip->refused_refresh);
 
-    /* The read found a password with the stripped text's value: that is what the
-     * selection holds, and the plain text would publish it without its hint.
-     *
-     * The requests go with it rather than being kept in @refused_refresh: that
-     * slot is for a read that could not say what the selection holds, and this
-     * one said. A selection carrying a password is refused a strip for as long
-     * as it carries one -- refresh_text () asks the same of every selection it
-     * reaches, and refuses it there outright -- so a request kept here would be
-     * one no later read could ever act on either. */
-    if (*item && G_PASTE_IS_PASSWORD_ITEM (*item))
-        return;
-
     /* Retried ahead of this read's own requests, and under the same guards: a
      * strip kept from an earlier read is the older one. The slot's reference
      * moves into the list rather than being copied, the list being what frees
@@ -551,24 +633,23 @@ g_paste_clipboards_manager_finish_refresh (_Clipboard           *clip,
     if (refused)
         pending = g_slist_prepend (pending, g_steal_pointer (&refused));
 
-    for (GSList *l = pending; l; l = l->next)
-    {
-        GWeakRef *refresh = l->data;
-        g_autoptr (GPasteItem) plain = g_weak_ref_get (refresh);
+    /* A read that found a password with the stripped text's value is owed none
+     * (held_strip ()), and the requests go with it rather than being kept in
+     * @refused_refresh: that slot is for a read that could not say what the
+     * selection holds, and this one said. A selection carrying a password is
+     * refused a strip for as long as it carries one -- refresh_text () asks the
+     * same of every selection it reaches, and refuses it there outright -- so a
+     * request kept here would be one no later read could ever act on either. */
+    g_autoptr (GPasteItem) plain = g_paste_clipboards_manager_held_strip (clip, pending, g_paste_clipboard_provider_get_text (clip->clipboard), *item);
 
-        if (!plain || g_paste_history_get_by_uuid (clip->manager->history, g_paste_item_get_uuid (plain)) != plain)
-            continue;
+    if (!plain)
+        return;
 
-        if (g_paste_clipboards_manager_selection_holds (clip->clipboard, plain))
-        {
-            if (secret != G_PASTE_CLIPBOARD_SECRET_NO || g_paste_clipboards_manager_publish_item (clip, plain, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
-                g_paste_clipboards_manager_refuse_refresh (clip, plain);
+    if (secret != G_PASTE_CLIPBOARD_SECRET_NO || g_paste_clipboards_manager_publish_item (clip, plain, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+        g_paste_clipboards_manager_refuse_refresh (clip, plain);
 
-            if (*item)
-                g_set_object (item, plain);
-            break;
-        }
-    }
+    if (*item)
+        g_set_object (item, plain);
 }
 
 /* What stands, in the history in use, for @entry -- a password record, or the
@@ -591,10 +672,14 @@ g_paste_clipboards_manager_entry_of (_Clipboard *clip,
 
     GPasteItem *listed = g_paste_history_get_by_uuid (history, g_paste_item_get_uuid (entry));
 
+    /* The value checked too, though no GPaste operation lists a uuid under
+     * another value -- an edit or a strip puts a new item, of a uuid of its own,
+     * in its place -- so no test reaches it: a history that ever did would
+     * otherwise have the read take the secret it carries for that entry. */
     if (listed)
         return (g_paste_str_equal (g_paste_item_get_real_value (listed), g_paste_item_get_real_value (entry))) ? listed : NULL;
 
-    return (g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (entry)), G_PASTE_PASSWORD_ITEM_NO_NAME)) ? entry : NULL;
+    return (g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (entry))) ? entry : NULL;
 }
 
 /* @item, read off a selection carrying the value of another history's entry
@@ -614,6 +699,79 @@ g_paste_clipboards_manager_capture_secret (GPasteItem **item,
     g_autoptr (GPasteItem) captured = g_paste_password_item_new (NULL, g_paste_item_get_real_value (*item), timeout);
 
     g_set_object (item, captured);
+}
+
+/* Put in @item's place what stands for @entry, a password the selection was
+ * found carrying -- its record, or the item a timeout edit was made on: its
+ * entry in this history (entry_of ()), or a capture of its own running @timeout
+ * where @entry is another history's. */
+static void
+g_paste_clipboards_manager_take_for (_Clipboard  *clip,
+                                     GPasteItem **item,
+                                     GPasteItem  *entry,
+                                     guint        timeout)
+{
+    GPasteItem *listed = g_paste_clipboards_manager_entry_of (clip, entry);
+
+    if (listed)
+        g_set_object (item, listed);
+    else
+        g_paste_clipboards_manager_capture_secret (item, timeout);
+}
+
+/* The first of the timeout edits @pending whose item a read finding @text on
+ * the selection holds: the edit that read resolves (finish_expiry ()). */
+static PendingPassword *
+g_paste_clipboards_manager_held_edit (GSList      *pending,
+                                      const gchar *text)
+{
+    for (GSList *l = pending; l; l = l->next)
+    {
+        PendingPassword *change = l->data;
+
+        if (g_paste_clipboards_manager_holds (text, change->item))
+            return change;
+    }
+
+    return NULL;
+}
+
+/* Put in @item's place, for a read answering @secret, the entry @change was
+ * made on (held_edit ()).
+ *
+ * An owner saying its text is no secret makes no password of it: the read keeps
+ * its own item, as preserve_password () does for a record that value keeps
+ * standing, the edit's countdown being armed all the same -- see the note on
+ * the value alone on finish_expiry ()
+ * (/clipboard/timeout_edit/plain_selection). Otherwise the read is the edited
+ * entry, as in preserve_password (): the history's own object for it, the
+ * newest, or a capture running the edit's countdown for another history's. */
+static void
+g_paste_clipboards_manager_take_edit (_Clipboard           *clip,
+                                      GPasteItem          **item,
+                                      PendingPassword      *change,
+                                      GPasteClipboardSecret secret)
+{
+    if (change && item && *item && secret != G_PASTE_CLIPBOARD_SECRET_NO)
+        g_paste_clipboards_manager_take_for (clip, item, change->item, change->timeout);
+}
+
+/* Whether @clip's record is running out at the next read of its selection:
+ * overdue, or a running countdown brought forward. */
+static gboolean
+g_paste_clipboards_manager_expiring (_Clipboard *clip)
+{
+    return clip->password_expired || (clip->force_expiry && clip->password_timeout);
+}
+
+/* Whether a read finding @text on a selection whose record @record is running
+ * out drops what it read: that password is being taken off, and putting it at
+ * the head of the history again would undo retire_password (). */
+static gboolean
+g_paste_clipboards_manager_expiry_drops (GPasteItem  *record,
+                                         const gchar *text)
+{
+    return record && g_paste_clipboards_manager_holds (text, record);
 }
 
 /* Resolve timeout edits before expiry: an edit may cancel or shorten the
@@ -646,33 +804,12 @@ g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
     if (!clip->pending_passwords)
         g_clear_handle_id (&clip->pending_deadline_id, g_source_remove);
 
-    for (GSList *l = pending; l; l = l->next)
+    PendingPassword *change = g_paste_clipboards_manager_held_edit (pending, g_paste_clipboard_provider_get_text (clip->clipboard));
+
+    if (change)
     {
-        PendingPassword *change = l->data;
-
-        if (g_paste_clipboards_manager_selection_holds (clip->clipboard, change->item))
-        {
-            g_paste_clipboards_manager_arm_password_at (clip, change->item, change->timeout, change->deadline, change->changed);
-            /* An owner saying its text is no secret makes no password of it: the
-             * read keeps its own item, as preserve_password () does for a record
-             * that value keeps standing. The countdown is armed all the same --
-             * see the note on the value alone above
-             * (/clipboard/timeout_edit/plain_selection).
-             *
-             * Otherwise the read is the edited entry, as in preserve_password ():
-             * the history's own object for it, the newest, or a capture running
-             * the edit's countdown for another history's. */
-            if (item && *item && secret != G_PASTE_CLIPBOARD_SECRET_NO)
-            {
-                GPasteItem *entry = g_paste_clipboards_manager_entry_of (clip, change->item);
-
-                if (entry)
-                    g_set_object (item, entry);
-                else
-                    g_paste_clipboards_manager_capture_secret (item, change->timeout);
-            }
-            break;
-        }
+        g_paste_clipboards_manager_arm_password_at (clip, change->item, change->timeout, change->deadline, change->changed);
+        g_paste_clipboards_manager_take_edit (clip, item, change, secret);
     }
 
     /* Forcing brings a running countdown forward, and what resolved since the
@@ -683,10 +820,10 @@ g_paste_clipboards_manager_finish_expiry (_Clipboard           *clip,
         g_paste_clipboards_manager_complete_expiry (clip->manager);
     }
 
-    if (!clip->password_expired && !clip->force_expiry)
+    if (!g_paste_clipboards_manager_expiring (clip))
         return FALSE;
 
-    gboolean held = clip->password && g_paste_clipboards_manager_selection_holds (clip->clipboard, clip->password);
+    gboolean held = g_paste_clipboards_manager_expiry_drops (clip->password, g_paste_clipboard_provider_get_text (clip->clipboard));
 
     clip->force_expiry = FALSE;
     g_paste_clipboards_manager_deselect_password (clip);
@@ -757,26 +894,58 @@ g_paste_clipboards_manager_may_carry_secret (_Clipboard *clip)
     return clip->password || clip->sensitive || clip->password_unconfirmed;
 }
 
+/* Put in @item's place, for a read finding @text on the selection and
+ * answering @secret, @record's entry: the password the selection was recorded
+ * as carrying, armed for @timeout. */
 static void
 g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
+                                              GPasteItem           *record,
+                                              guint                 timeout,
+                                              const gchar          *text,
                                               GPasteItem          **item,
                                               GPasteClipboardSecret secret)
 {
     /* A matching exposure keeps its item and deadline even when its hint is
      * readable: the captured twin only knows the global timeout default. */
-    if (!*item || secret == G_PASTE_CLIPBOARD_SECRET_NO || !clip->password ||
-        !g_paste_clipboards_manager_selection_holds (clip->clipboard, clip->password))
+    if (!*item || secret == G_PASTE_CLIPBOARD_SECRET_NO || !record || !g_paste_clipboards_manager_holds (text, record))
         return;
 
     /* The item kept is the record's entry in this history (entry_of ()): its
      * name and uuid have no place here when it is another's, the record
      * outliving a switch, and the read is then a capture of its own. */
-    GPasteItem *entry = g_paste_clipboards_manager_entry_of (clip, clip->password);
+    g_paste_clipboards_manager_take_for (clip, item, record, timeout);
+}
 
-    if (entry)
-        g_set_object (item, entry);
-    else
-        g_paste_clipboards_manager_capture_secret (item, clip->password_timeout);
+/* preserve_password () for a read of @clip's selection that has just concluded:
+ * its record, and what its provider's cache now says the selection holds. */
+static void
+g_paste_clipboards_manager_preserve_live_password (_Clipboard           *clip,
+                                                   GPasteItem          **item,
+                                                   GPasteClipboardSecret secret)
+{
+    g_paste_clipboards_manager_preserve_password (clip, clip->password, clip->password_timeout,
+                                                  g_paste_clipboard_provider_get_text (clip->clipboard), item, secret);
+}
+
+/* The password entry of the history @capture is a copy of, wherever it sits --
+ * what was added since, a password copied since included, may stand above it
+ * -- or %NULL: what a capture of a secret already on a selection is linked
+ * to, by identify_ready () and link_captures () alike. */
+static GPasteItem *
+g_paste_clipboards_manager_equal_entry (GPasteClipboardsManager *self,
+                                        GPasteItem              *capture)
+{
+    guint64 length = g_paste_history_get_length (self->history);
+
+    for (guint64 i = 0; i < length; ++i)
+    {
+        g_autoptr (GPasteItem) candidate = g_paste_history_dup (self->history, i);
+
+        if (candidate && candidate != capture && G_PASTE_IS_PASSWORD_ITEM (candidate) && g_paste_item_equals (capture, candidate))
+            return g_steal_pointer (&candidate);
+    }
+
+    return NULL;
 }
 
 /* A read asked so that the selection is identified, not so that a copy is
@@ -784,9 +953,12 @@ g_paste_clipboards_manager_preserve_password (_Clipboard           *clip,
  * asks for (reread_unconfirmed ()).
  *
  * It goes nowhere near notify_finish (), which is the whole point: nothing here
- * enters the history and nothing is synchronized onto the other selection. A
- * sync follows the copy the user made, and neither of these is one -- the
- * selection is carrying what it was carrying before the question was asked. */
+ * enters the history, and nothing it reads is synchronized onto the other
+ * selection. A sync follows the copy the user made, and neither of these is one
+ * -- the selection is carrying what it was carrying before the question was
+ * asked. What it does to the other selection is what the read out held back: a
+ * sync asked for meanwhile, which it resumes, and the synchronized copy of a
+ * password it is the first to see gone, which it takes off. */
 static void
 g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_GNUC_UNUSED,
                                            GPasteItem              *item,
@@ -803,7 +975,7 @@ g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_
     if (!superseded)
     {
         g_paste_clipboards_manager_confirm_password (data->clip, secret);
-        g_paste_clipboards_manager_preserve_password (data->clip, &identified, secret);
+        g_paste_clipboards_manager_preserve_live_password (data->clip, &identified, secret);
     }
 
     /* A superseded read can finish expiry only when a publication, rather than
@@ -828,19 +1000,21 @@ g_paste_clipboards_manager_identify_ready (GPasteClipboardProvider *clipboard G_
 
         if (!data->clip->password)
         {
-            /* A head seen while the history is still loading is one the load is
-             * about to replace -- an add made in the meantime, which it then puts
-             * back on top of what it read -- and not the one to link against, as
-             * link_captures () says for itself
-             * (/clipboard/bootstrap_before_load/identify_during_load). */
+            /* A history still loading holds only what was added in the
+             * meantime, which the load then puts back on top of what it read:
+             * none of the store's entries to link against, as link_captures ()
+             * says for itself
+             * (/clipboard/bootstrap_during_load/password_added_during_load). */
             gboolean loading = g_paste_history_is_loading (data->manager->history);
-            g_autoptr (GPasteItem) head = (loading) ? NULL : g_paste_history_dup (data->manager->history, 0);
+            g_autoptr (GPasteItem) entry = (loading) ? NULL : g_paste_clipboards_manager_equal_entry (data->manager, identified);
 
-            /* An initial capture equal to the history head shares its identity
-             * and stored timeout. Later reads preserve the standing record. */
-            if (head && g_paste_item_equals (identified, head))
-                g_set_object (&identified, head);
-            headless = !head;
+            /* An initial capture equal to an entry of the history shares its
+             * identity and stored timeout, wherever the entry sits, as
+             * link_captures () finds it. Later reads preserve the standing
+             * record. */
+            if (entry)
+                g_set_object (&identified, entry);
+            headless = loading || !g_paste_history_get_length (data->manager->history);
         }
         g_paste_clipboards_manager_arm_password (data->clip, identified, FALSE);
         /* No head to link to may be a history still loading, the daemon
@@ -1104,7 +1278,7 @@ g_paste_clipboards_manager_sync_from_to (GPasteClipboardsManager *self,
         else
         {
             g_debug ("clipboards-manager: the password was refused, not syncing it");
-            /* That selection kept whatever it had, which is not this password. */
+            /* As in notify_finish (). */
             g_paste_clipboards_manager_forget_stale_password (_to);
         }
 
@@ -1248,7 +1422,7 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
 
     g_debug ("clipboards-manager: notify finish");
 
-    /* The record this read may retire, for ensure_not_empty (). */
+    /* As in identify_ready (). */
     g_autoptr (GPasteItem) record = (clip->password) ? g_object_ref (clip->password) : NULL;
 
     /* A password read off a selection is on that selection already, and no other
@@ -1389,17 +1563,13 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
                 const gchar *text = g_paste_clipboard_provider_get_text (other->clipboard);
 
                 /* A selection carrying an unrecorded secret is written to rather
-                 * than compared. What get_text () answers is the last text read
-                 * that landed, which on a sensitive selection is exactly what
-                 * did not: a hint that came back and matched beside a text read
-                 * that failed leaves the cache naming an older string while the
-                 * secret sits there. Comparing against that cache would find the
-                 * strings equal, write nothing, and clear a record over the
-                 * cleartext it was kept for -- after which a sync out of that
-                 * selection publishes the secret as bare text. So the one case
-                 * where the daemon writes nothing and knows what sits there all
-                 * the same is the case where the record already says it does not.
-                 * See @sensitive on _Clipboard. */
+                 * than compared. The read that found it so landed no text, the
+                 * cache answering none, which is written over anyway; but a
+                 * later read that could not tell -- its hint offered and never
+                 * served -- lands a text beside @sensitive, and equal to the one
+                 * synchronized it would have nothing written over a secret the
+                 * daemon has no record of. See @sensitive on _Clipboard, and
+                 * /clipboard/sync/over_sensitive_unknown_read. */
                 if (other->sensitive || !text || !g_paste_str_equal (text, synchronized_text))
                 {
                     other->change_serial = change_serial;
@@ -1418,6 +1588,57 @@ g_paste_clipboards_manager_notify_finish (_Clipboard           *clip,
     g_paste_clipboards_manager_retire_synced_copies (clip);
 }
 
+/* Whether @item, a password a read brought back, is one to arm and not add: a
+ * named one here is a record or an edit taken at its word while the history
+ * loads (entry_of ()), a read making nameless ones alone. The model holds none
+ * of the history's entries yet; the load brings this one back if it is one of
+ * them, where an add would stand beside it under the same uuid, and has no
+ * place for it if it is another history's. */
+static gboolean
+g_paste_clipboards_manager_awaits_load (_Clipboard *clip,
+                                        GPasteItem *item)
+{
+    return G_PASTE_IS_PASSWORD_ITEM (item) && !g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (item)) &&
+           g_paste_history_is_loading (clip->manager->history);
+}
+
+/* Put in the place of @item -- a copy its owner served whole before leaving,
+ * overtaken before it concluded -- what the read would have recorded had it
+ * concluded first, %NULL included: the same decisions update_ready () makes,
+ * asked of the records frozen when the selection changed under the read and of
+ * what the read found on the selection, the cache and the records having moved
+ * on with whatever overtook it (the /clipboard/released_copy cases). Only the
+ * substitutions are made and the copy dropped, arming, publishing, taking off
+ * and spending being the selection's. A copy that has a value has identified
+ * the selection, which is what has finish_expiry () ask the edits at all
+ * (confirm_password ()); the edits it then resolves are not replayed into the
+ * expiry state, which stands as the release found it. */
+static void
+g_paste_clipboards_manager_judge_overtaken (GPasteClipboardsManagerUpdateData *data,
+                                            GPasteItem                       **item,
+                                            GPasteClipboardSecret              secret)
+{
+    FrozenRecords *frozen = data->frozen;
+    const gchar *text = g_paste_clipboard_update_overtaken_text ();
+    _Clipboard *clip = data->clip;
+
+    if (!frozen)
+        return;
+
+    g_paste_clipboards_manager_preserve_password (clip, frozen->password, frozen->password_timeout, text, item, secret);
+    g_paste_clipboards_manager_take_edit (clip, item, g_paste_clipboards_manager_held_edit (frozen->pending_passwords, text), secret);
+    if (frozen->password_expiring && g_paste_clipboards_manager_expiry_drops (frozen->password, text))
+    {
+        g_clear_object (item);
+        return;
+    }
+
+    g_autoptr (GPasteItem) plain = g_paste_clipboards_manager_held_strip (clip, frozen->refreshes, text, *item);
+
+    if (plain)
+        g_set_object (item, plain);
+}
+
 static void
 g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
                                          GPasteItem              *item,
@@ -1433,13 +1654,26 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
     if (!superseded)
     {
         g_paste_clipboards_manager_confirm_password (clip, secret);
-        g_paste_clipboards_manager_preserve_password (clip, &item, secret);
+        g_paste_clipboards_manager_preserve_live_password (clip, &item, secret);
     }
 
     /* As in identify_ready (): resolve any remaining expiry before dropping
-     * stale results or results arriving after explicit disposal. */
-    if (g_paste_clipboards_manager_finish_expiry (data->clip, &item, secret) || superseded || !data->manager->history)
+     * stale results or results arriving after explicit disposal. A superseded
+     * read's item says nothing of what sits on the selection, so no edit is
+     * resolved on it. */
+    if (g_paste_clipboards_manager_finish_expiry (data->clip, (superseded) ? NULL : &item, secret) || superseded || !data->manager->history)
     {
+        /* That item is a copy its owner served whole before leaving, and it is
+         * the history's alone: nothing is synchronised from it, and nothing is
+         * armed for it -- a password included, no selection carrying it any
+         * more. Recorded as the read would have recorded it, had it concluded
+         * first (judge_overtaken ()), and by a read that records copies alone. */
+        if (superseded && item && data->track && data->manager->history)
+        {
+            g_paste_clipboards_manager_judge_overtaken (data, &item, secret);
+            if (item && !g_paste_clipboards_manager_awaits_load (clip, item))
+                g_paste_history_add (data->manager->history, g_steal_pointer (&item));
+        }
         g_clear_object (&item);
         g_paste_clipboards_manager_resume_sync (clip);
         return;
@@ -1461,14 +1695,7 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
      * still need the countdown that takes it back off. */
     g_autoptr (GPasteItem) password = (item && G_PASTE_IS_PASSWORD_ITEM (item)) ? g_object_ref (item) : NULL;
 
-    /* A named password here is a record or an edit taken at its word while the
-     * history loads (entry_of ()), a read making nameless ones alone: armed,
-     * and not added. The model holds none of the history's entries yet; the
-     * load brings this one back if it is one of them, where an add would stand
-     * beside it under the same uuid, and has no place for it if it is another
-     * history's. */
-    if (password && !g_paste_str_equal (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (password)), G_PASTE_PASSWORD_ITEM_NO_NAME) &&
-        g_paste_history_is_loading (clip->manager->history))
+    if (password && g_paste_clipboards_manager_awaits_load (clip, password))
         g_clear_object (&item);
 
     if (!data->track && item)
@@ -1479,6 +1706,55 @@ g_paste_clipboards_manager_update_ready (GPasteClipboardProvider *clipboard,
 
     g_paste_clipboards_manager_notify_finish (clip, item, password, secret, synchronized_text, something_in_clipboard, change_serial);
     g_paste_clipboards_manager_resume_sync (clip);
+}
+
+/* Freeze what @clip's records say into the read the previous change started,
+ * when it records copies (FrozenRecords, notify ()), for the copy it may yet
+ * bring back: the change following a read is the release ending it with what
+ * it read (g_paste_clipboard_update_owner_gone ()), or one overtaking it before
+ * its content landed, which leaves it none. So this comes first in every
+ * change, and once a read: the one this change starts is the next frozen
+ * into. */
+static void
+g_paste_clipboards_manager_freeze_records (_Clipboard *clip)
+{
+    FrozenRecords **slot = g_steal_pointer (&clip->freeze_into);
+
+    if (!slot || !(clip->password || clip->pending_passwords || clip->refused_refresh || clip->pending_refreshes))
+        return;
+
+    g_autoptr (FrozenRecords) frozen = g_new0 (FrozenRecords, 1);
+
+    frozen->password = (clip->password) ? g_object_ref (clip->password) : NULL;
+    frozen->password_timeout = clip->password_timeout;
+    frozen->password_expiring = g_paste_clipboards_manager_expiring (clip);
+    for (GSList *l = clip->pending_passwords; l; l = l->next)
+    {
+        PendingPassword *change = g_memdup2 (l->data, sizeof (PendingPassword));
+
+        g_object_ref (change->item);
+        frozen->pending_passwords = g_slist_prepend (frozen->pending_passwords, change);
+    }
+    frozen->pending_passwords = g_slist_reverse (frozen->pending_passwords);
+
+    /* In the order finish_refresh () tries them, the refused one first. */
+    for (GSList *l = clip->pending_refreshes; l; l = l->next)
+    {
+        g_autoptr (GPasteItem) plain = g_weak_ref_get (l->data);
+
+        if (plain)
+            frozen->refreshes = g_slist_prepend (frozen->refreshes, g_paste_weak_ref_new (plain));
+    }
+    frozen->refreshes = g_slist_reverse (frozen->refreshes);
+    if (clip->refused_refresh)
+    {
+        g_autoptr (GPasteItem) refused = g_weak_ref_get (clip->refused_refresh);
+
+        if (refused)
+            frozen->refreshes = g_slist_prepend (frozen->refreshes, g_paste_weak_ref_new (refused));
+    }
+
+    *slot = g_steal_pointer (&frozen);
 }
 
 /* FIXME: the GDK backend costs two of these per external copy, where one copy is
@@ -1524,6 +1800,7 @@ g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
 {
     _Clipboard *clip = user_data;
 
+    g_paste_clipboards_manager_freeze_records (clip);
     ++clip->generation;
     clip->refresh_read_after = 0;
 
@@ -1546,10 +1823,16 @@ g_paste_clipboards_manager_notify (GPasteClipboardProvider *clipboard,
                            g_paste_settings_get_primary_to_history (settings) ||     // Or we asked that primary affects clipboard
                            g_paste_settings_get_synchronize_clipboards (settings))); // Or primary and clipboards are synchronized hence primary will affect history through clipboard
 
-    g_paste_clipboard_provider_update_full (clipboard,
-                                            track,
-                                            g_paste_clipboards_manager_update_ready,
-                                            g_paste_clipboards_manager_update_data_new (clip, track));
+    GPasteClipboardsManagerUpdateData *data = g_paste_clipboards_manager_update_data_new (clip, track);
+
+    /* Set before the read goes out: one answered at once frees its data, and
+     * this pointer with it. A read recording nothing is frozen for nothing, its
+     * copy never being judged (update_ready ()). Nothing here tells a read that
+     * may still come back with a copy from the GDK backend's formats wait,
+     * which never does, so the targets following such a wait freeze into it
+     * too: a few references, while a record or a strip stands. */
+    clip->freeze_into = (track) ? &data->frozen : NULL;
+    g_paste_clipboard_provider_update_full (clipboard, track, g_paste_clipboards_manager_update_ready, data);
 }
 
 /**
@@ -1579,9 +1862,7 @@ static gboolean
 g_paste_clipboards_manager_selection_holds (GPasteClipboardProvider *clipboard,
                                             GPasteItem              *item)
 {
-    const gchar *text = g_paste_clipboard_provider_get_text (clipboard);
-
-    return text && g_paste_str_equal (text, g_paste_item_get_real_value (item));
+    return g_paste_clipboards_manager_holds (g_paste_clipboard_provider_get_text (clipboard), item);
 }
 
 /* Forget the password @clip's selection was carrying once it stops carrying it.
@@ -1706,9 +1987,12 @@ g_paste_clipboards_manager_retire_password (GPasteClipboardsManager *self,
  * whatever it was carrying, so the record and its countdown go rather than being
  * replaced.
  *
- * The one write that skips it is the one taking a password back off:
- * publish_over_password () putting the replacement or the empty string there,
- * which picks no password and so has no countdown to arm. */
+ * The writes that skip it put no password on a selection, so have no countdown
+ * to arm: publish_over_password () putting the replacement or the empty string
+ * in a password's place, a strip publishing plain text over a selection
+ * carrying no secret (finish_refresh (), refresh_clip ()), and a sync's plain
+ * text, after which forget_stale_password () drops a record left stale
+ * (sync_ready (), notify_finish ()). */
 static void
 g_paste_clipboards_manager_arm_password_at (_Clipboard *clip,
                                             GPasteItem *item,
@@ -2315,6 +2599,68 @@ g_paste_clipboards_manager_rearm_password (GPasteClipboardsManager *self,
     g_paste_clipboards_manager_finish_expiry_all (self);
 }
 
+/* Refresh @clip if it still carries @item's text: see
+ * g_paste_clipboards_manager_refresh_text (). */
+static void
+g_paste_clipboards_manager_refresh_clip (_Clipboard *clip,
+                                         GPasteItem *item)
+{
+    /* As in sync_from_to (): this is one of the routes that reads the record
+     * below, so one the selection has moved on from goes before it is asked.
+     * A strip refused down there is refused by nothing at all -- neither
+     * published, nor queued, nor kept as refused -- so the record answering
+     * for the selection has to be one that still names what it carries. */
+    g_paste_clipboards_manager_forget_stale_password (clip);
+
+    /* A hidden cache can be a pending or inconclusive read. The next answer
+     * checks the selection before publishing; completed I/O alone cannot
+     * spend a strip while its secrecy remains unresolved. */
+    if (g_paste_clipboard_provider_is_reading (clip->clipboard) || clip->password_unconfirmed || clip->sensitive)
+    {
+        g_paste_clipboards_manager_queue_refresh (clip, item);
+        gint64 now = g_get_monotonic_time ();
+
+        if (!g_paste_clipboard_provider_is_reading (clip->clipboard) && now >= clip->refresh_read_after)
+        {
+            clip->refresh_read_after = now + G_USEC_PER_SEC;
+            g_paste_clipboards_manager_identify (clip);
+        }
+    }
+    /* A value match does not authorize stripping a password's hint. As in
+     * finish_refresh (), classification takes precedence over the text. */
+    else if (!g_paste_clipboards_manager_may_carry_secret (clip) &&
+             g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
+    {
+        if (g_paste_clipboards_manager_publish_item (clip, item, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
+            g_paste_clipboards_manager_refuse_refresh (clip, item);
+    }
+}
+
+/* Whether @clip is still owed a strip publishing @item: queued behind a read,
+ * or kept from one that could not be given. */
+static gboolean
+g_paste_clipboards_manager_owes_refresh (_Clipboard *clip,
+                                         GPasteItem *item)
+{
+    if (clip->refused_refresh)
+    {
+        g_autoptr (GPasteItem) refused = g_weak_ref_get (clip->refused_refresh);
+
+        if (refused == item)
+            return TRUE;
+    }
+
+    for (const GSList *l = clip->pending_refreshes; l; l = l->next)
+    {
+        g_autoptr (GPasteItem) pending = g_weak_ref_get (l->data);
+
+        if (pending == item)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 /**
  * g_paste_clipboards_manager_refresh_text:
  * @self: a #GPasteClipboardsManager instance
@@ -2332,39 +2678,65 @@ g_paste_clipboards_manager_refresh_text (GPasteClipboardsManager *self,
     g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
 
     for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
+        g_paste_clipboards_manager_refresh_clip (clipboard->data, item);
+}
+
+/**
+ * g_paste_clipboards_manager_retry_refresh:
+ * @self: a #GPasteClipboardsManager instance
+ * @item: the text item a strip was asked of again, which had nothing left to
+ *        strip
+ *
+ * Retry the refresh g_paste_clipboards_manager_refresh_text() could not give
+ * for @item, on the selections still owed it alone: one merely holding the same
+ * text was never served the rich flavours, and publishing over it would only
+ * take it from whichever application owns it.
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboards_manager_retry_refresh (GPasteClipboardsManager *self,
+                                          GPasteItem              *item)
+{
+    g_return_if_fail (G_PASTE_IS_CLIPBOARDS_MANAGER (self));
+    g_return_if_fail (G_PASTE_IS_TEXT_ITEM (item));
+
+    for (GSList *clipboard = self->clipboards; clipboard; clipboard = g_slist_next (clipboard))
     {
         _Clipboard *clip = clipboard->data;
 
-        /* As in sync_from_to (): this is one of the routes that reads the record
-         * below, so one the selection has moved on from goes before it is asked.
-         * A strip refused down there is refused by nothing at all -- neither
-         * published, nor queued, nor kept as refused -- so the record answering
-         * for the selection has to be one that still names what it carries. */
-        g_paste_clipboards_manager_forget_stale_password (clip);
-
-        /* A hidden cache can be a pending or inconclusive read. The next answer
-         * checks the selection before publishing; completed I/O alone cannot
-         * spend a strip while its secrecy remains unresolved. */
-        if (g_paste_clipboard_provider_is_reading (clip->clipboard) || clip->password_unconfirmed || clip->sensitive)
-        {
-            g_paste_clipboards_manager_queue_refresh (clip, item);
-            gint64 now = g_get_monotonic_time ();
-
-            if (!g_paste_clipboard_provider_is_reading (clip->clipboard) && now >= clip->refresh_read_after)
-            {
-                clip->refresh_read_after = now + G_USEC_PER_SEC;
-                g_paste_clipboards_manager_identify (clip);
-            }
-        }
-        /* A value match does not authorize stripping a password's hint. As in
-         * finish_refresh (), classification takes precedence over the text. */
-        else if (!g_paste_clipboards_manager_may_carry_secret (clip) &&
-                 g_paste_clipboards_manager_selection_holds (clip->clipboard, item))
-        {
-            if (g_paste_clipboards_manager_publish_item (clip, item, FALSE) != G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED)
-                g_paste_clipboards_manager_refuse_refresh (clip, item);
-        }
+        if (g_paste_clipboards_manager_owes_refresh (clip, item))
+            g_paste_clipboards_manager_refresh_clip (clip, item);
     }
+}
+
+/* Whether @clip's record names @item, a password leaving the history: its own
+ * entry, or the unlisted twin of one -- a capture or a merge equal to it -- but
+ * never a record whose own entry is still listed, named passwords staying
+ * distinct entries for sharing a value. */
+static gboolean
+g_paste_clipboards_manager_record_names (GPasteClipboardsManager *self,
+                                         _Clipboard              *clip,
+                                         GPasteItem              *item)
+{
+    if (!clip->password || g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)))
+        return FALSE;
+
+    return g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
+           g_paste_item_equals (clip->password, item);
+}
+
+/* Whether @clip's record names a password the change of the history being
+ * announced drops (g_paste_history_get_dropping ()). */
+static gboolean
+g_paste_clipboards_manager_record_dropping (GPasteClipboardsManager *self,
+                                            _Clipboard              *clip)
+{
+    for (const GSList *l = g_paste_history_get_dropping (self->history); l; l = l->next)
+    {
+        if (g_paste_clipboards_manager_record_names (self, clip, l->data))
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 /**
@@ -2391,14 +2763,17 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
     {
         _Clipboard *clip = clipboard->data;
 
-        /* The selection carries a password the history no longer lists --
-         * deleted at the head, @item heading in its place -- and @item is that
-         * very secret as plain text: published, it would put the secret back in
-         * clear with nothing to take it off. Taken off the way a dropped
-         * password is, with the newest entry fit to replace it
-         * (deselect_password ()). */
+        /* The selection carries a password the history is dropping -- deleted
+         * at the head, @item heading in its place, announced once this is
+         * published -- and @item is that very secret as plain text: published,
+         * it would put the secret back in clear with nothing to take it off.
+         * Taken off the way a dropped password is, with the newest entry fit to
+         * replace it (deselect_password ()). A record the history never listed
+         * -- a copy read with tracking paused, another history's entry -- is
+         * no password taken off, and a plain entry of it selected goes out as
+         * any other. */
         if (clip->password && !G_PASTE_IS_PASSWORD_ITEM (item) && self->history &&
-            !g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)) &&
+            g_paste_clipboards_manager_record_dropping (self, clip) &&
             g_paste_clipboards_manager_is_twin (g_paste_item_get_real_value (item), g_paste_item_get_real_value (clip->password)))
         {
             g_paste_clipboards_manager_deselect_password (clip);
@@ -2434,7 +2809,8 @@ g_paste_clipboards_manager_select (GPasteClipboardsManager *self,
  * g_paste_clipboards_manager_store:
  * @self: a #GPasteClipboardsManager instance
  *
- * Store clipboards contents before exiting
+ * Ask a clipboard manager to take over what every selection carries, as
+ * g_paste_clipboard_provider_store() does for one.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboards_manager_store (GPasteClipboardsManager *self)
@@ -2547,8 +2923,6 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
     if (!self->history || g_paste_history_is_loading (self->history))
         return G_SOURCE_REMOVE;
 
-    guint64 length = g_paste_history_get_length (self->history);
-
     for (GSList *l = self->clipboards; l; l = g_slist_next (l))
     {
         _Clipboard *clip = l->data;
@@ -2561,16 +2935,7 @@ g_paste_clipboards_manager_link_captures (gpointer user_data)
         if (!clip->password)
             continue;
 
-        g_autoptr (GPasteItem) entry = NULL;
-
-        for (guint64 i = 0; !entry && i < length; ++i)
-        {
-            g_autoptr (GPasteItem) candidate = g_paste_history_dup (self->history, i);
-
-            if (candidate && candidate != clip->password && G_PASTE_IS_PASSWORD_ITEM (candidate) &&
-                g_paste_item_equals (clip->password, candidate))
-                entry = g_steal_pointer (&candidate);
-        }
+        g_autoptr (GPasteItem) entry = g_paste_clipboards_manager_equal_entry (self, clip->password);
 
         if (!entry)
             continue;
@@ -2671,22 +3036,12 @@ on_password_dropped (GPasteClipboardsManager *self,
                 link = &node->next;
         }
 
-        /* Named passwords can share a value while remaining distinct entries.
-         * A record whose own entry survives is not the password being dropped.
-         * Unlisted capture/merge twins are compared below. */
-        if (clip->password && g_paste_history_get_by_uuid (self->history, g_paste_item_get_uuid (clip->password)))
-            continue;
-
         /* The record may hold an earlier object of the very entry that went:
          * updating a password puts a new one in its place under the same uuid
          * (g_paste_history_make_password ()), and a record whose selection was
          * being read then is left on the old one until a read identifies it
-         * (/clipboard/dropped_password/renamed_twin). Capture/merge twins are
-         * equal nameless items. Named entries remain distinct even when their
-         * cleartext matches an unlisted twin. */
-        if (clip->password &&
-            (g_paste_str_equal (g_paste_item_get_uuid (clip->password), g_paste_item_get_uuid (item)) ||
-             g_paste_item_equals (clip->password, item)))
+         * (/clipboard/dropped_password/renamed_twin). */
+        if (g_paste_clipboards_manager_record_names (self, clip, item))
         {
             g_paste_clipboards_manager_deselect_password (clip);
             /* As in on_password_timeout (): an unconfirmed record is only
@@ -2718,6 +3073,8 @@ _clipboard_free (gpointer data)
     g_object_unref (clip->clipboard);
     g_free (clip);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_Clipboard, _clipboard_free)
 
 static void
 g_paste_clipboards_manager_dispose (GObject *object)

@@ -13,34 +13,40 @@ ui_shortcuts_test = executable(
   'gpaste-ui-shortcuts-test',
   sources: ui_test_sources,
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('test-ui-shortcuts', ui_shortcuts_test, depends: [gpaste_schemas, test_bus_supervisor])
 
 ui_password_test = executable(
   'gpaste-ui-password-test',
-  sources: ['test-password-dialog.c'],
+  sources: ['test-password-dialog.c', '../../src/ui/gpaste-ui-composer.c'],
+  # Route logs through g_test_expect_message in this test build.
+  c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
 )
 
 test('test-ui-password', ui_password_test, depends: [gpaste_schemas, test_bus_supervisor])
 
 ui_edit_item_test = executable(
   'gpaste-ui-edit-item-test',
-  sources: ['test-edit-item.c'],
+  sources: ['test-edit-item.c', '../../src/ui/gpaste-ui-composer.c'],
+  # Route logs through g_test_expect_message in this test build.
+  c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
 )
 
 test('test-ui-edit-item', ui_edit_item_test, depends: [gpaste_schemas, test_bus_supervisor])
 
 ui_new_item_test = executable(
   'gpaste-ui-new-item-test',
-  sources: ['test-new-item.c'],
+  sources: ['test-new-item.c', '../../src/ui/gpaste-ui-composer.c'],
+  # Route logs through g_test_expect_message in this test build.
+  c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
 )
 
 test('test-ui-new-item', ui_new_item_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -49,7 +55,7 @@ ui_history_model_test = executable(
   'gpaste-ui-history-model-test',
   sources: ['test-history-model.c', '../../src/ui/gpaste-ui-history-model.c', '../../src/ui/gpaste-ui-pick-selection.c'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libgpaste_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libgpaste_internal_dep],
 )
 
 test('test-ui-history-model', ui_history_model_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -57,7 +63,7 @@ test('test-ui-history-model', ui_history_model_test, depends: [gpaste_schemas, t
 ui_text_dialog_test = executable(
   'gpaste-ui-text-dialog-test',
   sources: ['test-text-dialog.c'],
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  dependencies: [gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
 )
 
 test('test-ui-text-dialog', ui_text_dialog_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -75,7 +81,7 @@ ui_panel_history_test = executable(
   # Route logs through g_test_expect_message in this test build.
   c_args: ['-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('test-ui-panel-history', ui_panel_history_test, depends: [gpaste_schemas, test_bus_supervisor])
@@ -86,17 +92,26 @@ ui_daemon_presence_test = executable(
   # Unstructured, so that g_test_expect_message () sees the window's warnings.
   c_args: ['-DG_PASTE_TEST_PRE_RELEASES="@0@"'.format(','.join(pre_releases_ranked)), '-UG_LOG_USE_STRUCTURED'],
   include_directories: include_directories('../../src/ui'),
-  dependencies: [ gtk4_dep, gpaste_test_bus_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gtk4_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep ],
 )
 
 # Some twenty seconds of real daemons coming and going and windows resizing:
 # the default thirty would leave a loaded builder little room.
 test('test-ui-daemon-presence', ui_daemon_presence_test, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
 
-ui_preferences_test = executable(
-  'gpaste-ui-preferences-test',
-  sources: ['test-preferences.c'],
-  dependencies: [gtk4_dep, gpaste_test_env_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
-)
+# The suite compiles libgpaste-gtk4's own sources in beside the library, whose
+# dialog it also builds: the executable's copies have to stand in for the
+# library's, which -Bsymbolic keeps the library from letting them do -- a type
+# then registered twice. Its cases building the library's dialog or widget skip
+# themselves then, the rest running all the same; against a static library it
+# does not link, defining what the archive's objects define too.
+if not library_static
+  ui_preferences_test = executable(
+    'gpaste-ui-preferences-test',
+    sources: ['test-preferences.c'],
+    c_args: (library_interposable) ? [] : ['-DG_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE'],
+    dependencies: [gtk4_dep, gtk4x11_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_internal_dep, libgpaste_gtk4_internal_dep],
+  )
 
-test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])
+  test('test-ui-preferences', ui_preferences_test, depends: [gpaste_schemas, test_bus_supervisor])
+endif

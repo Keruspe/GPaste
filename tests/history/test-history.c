@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-test-history.h"
+
 #include <glib/gstdio.h>
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
@@ -23,6 +26,26 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <string.h>
+
+/* The PNGs decoded while @counting_decodes is set
+ * (/history/file_encrypted_image_round_trip). */
+static gboolean counting_decodes;
+static guint    decodes;
+
+GdkTexture *
+gdk_texture_new_from_bytes (GBytes  *bytes,
+                            GError **error)
+{
+    typedef GdkTexture *(*Decode) (GBytes *, GError **);
+    static Decode original;
+
+    if (!original)
+        original = (Decode) dlsym (RTLD_NEXT, "gdk_texture_new_from_bytes");
+    if (counting_decodes)
+        ++decodes;
+
+    return original (bytes, error);
+}
 #include <sys/file.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -40,10 +63,10 @@
 
 #include <sqlite3.h>
 #include <string.h>
+#endif
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 #include <sodium.h>
-#endif
 #endif
 
 /* Every history a case builds, held weakly, so that run_from_defaults () can
@@ -81,7 +104,7 @@ make_history (GPasteSettings **out_settings,
     static guint counter = 0;
     g_autofree gchar *name = g_strdup_printf ("test-%u", counter++);
 
-    GPasteSettings *settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
     g_paste_settings_set_growing_lines (settings, FALSE);
     g_paste_settings_set_max_history_size (settings, max_history_size);
@@ -95,9 +118,7 @@ make_history (GPasteSettings **out_settings,
     g_paste_history_load (history, name);
 
     if (out_settings)
-        *out_settings = settings;
-    else
-        g_object_unref (settings);
+        *out_settings = g_steal_pointer (&settings);
 
     return history;
 }
@@ -167,13 +188,6 @@ g_settings_sync (void)
     g_thread_join (g_thread_new ("give-back", give_back, NULL));
     g_main_context_release (NULL);
     g_clear_pointer (&unstored_value, g_variant_unref);
-}
-
-/* What dconf announces once it gives a write back, run. */
-static void
-drain (void)
-{
-    while (g_main_context_iteration (NULL, FALSE));
 }
 
 /* A process racing AddFile, when set: once the type and size of @swap_to are
@@ -301,7 +315,8 @@ test_set_active_refused (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_true (g_paste_settings_get_track_changes (settings));
     g_clear_error (&error);
-    drain ();
+    /* Run what dconf announces once it gives the write back. */
+    g_paste_test_bus_drain ();
     g_assert_true (g_paste_settings_get_track_changes (settings));
 
     refused_key = NULL;
@@ -350,12 +365,12 @@ test_switch_refused (void)
     g_paste_daemon_methods_switch_history (&methods, "switch-refused-elsewhere", &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_clear_error (&error);
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_paste_daemon_methods_delete_history (&methods, name, &error);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     refused_key = NULL;
-    drain ();
+    g_paste_test_bus_drain ();
 
     g_assert_cmpstr (g_paste_history_get_current (history), ==, name);
     g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
@@ -371,14 +386,6 @@ test_switch_unstored (void)
     unstored = TRUE;
     test_switch_refused ();
     unstored = FALSE;
-}
-
-static void
-count_dropped (GPasteHistory *history G_GNUC_UNUSED,
-               GPasteItem    *item G_GNUC_UNUSED,
-               gpointer       user_data)
-{
-    ++*(guint *) user_data;
 }
 
 /* Deleting the current history leaves it for the default one, and the
@@ -397,7 +404,7 @@ test_delete_current_drops_passwords (void)
     g_paste_settings_set_history_name (settings, name);
     g_paste_history_add (history, g_paste_password_item_new ("bank", "the secret", 0));
     g_paste_history_add (history, g_paste_text_item_new ("a later copy"));
-    g_signal_connect (history, "password-dropped", G_CALLBACK (count_dropped), &dropped);
+    g_signal_connect_swapped (history, "password-dropped", G_CALLBACK (g_paste_test_bus_count_emission), &dropped);
 
     g_assert_true (g_paste_history_delete (history, name, &error));
     g_assert_no_error (error);
@@ -455,18 +462,18 @@ test_delete_current_failed_stays (void)
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
-/* BackupHistory through the daemon's methods, waited for. */
-static void
-backup_history (const GPasteDaemonMethods *methods,
-                const gchar               *history,
-                const gchar               *backup,
-                GError                   **error)
+/* Search through the daemon's methods, waited for. */
+static GVariant *
+search (const GPasteDaemonMethods *methods,
+        const gchar               *query,
+        GError                   **error)
 {
     g_autoptr (GAsyncResult) result = NULL;
 
-    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
+    g_paste_daemon_methods_search_async (methods, query, g_paste_test_env_keep_result, &result);
     g_paste_test_env_wait_result (&result);
-    g_paste_daemon_methods_backup_history_finish (result, error);
+
+    return g_paste_daemon_methods_search_finish (result, error);
 }
 
 /* @name copied as @target, waited for. */
@@ -542,6 +549,31 @@ test_delete_missing_history (void)
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND);
 }
 
+/* The current history is listed whether or not its store holds it yet, as a
+ * history just switched to does not until its load has read it. */
+static void
+test_list_histories_has_current (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_load (history, "listed-without-store");
+
+    g_autoptr (GVariant) histories = list_histories (&methods, &error);
+    const gchar *name = NULL;
+    guint64 size = 0;
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (g_variant_n_children (histories), ==, 1);
+    g_variant_get_child (histories, 0, "(&st)", &name, &size);
+    g_assert_cmpstr (name, ==, "listed-without-store");
+}
+
 static void
 test_add_password_name_conflict (void)
 {
@@ -599,7 +631,7 @@ test_add_file_tiff (void)
     g_assert_cmpuint (g_bytes_get_size (tiff), >, 4096);
     g_assert_cmpmem (g_bytes_get_data (tiff, NULL), 4, "II*\0", 4);
     g_assert_cmpint (g_mkdir_with_parents (dir, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (path, g_bytes_get_data (tiff, NULL), (gssize) g_bytes_get_size (tiff), NULL));
+    write_bytes (path, tiff);
     g_paste_settings_set_trim_items (settings, FALSE);
     g_paste_settings_set_max_text_item_size (settings, 1024);
     g_paste_settings_set_images_support (settings, FALSE);
@@ -619,10 +651,15 @@ test_add_file_tiff (void)
     g_assert_cmpint (g_rmdir (dir), ==, 0);
 }
 
-/* The file whose bytes read () counts, in @watched_bytes, while set: through
- * any descriptor, which is what AddFile reads its file from. */
-static const gchar *watched_path = NULL;
-static gsize        watched_bytes;
+/* The file whose bytes read () counts, in @watched_bytes, while @watching:
+ * through any descriptor open on it, which is what AddFile reads its file
+ * from. Told by its inode, taken once watch_file () names it, not by the path
+ * the descriptor resolves to, which a link on the way to the file -- a
+ * temporary directory under one -- spells otherwise. */
+static gboolean watching;
+static dev_t    watched_dev;
+static ino_t    watched_ino;
+static gsize    watched_bytes;
 
 ssize_t
 read (int    fd,
@@ -636,21 +673,59 @@ read (int    fd,
 
     ssize_t got = original (fd, buf, count);
 
-    if (watched_path && got > 0)
+    if (watching && got > 0)
     {
-        g_autofree gchar *link = g_strdup_printf ("/proc/self/fd/%d", fd);
-        g_autofree gchar *target = g_file_read_link (link, NULL);
+        struct stat read_from;
 
-        if (g_paste_str_equal (target, watched_path))
+        if (fstat (fd, &read_from) == 0 && read_from.st_dev == watched_dev && read_from.st_ino == watched_ino)
             watched_bytes += (gsize) got;
     }
 
     return got;
 }
 
+/* Has read () count what is read of @path from now on. */
+static void
+watch_file (const gchar *path)
+{
+    GStatBuf watched;
+
+    g_assert_cmpint (g_stat (path, &watched), ==, 0);
+    watched_dev = watched.st_dev;
+    watched_ino = watched.st_ino;
+    watched_bytes = 0;
+    watching = TRUE;
+}
+
+/* The placeholder is no name to add a password under: told apart from the
+ * nameless ones by value alone, such a password would come back under an
+ * existing uuid exactly when the value guessed is one the history holds. */
+static void
+test_add_password_placeholder_refused (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "1234", 0));
+
+    /* No clipboard manager: the refusal comes before anything is published. */
+    const GPasteDaemonMethods methods = { .history = history };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *result = g_paste_daemon_methods_add_password (&methods, G_PASTE_PASSWORD_ITEM_NO_NAME, "1234", 0, &error);
+
+    g_assert_null (result);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    /* Nor one to delete a password by: it names none of the nameless ones. */
+    g_clear_error (&error);
+    g_paste_daemon_methods_delete_password (&methods, G_PASTE_PASSWORD_ITEM_NO_NAME, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+}
+
 /* AddFile reads only a regular file the history could keep: a FIFO would hold
  * the daemon until something wrote to it, and a file over the memory cap is
- * refused unread, as watched_path holds it to, root or not. Past the
+ * refused unread, as watch_file () holds it to, root or not. Past the
  * text cap with trim-items off, one beginning as a text is refused on its first
  * bytes, the NULs past them, which a whole read would find, never looked at;
  * with trimming on it is read, since what trimming leaves may fit. */
@@ -686,10 +761,9 @@ test_add_file_refusals (void)
     g_assert_cmpint (ftruncate (fd, 6 * 1024 * 1024), ==, 0);
     g_assert_true (g_close (fd, NULL));
     g_paste_settings_set_max_memory_usage (settings, 5);
-    watched_path = big;
-    watched_bytes = 0;
+    watch_file (big);
     g_assert_null (g_paste_daemon_methods_add_file (&methods, big, &error));
-    watched_path = NULL;
+    watching = FALSE;
     g_assert_cmpuint (watched_bytes, ==, 0);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
@@ -699,10 +773,10 @@ test_add_file_refusals (void)
     g_assert_true (g_file_set_contents (long_text, head, -1, NULL));
     g_assert_cmpint (truncate (long_text, 2 * 1024 * 1024), ==, 0);
     g_paste_settings_set_max_text_item_size (settings, 1024 * 1024);
-    watched_path = long_text;
-    watched_bytes = 0;
+    watch_file (long_text);
     g_assert_null (g_paste_daemon_methods_add_file (&methods, long_text, &error));
-    watched_path = NULL;
+    watching = FALSE;
+    g_assert_cmpuint (watched_bytes, >, 0);
     g_assert_cmpuint (watched_bytes, <=, 4096);
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
     g_clear_error (&error);
@@ -713,9 +787,14 @@ test_add_file_refusals (void)
 
     g_assert_true (g_file_set_contents (padded, padded_text, -1, NULL));
     g_paste_settings_set_trim_items (settings, TRUE);
+    watch_file (padded);
 
     g_autofree gchar *uuid = g_paste_daemon_methods_add_file (&methods, padded, &error);
 
+    watching = FALSE;
+    /* Read whole, and counted whole: what tells the counts above from those
+     * of a read () that sees nothing of the file. */
+    g_assert_cmpuint (watched_bytes, ==, strlen (padded_text));
     g_assert_no_error (error);
     g_assert_nonnull (uuid);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
@@ -726,6 +805,23 @@ test_add_file_refusals (void)
     g_assert_cmpint (g_unlink (long_text), ==, 0);
     g_assert_cmpint (g_unlink (padded), ==, 0);
     g_assert_cmpint (g_rmdir (dir), ==, 0);
+}
+
+/* A path naming nothing is refused in %G_FILE_ERROR, as an open or a read
+ * failing is: one file, one domain, rather than GIO's for the lookup alone. */
+static void
+test_add_file_missing (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    const GPasteDaemonMethods methods = { .clipboards_manager = manager, .history = history, .settings = settings };
+    g_autofree gchar *missing = g_build_filename (g_get_user_cache_dir (), "add-file-missing", NULL);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_null (g_paste_daemon_methods_add_file (&methods, missing, &error));
+    g_assert_error (error, G_FILE_ERROR, G_FILE_ERROR_NOENT);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 }
 
 /* A file in a folder AddFile cannot enter is refused for that, as the read
@@ -936,7 +1032,8 @@ test_copy_refusals (void)
     g_assert_cmpstr (default_after, ==, default_before);
 
     /* A load waiting for another daemon's storage lock. */
-    g_autofree gchar *lock = g_build_filename (g_paste_util_get_history_dir_path (), "lock", NULL);
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *lock = g_build_filename (dir, "lock", NULL);
 
     g_paste_storage_backend_unlock ();
 
@@ -951,15 +1048,7 @@ test_copy_refusals (void)
 
     g_assert_error (loading, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_close (held, NULL);
-
-    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
-
-    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
-    {
-        g_main_context_iteration (NULL, FALSE);
-        g_usleep (1000);
-    }
-    g_assert_false (g_paste_history_is_loading (history));
+    wait_load (history);
 }
 
 /* Like make_history but without forcing a name into GSettings (which would emit
@@ -968,17 +1057,13 @@ test_copy_refusals (void)
 static GPasteHistory *
 make_plain_history_capped (guint64 max_history_size)
 {
-    GPasteSettings *settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
     g_paste_settings_set_growing_lines (settings, FALSE);
     g_paste_settings_set_max_history_size (settings, max_history_size);
     g_paste_settings_set_max_memory_usage (settings, 1024 /* MiB */);
 
-    GPasteHistory *history = g_paste_history_new (settings);
-
-    g_object_unref (settings);
-
-    return history;
+    return g_paste_history_new (settings);
 }
 
 static GPasteHistory *
@@ -996,13 +1081,12 @@ value_at (GPasteHistory *history,
 }
 
 /* One millisecond of main loop: run everything pending, then let the clock move
- * on. Every wait in this file is built out of this, so a flaky-timeout fix has
+ * on. Every pump of this file is built out of this, so a flaky-timeout fix has
  * one place to land. */
 static void
 pump_once (void)
 {
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     g_usleep (1000);
 }
 
@@ -1031,22 +1115,6 @@ pump_until_length (GPasteHistory *history,
     }
     return g_paste_history_get_length (history) == expected_len;
 }
-
-/* A test that provokes a warning runs its body in a child: the refusals under
- * test warn, and with structured logging (G_LOG_USE_STRUCTURED)
- * g_test_expect_message cannot swallow them, so the child drops warning
- * fatality -- a critical still aborts it -- and the parent matches them on the
- * child's stderr instead. A child
- * run only for directories of its own, expecting no warning, leaves this out,
- * so that one still fails it. */
-#define G_PASTE_TEST_IN_SUBPROCESS  g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR)
-
-#define G_PASTE_TEST_TRAP_SUBPROCESS(stderr_glob)                    \
-    do {                                                             \
-        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT); \
-        g_test_trap_assert_passed ();                                \
-        g_test_trap_assert_stderr (stderr_glob);                     \
-    } while (FALSE)
 
 /* Nor is a history that does not read back backed up, as the empty one that
  * reading it leaves would be: refused, and nothing written. */
@@ -1125,32 +1193,14 @@ test_migration_prompt_init (TestMigrationPrompt *self G_GNUC_UNUSED)
 }
 
 static void
-on_migration_settled (GObject      *source G_GNUC_UNUSED,
-                      GAsyncResult *result,
-                      gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-static void
 run_migration (GPasteSettings      *settings,
                TestMigrationPrompt *prompt)
 {
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, on_migration_settled, &result);
-
-    /* Bounded, so a migration that never settles fails here rather than at
-     * meson's timeout; an import into an encrypted flavour takes seconds. */
-    gint64 deadline = g_get_monotonic_time () + 60 * G_USEC_PER_SEC;
-
-    while (!result && g_get_monotonic_time () < deadline)
-    {
-        if (!g_main_context_iteration (NULL, FALSE))
-            g_usleep (1000);
-    }
-    g_assert_nonnull (result);
+    g_paste_storage_migration_async (G_PASTE_PROMPT (prompt), settings, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_STORAGE_WAIT_SECONDS);
 
     g_assert_true (g_paste_storage_migration_finish (result, &error));
     g_assert_no_error (error);
@@ -1397,18 +1447,38 @@ test_migration_none_is_current (void)
 
 /* A configured history name that names no history is the default one to the
  * detection, as it is to the history the daemon then loads, rather than a path
- * handed on regardless. */
+ * handed on regardless: the plain file the default history is in is what it
+ * finds, not the encrypted one beside the history directory that
+ * "../elsewhere" would name, nor the database flavour most files are in, which
+ * a name with no history of its own falls back on. */
 static void
 test_migration_invalid_history_name (void)
 {
     if (g_test_subprocess ())
     {
         g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+        g_autoptr (GPasteStorageBackend) file = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+        g_autolist (GPasteItem) items = g_list_prepend (NULL, g_paste_text_item_new ("default"));
+
+        g_assert_true (g_paste_storage_backend_write_history (file, G_PASTE_DEFAULT_HISTORY, items));
+
+        g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+        g_autofree gchar *outside = g_build_filename (dir, "..", "elsewhere.xmls", NULL);
+        g_autofree gchar *first_database = g_paste_util_get_history_file_path ("invalid-name-first", "db");
+        g_autofree gchar *second_database = g_paste_util_get_history_file_path ("invalid-name-second", "db");
+
+        g_assert_true (g_file_set_contents (outside, "", 0, NULL));
+        g_assert_true (g_file_set_contents (first_database, "", 0, NULL));
+        g_assert_true (g_file_set_contents (second_database, "", 0, NULL));
+
         g_autoptr (TestMigrationPrompt) prompt = g_object_new (TEST_TYPE_MIGRATION_PROMPT, NULL);
 
         g_paste_settings_set_history_name (settings, "../elsewhere");
         prompt->chosen = G_PASTE_STORAGE_FILE;
         run_migration (settings, prompt);
+        g_assert_cmpint (prompt->current, ==, G_PASTE_STORAGE_FILE);
+        g_assert_cmpint (g_paste_settings_get_storage_backend (settings), ==, G_PASTE_STORAGE_FILE);
+
         g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
         return;
     }
@@ -1543,7 +1613,13 @@ test_image_capture_does_not_write (void)
 
     g_assert_nonnull (item);
     g_assert_nonnull (g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item)));
-    g_assert_false (g_file_test (g_paste_item_get_value (item), G_FILE_TEST_EXISTS));
+    g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (item)));
+
+    /* The value is the checksum, which names a file only under a history's
+     * images directory, the default one's included. */
+    g_autofree gchar *path = g_paste_file_backend_image_path (G_PASTE_DEFAULT_HISTORY, g_paste_item_get_value (item));
+
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
 }
 
 /* The plain file backend materializes an image's cache file from the item
@@ -1560,7 +1636,7 @@ test_file_image_materialization (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (4, 5, 6);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -1594,8 +1670,6 @@ test_file_image_materialization (void)
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
     /* Read back off that file, and it says so. */
     g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, cache_path);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A captured image names no file: its value is its checksum, and where its
@@ -1645,28 +1719,6 @@ test_file_delete_takes_temporary (void)
     g_assert_false (g_file_test (temporary, G_FILE_TEST_EXISTS));
 }
 
-static void
-on_emptied (GObject      *source G_GNUC_UNUSED,
-            GAsyncResult *result,
-            gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-/* EmptyHistory, waited for as its D-Bus answer is. */
-static void
-empty_history (const GPasteDaemonMethods *methods,
-               const gchar               *name,
-               GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
-    g_paste_daemon_methods_empty_history_finish (result, error);
-}
-
 /* Emptying a history this daemon does not hold writes an empty one with its
  * own backend, and leaves alone the images a file flavour still storing that
  * name reads: the old data a migration kept, say. With no storage in use,
@@ -1701,6 +1753,9 @@ test_empty_other_keeps_stored_images (void)
 #endif
 #ifdef G_PASTE_ENABLE_SQLITE
         G_PASTE_STORAGE_SQLITE,
+#endif
+#if defined (G_PASTE_ENABLE_SQLITE) && defined (G_PASTE_ENABLE_ENCRYPTION)
+        G_PASTE_STORAGE_ENCRYPTED_SQLITE,
 #endif
         G_PASTE_N_STORAGE,
     };
@@ -1797,6 +1852,12 @@ test_noop_refuses_unmade (void)
         g_assert_error (other_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
         g_assert_true (g_file_test (other, G_FILE_TEST_EXISTS));
 
+        /* Nor is another one stored out of reach no history to back up. */
+        g_autoptr (GError) backup_error = NULL;
+
+        backup_history (&methods, "noop-other", "noop-other-copy", &backup_error);
+        g_assert_error (backup_error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+
         g_assert_cmpint (g_unlink (kept), ==, 0);
         g_assert_cmpint (g_unlink (other), ==, 0);
     }
@@ -1826,7 +1887,7 @@ test_locked_refuses_unmade (void)
         return;
     }
 
-    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+    G_PASTE_TEST_IN_SUBPROCESS;
 
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
 
@@ -1862,8 +1923,8 @@ test_file_image_per_history (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (16, 17, 18);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
-    GList *items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items_a = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items_b = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items_a->data);
     g_assert_nonnull (items_b->data);
@@ -1896,8 +1957,6 @@ test_file_image_per_history (void)
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpint (g_paste_item_get_kind (loaded->data), ==, G_PASTE_ITEM_KIND_IMAGE);
 
-    g_list_free_full (items_a, g_object_unref);
-    g_list_free_full (items_b, g_object_unref);
 }
 
 /* Backing a history up writes the *same* items under another name: the backup
@@ -1912,7 +1971,7 @@ test_file_backup_owns_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (19, 20, 21);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -1944,8 +2003,6 @@ test_file_backup_owns_images (void)
     g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, checksum);
     /* Read out of the backup's own copy, not the source's. */
     g_assert_cmpstr (g_paste_image_item_get_cache_path (loaded->data), ==, dst_path);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Dropping an image from a history takes the file the backend materialized for
@@ -2343,6 +2400,8 @@ test_file_legacy_images_sweep (void)
     g_autofree gchar *aliased_reference = g_build_filename (alias, "images", aliased_file_name, NULL);
     g_autofree gchar *orphan = g_build_filename (shared, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png", NULL);
     g_autofree gchar *foreign = g_build_filename (shared, "Screenshot.png", NULL);
+    /* Named in the middle of a text item, which keeps it all the same. */
+    g_autofree gchar *texted = g_build_filename (shared, "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210.png", NULL);
     g_autofree gchar *history = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                                                  "<history version=\"2.0\">\n"
                                                  "  <item kind=\"Image\" uuid=\"5c7a3c3e-legacy\" date=\"1234567890\" checksum=\"%s\">\n"
@@ -2351,16 +2410,20 @@ test_file_legacy_images_sweep (void)
                                                  "  <item kind=\"Image\" uuid=\"5c7a3c3e-aliased\" date=\"1234567890\" checksum=\"%s\">\n"
                                                  "    <value><![CDATA[%s]]></value>\n"
                                                  "  </item>\n"
+                                                 "  <item kind=\"Text\" uuid=\"5c7a3c3e-texted\">\n"
+                                                 "    <value><![CDATA[see %s, still here]]></value>\n"
+                                                 "  </item>\n"
                                                  "</history>\n",
-                                                 checksum, legacy, aliased_checksum, aliased_reference);
+                                                 checksum, legacy, aliased_checksum, aliased_reference, texted);
     g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
 
     g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
-    g_assert_true (g_file_set_contents (aliased_legacy, g_bytes_get_data (aliased_png, NULL), (gssize) g_bytes_get_size (aliased_png), NULL));
+    write_bytes (legacy, png);
+    write_bytes (aliased_legacy, aliased_png);
     g_assert_cmpint (symlink (history_dir, alias), ==, 0);
     g_assert_true (g_file_set_contents (orphan, "nobody's", -1, NULL));
     g_assert_true (g_file_set_contents (foreign, "not ours", -1, NULL));
+    g_assert_true (g_file_set_contents (texted, "named in a text", -1, NULL));
     g_assert_true (g_file_set_contents (history_path, history, -1, NULL));
 
     g_paste_file_backend_sweep_legacy_images ();
@@ -2368,26 +2431,84 @@ test_file_legacy_images_sweep (void)
     g_assert_true (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (orphan, G_FILE_TEST_EXISTS));
     g_assert_true (g_file_test (foreign, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (texted, G_FILE_TEST_EXISTS));
 
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
         g_autolist (GPasteItem) items = read_history_ok (backend, name);
 
-        g_assert_cmpuint (g_list_length (items), ==, 2);
+        g_assert_cmpuint (g_list_length (items), ==, 3);
         g_paste_storage_backend_write_history (backend, name, items);
     }
 
     g_paste_file_backend_sweep_legacy_images ();
     g_assert_false (g_file_test (legacy, G_FILE_TEST_EXISTS));
     g_assert_false (g_file_test (aliased_legacy, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (texted, G_FILE_TEST_EXISTS));
     g_assert_cmpint (g_unlink (alias), ==, 0);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
     g_autolist (GPasteItem) items = read_history_ok (backend, name);
 
-    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpuint (g_list_length (items), ==, 3);
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->data), ==, checksum);
     g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, aliased_checksum);
+}
+
+/* A NUL a damaged GPaste 50 document holds ends no scan of it: the images it
+ * names past one are kept, as the read going on past it still names them. */
+static void
+test_file_legacy_images_past_nul (void)
+{
+    const gchar *name = "legacy-past-nul";
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+    g_paste_settings_set_images_support (settings, TRUE);
+
+    g_autoptr (GBytes) png = test_png_bytes_colored (70, 71, 72);
+    g_autoptr (GBytes) after_png = test_png_bytes_colored (73, 74, 75);
+    g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+    g_autoptr (GPasteItem) image = g_paste_image_item_new_from_bytes (png, date, NULL);
+    g_autoptr (GPasteItem) after_image = g_paste_image_item_new_from_bytes (after_png, date, NULL);
+    const gchar *checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (image));
+    const gchar *after_checksum = g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (after_image));
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *shared = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *file_name = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
+    g_autofree gchar *after_file_name = g_strconcat (after_checksum, ".png", NULL);
+    g_autofree gchar *after_legacy = g_build_filename (shared, after_file_name, NULL);
+    g_autofree gchar *head = g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                              "<history version=\"2.0\">\n"
+                                              "  <item kind=\"Image\" uuid=\"5c7a3c3e-before\" date=\"1234567890\" checksum=\"%s\">\n"
+                                              "    <value><![CDATA[%s]]></value>\n"
+                                              "  </item>\n",
+                                              checksum, legacy);
+    g_autofree gchar *tail = g_strdup_printf ("  <item kind=\"Image\" uuid=\"5c7a3c3e-after\" date=\"1234567890\" checksum=\"%s\">\n"
+                                              "    <value><![CDATA[%s]]></value>\n"
+                                              "  </item>\n"
+                                              "</history>\n",
+                                              after_checksum, after_legacy);
+    g_autoptr (GString) history = g_string_new (head);
+    g_autofree gchar *history_path = g_paste_util_get_history_file_path (name, "xml");
+
+    /* Between the two items, where GMarkup reads it as blank. */
+    g_string_append_len (history, "\0\0\0\0", 4);
+    g_string_append (history, tail);
+    g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+    g_assert_true (g_file_set_contents (after_legacy, g_bytes_get_data (after_png, NULL), (gssize) g_bytes_get_size (after_png), NULL));
+    g_assert_true (g_file_set_contents (history_path, history->str, (gssize) history->len, NULL));
+
+    g_paste_file_backend_sweep_legacy_images ();
+    g_assert_true (g_file_test (legacy, G_FILE_TEST_EXISTS));
+    g_assert_true (g_file_test (after_legacy, G_FILE_TEST_EXISTS));
+
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
+    g_autolist (GPasteItem) items = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (items), ==, 2);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (items->next->data), ==, after_checksum);
 }
 
 /* A GPaste 50 history holding one image, kept in
@@ -2403,7 +2524,7 @@ legacy_history (GBytes      *png,
     g_autofree gchar *legacy = g_build_filename (shared, file_name, NULL);
 
     g_assert_cmpint (g_mkdir_with_parents (shared, 0700), ==, 0);
-    g_assert_true (g_file_set_contents (legacy, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+    write_bytes (legacy, png);
 
     return g_strdup_printf ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                             "<history version=\"2.0\">\n"
@@ -2571,14 +2692,14 @@ test_file_encrypted_fallback_verified (void)
         g_paste_storage_backend_write_history (encrypted, name, items);
         g_assert_cmpint (g_unlink (pngs), ==, 0);
 
-        g_assert_true (g_file_set_contents (png, g_bytes_get_data (forged, NULL), (gssize) g_bytes_get_size (forged), NULL));
+        write_bytes (png, forged);
         {
             g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
 
             g_assert_null (loaded);
         }
 
-        g_assert_true (g_file_set_contents (png, g_bytes_get_data (genuine, NULL), (gssize) g_bytes_get_size (genuine), NULL));
+        write_bytes (png, genuine);
         {
             g_autolist (GPasteItem) loaded = read_history_ok (encrypted, name);
 
@@ -2634,7 +2755,61 @@ test_file_encrypted_side_file_verified (void)
     G_PASTE_TEST_TRAP_SUBPROCESS ("*not the one its encrypted history names*");
 }
 
-#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* An image a read dropped, its side file holding something else, comes back
+ * when it is copied again: the write puts its side file anew rather than
+ * taking the one at its name for complete. */
+static void
+test_file_encrypted_refused_side_file_rewritten (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        const gchar *name = "encrypted-refused-side-file";
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        g_paste_settings_set_images_support (settings, TRUE);
+
+        g_autoptr (GPasteStorageBackend) encrypted = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autoptr (GBytes) png = test_png_bytes_colored (60, 61, 62);
+        g_autoptr (GBytes) other = test_png_bytes_colored (63, 64, 65);
+        g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+        g_autolist (GPasteItem) others = g_list_append (NULL, g_paste_image_item_new_from_bytes (other, date, NULL));
+        g_autofree gchar *checksum = g_strdup (g_paste_image_item_get_checksum (items->data));
+        g_autofree gchar *image_png = g_paste_file_backend_image_path (name, checksum);
+        g_autofree gchar *image_pngs = g_paste_file_backend_encrypted_path (image_png);
+        g_autofree gchar *other_png = g_paste_file_backend_image_path ("encrypted-refused-other", g_paste_image_item_get_checksum (others->data));
+        g_autofree gchar *other_pngs = g_paste_file_backend_encrypted_path (other_png);
+        g_autofree gchar *contents = NULL;
+        gsize length = 0;
+
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, name, items));
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, "encrypted-refused-other", others));
+        g_assert_true (g_file_get_contents (other_pngs, &contents, &length, NULL));
+        g_assert_true (g_file_set_contents (image_pngs, contents, (gssize) length, NULL));
+
+        {
+            g_autolist (GPasteItem) dropped = read_history_ok (encrypted, name);
+
+            g_assert_null (dropped);
+        }
+
+        g_autolist (GPasteItem) again = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+
+        g_assert_true (g_paste_storage_backend_write_history (encrypted, name, again));
+
+        g_autoptr (GPasteStorageBackend) reader = g_paste_file_backend_new_encrypted (settings, "passphrase");
+        g_autolist (GPasteItem) loaded = read_history_ok (reader, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not the one its encrypted history names*");
+}
+
 /* An image whose pixels a round trip through PNG does not give back exactly --
  * floating point with alpha -- is read back from the encrypted flavour all the
  * same: its side file is checked against the PNG the document names, not
@@ -2683,8 +2858,29 @@ test_file_encrypted_image_round_trip (void)
 
     g_assert_cmpuint (g_list_length (loaded), ==, 1);
     g_assert_cmpstr (g_paste_image_item_get_checksum (loaded->data), ==, checksum);
+
+    /* Written again by a backend that never read its side file, the document
+     * names no PNG for it, as GPaste 51.0's never did: its encrypted side file
+     * is still read, under the history's checksum, its pixels failing the
+     * check through PNG -- decoded once for both. */
+    {
+        g_autoptr (GPasteStorageBackend) unaware = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+        g_assert_true (g_paste_storage_backend_write_history (unaware, name, items));
+    }
+
+    g_autoptr (GPasteStorageBackend) upgraded = g_paste_file_backend_new_encrypted (settings, "passphrase");
+
+    decodes = 0;
+    counting_decodes = TRUE;
+
+    g_autolist (GPasteItem) kept = read_history_ok (upgraded, name);
+
+    counting_decodes = FALSE;
+    g_assert_cmpuint (decodes, ==, 1);
+    g_assert_cmpuint (g_list_length (kept), ==, 1);
+    g_assert_cmpstr (g_paste_image_item_get_checksum (kept->data), ==, checksum);
 }
-#endif
 
 /* A plain history moved to the encrypted flavour the way a migration does it:
  * imported, then deleted. Its screenshots go in clear with it, their encrypted
@@ -2735,13 +2931,15 @@ test_file_encrypting_migration_lost_side_file (void)
 #endif
 
 #ifdef G_PASTE_ENABLE_SQLITE
-/* A row with no uuid -- another tool's table, adopted as GPaste's when it has
- * the columns, need not refuse one -- reads as an item of a uuid of its own,
- * and the reconciliation of the next add that displaces anything leaves it
- * alone: hashed as one of the model's, its NULL crashed the daemon, and
- * gnome-shell with it in-shell, at every such add. */
+/* A row with no valid uuid -- another tool's table, adopted as GPaste's when it
+ * has the columns, need not refuse one -- reads as an item of a uuid of its
+ * own, which the row is given in the store too: the next read finds it there,
+ * the reconciliation of an add that displaces anything keeps the row as the
+ * model's -- hashed as one of the model's, a NULL crashed the daemon, and
+ * gnome-shell with it in-shell, at every such add -- and a delete of the item
+ * reaches it rather than deleting nothing. */
 static void
-test_sqlite_null_uuid_reconciled (void)
+test_sqlite_null_uuid_adopted (void)
 {
     const gchar *name = "sqlite-null-uuid";
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
@@ -2760,23 +2958,44 @@ test_sqlite_null_uuid_reconciled (void)
     sqlite3_close (db);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+    g_autolist (GPasteItem) first = read_history_ok (backend, name);
+
+    g_assert_cmpuint (g_list_length (first), ==, 2);
+
+    /* The uuids they were read with are theirs in the store now. */
+    {
+        g_autoptr (GPasteStorageBackend) again = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) reread = read_history_ok (again, name);
+
+        g_assert_cmpuint (g_list_length (reread), ==, 2);
+        for (const GList *a = first, *b = reread; a && b; a = a->next, b = b->next)
+            g_assert_cmpstr (g_paste_item_get_uuid (a->data), ==, g_paste_item_get_uuid (b->data));
+    }
+
+    g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
+    g_autoptr (GList) snapshot = g_list_prepend (g_list_copy (first), added);
+
+    g_paste_storage_backend_add_item (backend, name, added, snapshot);
 
     {
         g_autolist (GPasteItem) read = read_history_ok (backend, name);
 
-        g_assert_cmpuint (g_list_length (read), ==, 2);
+        g_assert_cmpuint (g_list_length (read), ==, 3);
+        g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "added");
     }
 
-    g_autoptr (GPasteItem) added = g_paste_text_item_new ("added");
-    g_autoptr (GList) snapshot = g_list_append (NULL, added);
+    /* Deleted, the row read with no uuid of its own goes. */
+    GPasteItem *uuidless = g_list_last (first)->data;
 
-    g_paste_storage_backend_add_item (backend, name, added, snapshot);
+    g_assert_cmpstr (g_paste_item_get_value (uuidless), ==, "no uuid");
+    snapshot = g_list_remove (snapshot, uuidless);
+    g_paste_storage_backend_remove_item (backend, name, g_paste_item_get_uuid (uuidless), snapshot);
 
     g_autolist (GPasteItem) read = read_history_ok (backend, name);
 
     g_assert_cmpuint (g_list_length (read), ==, 2);
-    g_assert_cmpstr (g_paste_item_get_value (read->data), ==, "added");
-    g_assert_cmpstr (g_paste_item_get_value (read->next->data), ==, "no uuid");
+    for (const GList *l = read; l; l = l->next)
+        g_assert_cmpstr (g_paste_item_get_value (l->data), !=, "no uuid");
 }
 
 /* The same eviction against a database: the image was never a file, so nothing
@@ -2819,9 +3038,13 @@ test_sqlite_eviction_deletes_no_image (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_null (g_paste_image_item_get_cache_path (G_PASTE_IMAGE_ITEM (g_paste_history_get (history, 0))));
 
-    g_paste_history_remove (history, 0);
+    /* Nor does its eviction, written before anything is looked at: no images
+     * directory for the history, let alone a file in it. */
+    g_autofree gchar *images = g_path_get_dirname (image_path);
 
-    g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
+    g_paste_history_remove (history, 0);
+    g_paste_history_flush (history);
+    g_assert_false (g_file_test (images, G_FILE_TEST_EXISTS));
 }
 #endif
 
@@ -3026,8 +3249,8 @@ test_uuid_lookup_survives_reshuffling (void)
     const guint n_uuids = 6;
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteHistory) history = make_history (&settings, 100);
-    /* NULL-terminated and freed as a strv: g_autofree on an array would free
-     * only its first element, since the cleanup is handed the array's address. */
+    /* NULL-terminated and freed as a strv: g_autofree would free the array
+     * alone, leaking every string in it. */
     g_auto (GStrv) uuids = g_new0 (gchar *, n_uuids + 1);
 
     for (guint i = 0; i < n_uuids; ++i)
@@ -3224,13 +3447,20 @@ test_search_queries (void)
     g_assert_cmpuint (g_strv_length (literal), ==, 1);
 
     /* Nor by the placeholder its value is: an asterisk typed, escaped, finds
-     * no password named otherwise. */
+     * no password named otherwise -- nor a nameless one, whose name is that
+     * placeholder, found by its uuid alone. */
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "nameless secret", 0));
+
+    g_autofree gchar *nameless = dup_uuid_at (history, 0);
     g_autofree gchar *asterisk = g_regex_escape_string ("*", -1);
     g_auto (GStrv) by_placeholder = g_paste_history_search (history, asterisk);
+    g_auto (GStrv) by_uuid = g_paste_history_search (history, nameless);
 
     g_assert_cmpuint (g_strv_length (by_placeholder), ==, 0);
+    g_assert_cmpuint (g_strv_length (by_uuid), ==, 1);
+    g_assert_cmpstr (by_uuid[0], ==, nameless);
 
-    g_assert_null (g_paste_daemon_methods_search (&methods, "c++ (gcc", &error));
+    g_assert_null (search (&methods, "c++ (gcc", &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
 
     /* Saying what is wrong with it, in GLib's words. */
@@ -3243,14 +3473,119 @@ test_search_queries (void)
 
     g_autofree gchar *long_query = g_strnfill (G_PASTE_HISTORY_MAX_SEARCH_LENGTH + 1, 'a');
 
-    g_assert_null (g_paste_daemon_methods_search (&methods, long_query, &error));
+    g_assert_null (search (&methods, long_query, &error));
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
     g_clear_error (&error);
 
-    g_autoptr (GVariant) found = g_paste_daemon_methods_search (&methods, escaped, &error);
+    g_autoptr (GVariant) found = search (&methods, escaped, &error);
 
     g_assert_no_error (error);
     g_assert_cmpuint (g_variant_n_children (found), ==, 1);
+}
+
+/* The thread a search's first match runs on, and whether the main loop turned
+ * while it ran, recorded while @matches_watched is set: that match waits for
+ * the main loop to turn, as one taking its match limit lets it, a second at
+ * most -- on the main thread, nothing turns it. */
+static gint     matches_watched;
+static GThread *matched_on;
+static gint     main_loop_turns;
+static gint     turned_while_matching;
+
+gboolean
+g_regex_match (const GRegex    *regex,
+               const gchar     *string,
+               GRegexMatchFlags match_options,
+               GMatchInfo     **match_info)
+{
+    typedef gboolean (*Match) (const GRegex *, const gchar *, GRegexMatchFlags, GMatchInfo **);
+    Match original = (Match) dlsym (RTLD_NEXT, "g_regex_match");
+
+    g_assert_nonnull (original);
+    if (g_atomic_int_get (&matches_watched) && g_atomic_pointer_compare_and_exchange (&matched_on, NULL, g_thread_self ()))
+    {
+        gint turns = g_atomic_int_get (&main_loop_turns);
+        gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
+
+        while (g_atomic_int_get (&main_loop_turns) == turns && g_get_monotonic_time () < deadline)
+            g_usleep (1000);
+        g_atomic_int_set (&turned_while_matching, g_atomic_int_get (&main_loop_turns) != turns);
+    }
+
+    return original (regex, string, match_options, match_info);
+}
+
+static gboolean
+count_tick (gpointer user_data)
+{
+    g_atomic_int_inc ((gint *) user_data);
+
+    return G_SOURCE_CONTINUE;
+}
+
+/* A search is matched on a worker thread, the main loop turning meanwhile: a
+ * pattern taking its match limit on every item -- nested quantifiers over a
+ * run of what they repeat -- would otherwise stall the daemon, gnome-shell for
+ * the in-shell one, for as long, under the history's lock on the main loop.
+ * The match held until the main loop turns stands in for one that slow, which
+ * how fast a regex engine is would otherwise decide. */
+static void
+test_search_off_main_loop (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 50);
+
+    g_paste_history_add (history, g_paste_text_item_new ("needle"));
+    g_paste_history_add (history, g_paste_text_item_new ("haystack"));
+
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+    guint tick = g_timeout_add (1, count_tick, &main_loop_turns);
+
+    g_source_set_name_by_id (tick, "[GPaste] test main loop turns");
+    g_atomic_pointer_set (&matched_on, NULL);
+    g_atomic_int_set (&turned_while_matching, FALSE);
+    g_atomic_int_set (&matches_watched, TRUE);
+    g_paste_history_search_items_async (history, "needle", g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+    g_atomic_int_set (&matches_watched, FALSE);
+    g_source_remove (tick);
+
+    g_autoptr (GPtrArray) found = g_paste_history_search_items_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (found->len, ==, 1);
+    g_assert_nonnull (g_atomic_pointer_get (&matched_on));
+    g_assert_true (g_atomic_pointer_get (&matched_on) != g_thread_self ());
+    g_assert_true (g_atomic_int_get (&turned_while_matching));
+}
+
+/* A pattern of nested quantifiers over a run of what they repeat, with nothing
+ * at the end they could match, takes PCRE2's match limit on each item where
+ * its build has one low enough: the search answers no match, with no error
+ * and no warning, which the fatal warnings of this binary would abort on. A
+ * build matching it to the end answers the same. */
+static void
+test_search_past_match_limit (void)
+{
+    g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+    for (guint i = 0; i < 4; ++i)
+    {
+        g_autofree gchar *run = g_strdup_printf ("%u aaaaaaaaaaaaaaaaaaaaaaaaaaaaab", i);
+
+        g_paste_history_add (history, g_paste_text_item_new (run));
+    }
+
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_history_search_items_async (history, "(a+)+$", g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result (&result);
+
+    g_autoptr (GPtrArray) found = g_paste_history_search_items_finish (result, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (found->len, ==, 0);
 }
 
 /* Merge joins text: an image's value is a checksum and a password's a
@@ -3287,6 +3622,86 @@ test_merge_refuses_image_and_password (void)
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_WRONG_ITEM_KIND);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
     }
+}
+
+/* What a caller repeats is measured before anything is built from it: a merge
+ * of one item thousands of times under a megabyte of decoration is refused as
+ * too long without the gigabytes being joined, and a listing asked for one
+ * item more often than the history could hold it is refused rather than
+ * copying its value every time. */
+static void
+test_repeats_measured_first (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+    g_paste_settings_set_trim_items (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("text"));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+    g_autofree gchar *decoration = g_strnfill (1024 * 1024, '=');
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    for (guint i = 0; i < 4096; ++i)
+        g_strv_builder_add (builder, uuid);
+
+    g_auto (GStrv) repeated = g_strv_builder_end (builder);
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings };
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *merged = g_paste_daemon_methods_merge (&methods, decoration, "", (const gchar * const *) repeated, &error);
+
+    g_assert_null (merged);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_REJECTED);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+
+    g_autoptr (GError) items_error = NULL;
+    g_autoptr (GVariant) twice = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) repeated + 4094, &items_error);
+
+    g_assert_no_error (items_error);
+    g_assert_cmpuint (g_variant_n_children (twice), ==, 2);
+
+    g_paste_history_add (history, g_paste_text_item_new (decoration));
+
+    g_autofree gchar *large = dup_uuid_at (history, 0);
+    g_autoptr (GStrvBuilder) large_builder = g_strv_builder_new ();
+
+    /* Past the 6 MiB a history may hold. */
+    for (guint i = 0; i < 8; ++i)
+        g_strv_builder_add (large_builder, large);
+
+    g_auto (GStrv) larges = g_strv_builder_end (large_builder);
+    g_autoptr (GVariant) items = NULL;
+
+    g_paste_settings_set_max_memory_usage (settings, 6);
+    items = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) larges, &items_error);
+    g_assert_null (items);
+    g_assert_error (items_error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
+
+    /* Distinct items are answered whatever they weigh: pinned ones, which the
+     * memory cap never evicts, past it. */
+    g_autoptr (GStrvBuilder) pinned_builder = g_strv_builder_new ();
+
+    g_paste_settings_set_max_memory_usage (settings, 100);
+    for (guint i = 0; i < 7; ++i)
+    {
+        g_autofree gchar *value = g_strdup_printf ("%u%s", i, decoration);
+
+        g_paste_history_add (history, g_paste_text_item_new (value));
+
+        g_autofree gchar *pinned = dup_uuid_at (history, 0);
+
+        g_assert_true (g_paste_history_set_favourite (history, pinned, TRUE));
+        g_strv_builder_add (pinned_builder, pinned);
+    }
+    g_paste_settings_set_max_memory_usage (settings, 6);
+
+    g_auto (GStrv) pinned = g_strv_builder_end (pinned_builder);
+    g_autoptr (GVariant) all_pinned = NULL;
+
+    g_clear_error (&items_error);
+    all_pinned = g_paste_daemon_methods_get_items (&methods, (const gchar * const *) pinned, &items_error);
+    g_assert_no_error (items_error);
+    g_assert_cmpuint (g_variant_n_children (all_pinned), ==, 7);
 }
 
 /* Selecting an idle image decodes it again, and the history's total has to
@@ -3543,6 +3958,65 @@ test_memory_cap_after_replacement_spares_once (void)
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 3);
 }
 
+/* A replacement as heavy as the item the memory cap is to evict next takes its
+ * place there, as an item leaving the head does: the tie is either's to take
+ * (g_paste_history_private_offer_biggest ()). */
+static void
+test_memory_cap_replacement_takes_tie (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *first = g_strnfill (3 * 1024 * 1024, 'A');
+    g_autofree gchar *second = g_strnfill (3 * 1024 * 1024, 'B');
+    g_autofree gchar *edited = g_strnfill (3 * 1024 * 1024, 'E');
+
+    g_paste_history_add (history, g_paste_text_item_new (first));
+
+    g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new (second));
+
+    g_autofree gchar *second_uuid = dup_uuid_at (history, 0);
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *replacement = g_paste_history_replace (history, uuid, edited);
+
+    g_assert_nonnull (replacement);
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_cmpuint (g_paste_settings_get_max_memory_usage (settings), ==, 5);
+
+    g_assert_null (g_paste_history_get_by_uuid (history, replacement));
+    g_assert_nonnull (g_paste_history_get_by_uuid (history, second_uuid));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
+/* Replace builds a text item out of @contents, so it has to have some. */
+static void
+test_replace_refuses_no_contents (void)
+{
+    if (g_test_subprocess ())
+    {
+        /* The critical is the refusal under test, which
+         * G_PASTE_TEST_IN_SUBPROCESS would abort on. */
+        g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_paste_history_add (history, g_paste_text_item_new ("kept"));
+
+        g_autofree gchar *uuid = dup_uuid_at (history, 0);
+
+        g_assert_null (g_paste_history_replace (history, uuid, NULL));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+        g_assert_cmpstr (value_at (history, 0), ==, "kept");
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*CRITICAL*g_paste_history_replace*contents*");
+}
+
 /* A favourite weighing more than max-memory-usage stays, the cap leaving it
  * alone, and selecting it makes it the head like any other: the selection it is
  * announced for is that item's. */
@@ -3698,10 +4172,6 @@ test_favourite_survives_replace (void)
     g_assert_true (g_paste_item_is_favourite (g_paste_history_get (history, 0)));
 }
 
-/* MakePassword handed a password's own uuid keeps the entry where it stands,
- * under that uuid, rather than minting a new one: the uuid that went in comes
- * back, the name and the timeout are written and the value is not. That is
- * what Edit Password drives on every save. */
 /* A name heavy enough to put a password past the memory cap is refused, nothing
  * changed, as Replace refuses contents that heavy: spared by the cap, it would
  * evict every other entry to make room for itself. */
@@ -3728,6 +4198,10 @@ test_make_password_heavy_name (void)
     g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
 }
 
+/* MakePassword handed a password's own uuid keeps the entry where it stands,
+ * under that uuid, rather than minting a new one: the uuid that went in comes
+ * back, the name and the timeout are written and the value is not. That is
+ * what Edit Password drives on every save. */
 static void
 test_make_password_keeps_uuid (void)
 {
@@ -4520,10 +4994,11 @@ test_flush_stops_recording (void)
         g_paste_history_flush (writer);
 
         /* This change happens after the flush: it stays in memory but must never
-         * reach the disk. Pump the loop so an (erroneous) async write would run. */
+         * reach the disk. Flushed again, so that an (erroneous) write recorded
+         * for it has landed before the reader looks. */
         g_paste_history_add (writer, g_paste_text_item_new ("dropped"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (writer);
     }
 
     {
@@ -4608,11 +5083,11 @@ test_file_v1_refused_and_preserved (void)
         g_paste_history_load (history, name);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 
-        /* Recording is off for it, so a subsequent
-         * add must not reach the file. */
+        /* Recording is off for it, so a subsequent add must not reach the file:
+         * flushed, so that an (erroneous) write recorded for it has landed. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (history);
 
         g_autofree gchar *raw = NULL;
 
@@ -4747,7 +5222,7 @@ test_file_parser_malformed (void)
                                                  TRUE);
         g_autofree gchar *trailing = read_document ("parser-trailing",
                                                     "  <item kind=\"Text\"><value><![CDATA[kept]]>never logged</value></item>\n",
-                                                    TRUE);
+                                                    FALSE);
         g_autofree gchar *nested_item = read_document ("parser-nested-item",
                                                        "  <item kind=\"Text\"><value>a</value><item kind=\"Text\"><value>b</value></item></item>\n",
                                                        FALSE);
@@ -4768,6 +5243,13 @@ test_file_parser_malformed (void)
         g_assert_cmpstr (wrapped, ==, "own too");
         g_free (read_document ("parser-markup-in-value",
                                "  <item kind=\"Text\"><value>before<b>bold</b>after</value></item>\n",
+                               FALSE));
+        /* Two runs, which the next save would cut down to the first. */
+        g_free (read_document ("parser-split-value",
+                               "  <item kind=\"Text\"><value><![CDATA[first]]><![CDATA[second]]></value></item>\n",
+                               FALSE));
+        g_free (read_document ("parser-text-then-section",
+                               "  <item kind=\"Text\"><value>abc<![CDATA[def]]></value></item>\n",
                                FALSE));
         g_free (read_document ("parser-bad-utf8",
                                "  <item kind=\"Text\"><value><![CDATA[a value damaged \xc3]]></value></item>\n"
@@ -4795,7 +5277,7 @@ test_file_parser_malformed (void)
         g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
         g_autofree gchar *png_path = g_build_filename (history_dir, "parser-checksum.png", NULL);
 
-        g_assert_true (g_file_set_contents (png_path, g_bytes_get_data (png, NULL), (gssize) g_bytes_get_size (png), NULL));
+        write_bytes (png_path, png);
 
         g_autofree gchar *image = g_strdup_printf ("  <item kind=\"Image\" date=\"1234567890\" checksum=\"../../escaped&quot;x\"><value>%s</value></item>\n", png_path);
         g_autofree gchar *checksum = read_document ("parser-checksum", image, TRUE);
@@ -4880,11 +5362,14 @@ test_file_version_guard (void)
         g_paste_history_load (history, name);
         g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 
-        /* Recording is off for it: pump the loop so an (erroneous) async write
-         * would run, then check the file is byte-for-byte what we wrote. */
+        /* Recording is off for it: flushed, so that an (erroneous) write recorded
+         * for the add has landed, then the file checked byte-for-byte against
+         * what we wrote. Resumed, the flush having stopped the recording the
+         * rest of the case needs. */
         g_paste_history_add (history, g_paste_text_item_new ("usurper"));
 
-        pump_for_ms (100);
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
 
         g_autofree gchar *raw = NULL;
 
@@ -5090,13 +5575,43 @@ test_reload_then_empty_drops_password (void)
     g_signal_handlers_disconnect_by_data (history, dropped);
 }
 
-/* A load waited for as the daemon's main loop would. */
+/* A load waited for as the daemon's main loop would, thirty seconds at most. */
 static gboolean
 pump_until_loaded (GPasteHistory *history)
 {
-    for (guint i = 0; i < 5000 && g_paste_history_is_loading (history); ++i)
+    gint64 deadline = g_get_monotonic_time () + 30 * G_USEC_PER_SEC;
+
+    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
         pump_once ();
     return !g_paste_history_is_loading (history);
+}
+
+/* An add made while a load is out, equal to the head that load reads, takes its
+ * place -- unless it is refused, a max-memory-usage lowered meanwhile below its
+ * weight: the head read then stays, rather than both going, and the store with
+ * them at the next write. */
+static void
+test_loaded_head_kept_for_refused_add (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autofree gchar *name = g_strdup (g_paste_history_get_current (history));
+    g_autofree gchar *heavy = g_strnfill (6 * 1024 * 1024, 'h');
+
+    g_paste_history_add (history, g_paste_text_item_new (heavy));
+    g_paste_history_flush (history);
+    g_paste_history_resume (history);
+    g_assert_true (g_paste_history_switch (history, "loaded-head-other"));
+    g_assert_true (pump_until_loaded (history));
+
+    g_assert_true (g_paste_history_switch (history, name));
+    g_paste_history_add (history, g_paste_text_item_new (heavy));
+    g_paste_settings_set_max_memory_usage (settings, 5);
+    g_assert_true (pump_until_loaded (history));
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, heavy);
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
 /* A long item reads back in a time its length bounds: two megabytes take
@@ -5120,6 +5635,108 @@ test_file_long_item_read (void)
     g_assert_cmpuint (g_list_length (read), ==, 1);
     g_assert_cmpstr (g_paste_item_get_value (read->data), ==, text);
     g_paste_settings_reset (settings, G_PASTE_MAX_MEMORY_USAGE_SETTING);
+}
+
+/* A history nobody has named has nothing to delete: refused as the caller's
+ * mistake, rather than answered as done with nothing deleted. */
+static void
+test_delete_unnamed (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_failed ();
+        g_test_trap_assert_stderr ("*CRITICAL*g_paste_history_delete*name || self->name*");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_delete (history, NULL, NULL);
+}
+
+/* A switch leaves behind a plain flavour's passwords for good, its store keeping
+ * none, and announces them -- once: switching back finds nothing to announce
+ * again. An encrypted flavour's store keeps them, and a switch announces none,
+ * as a delete of a history then announces what its store took with it, those
+ * its switch to the default history announced aside. And a history asked to
+ * load again while its load is out keeps what was copied meanwhile. */
+static void
+test_switch_drops_unkept_passwords (void)
+{
+    g_autoptr (GPtrArray) dropped = g_ptr_array_new_with_free_func (g_free);
+
+    {
+        g_autoptr (GPasteSettings) settings = NULL;
+        g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+        g_autofree gchar *left = g_strdup (g_paste_history_get_current (history));
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+        g_paste_history_add (history, g_paste_password_item_new ("plain", "plain secret", 0));
+        g_paste_history_add (history, g_paste_text_item_new ("a text"));
+        g_assert_true (g_paste_history_switch (history, "switch-drops-other"));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 1);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 0), ==, "plain secret");
+
+        g_assert_true (g_paste_history_switch (history, left));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 1);
+
+        /* Deleted, the history in use is left first: announced there, once. */
+        g_assert_true (g_paste_history_switch (history, "switch-drops-deleted"));
+        g_assert_true (pump_until_loaded (history));
+        g_paste_history_add (history, g_paste_password_item_new ("deleted", "deleted secret", 0));
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
+        g_assert_true (g_paste_history_delete (history, NULL, NULL));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 2);
+        g_assert_cmpstr (g_ptr_array_index (dropped, 1), ==, "deleted secret");
+        g_signal_handlers_disconnect_by_data (history, dropped);
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+    }
+
+    {
+        g_autoptr (GPasteHistory) history = make_history (NULL, 10);
+
+        g_paste_history_load_async (history, "load-twice");
+        g_paste_history_add (history, g_paste_text_item_new ("copied meanwhile"));
+        g_paste_history_load_async (history, "load-twice");
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "copied meanwhile");
+    }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    {
+        g_paste_storage_backend_set_passphrase ("switch passphrase");
+
+        /* Set before the history is made, so that it loads from that flavour:
+         * the settings all share the one memory backend. */
+        {
+            g_autoptr (GPasteSettings) encrypted = g_paste_settings_new ();
+
+            g_paste_settings_set_storage_backend (encrypted, G_PASTE_STORAGE_ENCRYPTED_FILE);
+        }
+
+        g_autoptr (GPasteSettings) settings = NULL;
+        g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+
+        g_signal_connect (history, "password-dropped", G_CALLBACK (record_dropped), dropped);
+        g_paste_history_add (history, g_paste_password_item_new ("kept", "kept secret", 0));
+        g_paste_history_flush (history);
+        g_paste_history_resume (history);
+        g_assert_true (g_paste_history_switch (history, "switch-keeps-other"));
+        g_assert_true (pump_until_loaded (history));
+        g_assert_cmpuint (dropped->len, ==, 2);
+        g_signal_handlers_disconnect_by_data (history, dropped);
+        g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
+        g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
+        g_paste_storage_backend_set_passphrase (NULL);
+    }
+#endif
 }
 
 /* So are they when the history, the one history-name names, is deleted before
@@ -5162,6 +5779,106 @@ test_reload_then_delete_drops_password (gconstpointer data)
     g_signal_handlers_disconnect_by_data (history, dropped);
     g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
     g_paste_history_flush (history);
+}
+
+/* Registered through add_test (), as every case is, so that both start from the
+ * schema's defaults (run_from_defaults ()). */
+static void
+test_reload_then_delete_drops_password_once (void)
+{
+    test_reload_then_delete_drops_password (GINT_TO_POINTER (FALSE));
+}
+
+static void
+test_reload_twice_drops_password (void)
+{
+    test_reload_then_delete_drops_password (GINT_TO_POINTER (TRUE));
+}
+
+/* A delete with no store to unlink -- the history in use never saved -- has
+ * deleted the history all the same; one whose store went but whose images
+ * could not all be swept is reported, the history gone and not gone back to,
+ * which would make its store again -- and so is one whose store had gone
+ * already, the images it left being what went wrong. */
+static void
+test_delete_store_or_sweep (void)
+{
+    if (!g_test_subprocess ())
+    {
+        if (!geteuid ())
+        {
+            g_test_skip ("root removes files from a directory of mode 0500");
+            return;
+        }
+
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
+    /* The sweep cut short warns of what it left. */
+    G_PASTE_TEST_IN_SUBPROCESS;
+
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    g_autoptr (GError) error = NULL;
+
+    g_assert_true (g_paste_history_switch (history, "delete-never-saved"));
+    g_assert_true (pump_until_loaded (history));
+    g_assert_true (g_paste_history_delete (history, NULL, &error));
+    g_assert_no_error (error);
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+
+    g_autofree gchar *path = g_paste_util_get_history_file_path ("delete-unswept", "xml");
+    g_autofree gchar *images = g_paste_file_backend_images_dir ("delete-unswept");
+    g_autofree gchar *kept = g_build_filename (images, "kept.png", NULL);
+
+    g_assert_true (g_paste_history_switch (history, "delete-unswept"));
+    g_assert_true (pump_until_loaded (history));
+    g_paste_history_add (history, g_paste_text_item_new ("stored"));
+    g_paste_history_flush (history);
+    g_paste_history_resume (history);
+    g_assert_true (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpint (g_mkdir_with_parents (images, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (kept, "png", -1, NULL));
+    g_assert_cmpint (g_chmod (images, 0500), ==, 0);
+
+    /* Through the method, whose views are told the history went. */
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    guint announced = 0;
+
+    g_signal_connect_swapped (skeleton, "raw-history-deleted", G_CALLBACK (g_paste_test_bus_count_emission), &announced);
+    g_paste_daemon_methods_delete_history (&methods, "delete-unswept", &error);
+    g_assert_cmpint (g_chmod (images, 0700), ==, 0);
+    g_assert_nonnull (error);
+    g_assert_cmpuint (announced, ==, 1);
+    g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+
+    g_autofree gchar *gone = g_paste_util_get_history_file_path ("delete-gone-unswept", "xml");
+    g_autofree gchar *gone_images = g_paste_file_backend_images_dir ("delete-gone-unswept");
+    g_autofree gchar *gone_kept = g_build_filename (gone_images, "kept.png", NULL);
+    g_autoptr (GError) gone_error = NULL;
+
+    g_assert_true (g_paste_history_switch (history, "delete-gone-unswept"));
+    g_assert_true (pump_until_loaded (history));
+    /* The store removed from under the daemon. */
+    g_assert_cmpint (g_unlink (gone), ==, 0);
+    g_assert_cmpint (g_mkdir_with_parents (gone_images, 0700), ==, 0);
+    g_assert_true (g_file_set_contents (gone_kept, "png", -1, NULL));
+    g_assert_cmpint (g_chmod (gone_images, 0500), ==, 0);
+    announced = 0;
+    g_paste_daemon_methods_delete_history (&methods, "delete-gone-unswept", &gone_error);
+    g_assert_cmpint (g_chmod (gone_images, 0700), ==, 0);
+    g_assert_nonnull (gone_error);
+    g_assert_cmpuint (announced, ==, 1);
+    g_assert_true (g_file_test (gone_kept, G_FILE_TEST_EXISTS));
+    g_assert_cmpstr (g_paste_history_get_current (history), ==, G_PASTE_DEFAULT_HISTORY);
+    g_assert_true (pump_until_loaded (history));
+    g_paste_settings_reset (settings, G_PASTE_HISTORY_NAME_SETTING);
 }
 
 /* A history whose store holds @value alone, pinned or not, and a reader of it
@@ -5249,21 +5966,13 @@ test_load_selects_last_add (void)
  * change all the same, is no switch: nothing only the model holds is dropped,
  * a plain flavour's password included. */
 static void
-count_switches (GPasteHistory *history G_GNUC_UNUSED,
-                const gchar   *name G_GNUC_UNUSED,
-                gpointer       user_data)
-{
-    ++*(guint *) user_data;
-}
-
-static void
 test_switch_to_current_keeps_model (void)
 {
     g_autoptr (GPasteSettings) settings = NULL;
     g_autoptr (GPasteHistory) history = make_history (&settings, 10);
     guint switches = 0;
 
-    g_signal_connect (history, "switch", G_CALLBACK (count_switches), &switches);
+    g_signal_connect_swapped (history, "switch", G_CALLBACK (g_paste_test_bus_count_emission), &switches);
     g_paste_settings_set_history_name (settings, g_paste_history_get_current (history));
     g_paste_history_add (history, g_paste_text_item_new ("stored"));
     g_paste_history_add (history, g_paste_password_item_new (NULL, "in the model alone", 0));
@@ -5569,6 +6278,54 @@ test_reload_during_load_keeps_adds (void)
     g_assert_cmpstr (value_at (history, 0), ==, "copied during the load");
 }
 
+/* A reload of the history loaded -- what ends a store check, a change of
+ * passphrase or an in-place migration -- leaves the selections alone: they
+ * carry what was copied last, which the history need not hold (the primary's
+ * highlight, a copy made while paused), and the head they were given when the
+ * history was loaded is not published over that again. A model empty until
+ * then, an encrypted store unlocked at last, has its head published, as a
+ * first load does. */
+static void
+test_reload_selects_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
+    guint selected = 0;
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    g_paste_history_flush (history);
+    g_signal_connect_swapped (history, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
+    g_paste_history_reload_backend (history);
+    g_assert_true (pump_until_loaded (history));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
+    g_assert_cmpuint (selected, ==, 0);
+
+    g_signal_handlers_disconnect_by_data (history, &selected);
+
+    /* On no storage, as a locked store runs, its store written behind it. */
+    const gchar *name = "reload-unlocked";
+    g_autoptr (GPasteSettings) unlocked_settings = g_paste_settings_new ();
+
+    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_NOOP);
+
+    g_autoptr (GPasteHistory) unlocked = g_paste_history_new (unlocked_settings);
+    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, unlocked_settings);
+    g_autolist (GPasteItem) stored = g_list_append (NULL, g_paste_text_item_new ("stored head"));
+
+    g_paste_history_load (unlocked, name);
+    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 0);
+    g_assert_true (g_paste_storage_backend_write_history (backend, name, stored));
+    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_FILE);
+    selected = 0;
+    g_signal_connect_swapped (unlocked, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
+    g_paste_history_flush (unlocked);
+    g_paste_history_reload_backend (unlocked);
+    g_assert_true (pump_until_loaded (unlocked));
+    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 1);
+    g_assert_cmpuint (selected, ==, 1);
+    g_signal_handlers_disconnect_by_data (unlocked, &selected);
+}
+
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 /* The encrypted file backend must round-trip a history (keeping password
  * entries and their real value), and the on-disk ".xmls" file must actually be
@@ -5586,7 +6343,7 @@ test_encrypted_roundtrip (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (7, 8, 9);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
@@ -5654,8 +6411,6 @@ test_encrypted_roundtrip (void)
     g_assert_true (found_text);
     g_assert_true (found_password);
     g_assert_true (found_image);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Reading a history that does not exist yet writes an empty placeholder file so
@@ -5685,62 +6440,6 @@ test_encrypted_empty_placeholder (void)
     g_autolist (GPasteItem) second = read_history_ok (backend, name);
 
     g_assert_null (second);
-}
-
-static void
-count_selected (GPasteHistory *history G_GNUC_UNUSED,
-                GPasteItem    *item G_GNUC_UNUSED,
-                gpointer       user_data)
-{
-    ++*(guint *) user_data;
-}
-
-/* A reload of the history loaded -- what ends a store check, a change of
- * passphrase or an in-place migration -- leaves the selections alone: they
- * carry what was copied last, which the history need not hold (the primary's
- * highlight, a copy made while paused), and the head they were given when the
- * history was loaded is not published over that again. A model empty until
- * then, an encrypted store unlocked at last, has its head published, as a
- * first load does. */
-static void
-test_reload_selects_nothing (void)
-{
-    g_autoptr (GPasteSettings) settings = NULL;
-    g_autoptr (GPasteHistory) history = make_history (&settings, 10);
-    guint selected = 0;
-
-    g_paste_history_add (history, g_paste_text_item_new ("head"));
-    g_paste_history_flush (history);
-    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
-    g_paste_history_reload_backend (history);
-    g_assert_true (pump_until_loaded (history));
-    g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
-    g_assert_cmpuint (selected, ==, 0);
-
-    g_signal_handlers_disconnect_by_data (history, &selected);
-
-    /* On no storage, as a locked store runs, its store written behind it. */
-    const gchar *name = "reload-unlocked";
-    g_autoptr (GPasteSettings) unlocked_settings = g_paste_settings_new ();
-
-    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_NOOP);
-
-    g_autoptr (GPasteHistory) unlocked = g_paste_history_new (unlocked_settings);
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, unlocked_settings);
-    g_autolist (GPasteItem) stored = g_list_append (NULL, g_paste_text_item_new ("stored head"));
-
-    g_paste_history_load (unlocked, name);
-    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 0);
-    g_assert_true (g_paste_storage_backend_write_history (backend, name, stored));
-    g_paste_settings_set_storage_backend (unlocked_settings, G_PASTE_STORAGE_FILE);
-    selected = 0;
-    g_signal_connect (unlocked, "selected", G_CALLBACK (count_selected), &selected);
-    g_paste_history_flush (unlocked);
-    g_paste_history_reload_backend (unlocked);
-    g_assert_true (pump_until_loaded (unlocked));
-    g_assert_cmpuint (g_paste_history_get_length (unlocked), ==, 1);
-    g_assert_cmpuint (selected, ==, 1);
-    g_signal_handlers_disconnect_by_data (unlocked, &selected);
 }
 
 /* Loading a history selects its head, which puts it on the selections -- but not
@@ -5776,7 +6475,7 @@ test_load_skips_password_head (void)
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
     guint selected = 0;
 
-    g_signal_connect (history, "selected", G_CALLBACK (count_selected), &selected);
+    g_signal_connect_swapped (history, "selected", G_CALLBACK (g_paste_test_bus_count_emission), &selected);
 
     g_paste_history_load (history, names[0]);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
@@ -5815,10 +6514,9 @@ test_encrypted_explicit_passphrase (void)
         {
             g_autoptr (GPasteStorageBackend) backend =
                 g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_FILE, settings, source_passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new (value));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new (value));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* The explicit key reads it back... */
@@ -5894,22 +6592,20 @@ test_encrypted_rekey (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
-            GList *items = NULL;
+            g_autolist (GPasteItem) items = NULL;
 
             items = g_list_append (items, g_paste_text_item_new ("plain text entry"));
             items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
 
             /* A second history, re-keyed through the same backend as the daemon
              * does it: re-keying one must not cost this instance the ability to
              * open the others, which are still on the old passphrase. */
-            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+            g_autolist (GPasteItem) other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
 
             g_paste_storage_backend_write_history (backend, other_name, other_items);
-            g_list_free_full (other_items, g_object_unref);
 
             g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
             g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
@@ -5984,7 +6680,7 @@ test_encrypted_rekey (void)
 
             {
                 g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, old_passphrase);
-                GList *items = NULL;
+                g_autolist (GPasteItem) items = NULL;
 
                 for (guint i = 0; i < 10; ++i)
                 {
@@ -5994,7 +6690,6 @@ test_encrypted_rekey (void)
                 }
 
                 g_paste_storage_backend_write_history (backend, big_name, items);
-                g_list_free_full (items, g_object_unref);
             }
 
             /* The limit drops well below what is stored, as it would after the
@@ -6102,7 +6797,7 @@ test_sqlite_roundtrip (void)
 
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, text);
     items = g_list_append (items, g_paste_uris_item_new_from_str ("file:///tmp/a\nfile:///tmp/b"));
     items = g_list_append (items, g_paste_color_item_new_from_str ("rgb(255,0,0)"));
@@ -6168,8 +6863,6 @@ test_sqlite_roundtrip (void)
 
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, orig_png));
-
-    g_list_free_full (items, g_object_unref);
 
     /* Deleting the history removes the database. */
     g_paste_storage_backend_delete_history (backend, name, NULL);
@@ -6256,7 +6949,7 @@ test_sqlite_replace (void)
     g_paste_item_add_special_value (middle, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                      g_bytes_new_static ("<i>old</i>", 10)));
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, g_paste_text_item_new ("front"));
     items = g_list_append (items, middle);
     items = g_list_append (items, g_paste_text_item_new ("back"));
@@ -6304,8 +6997,6 @@ test_sqlite_replace (void)
     g_assert_cmpuint (g_list_length (after_password), ==, 2);
     g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 0)), ==, "front");
     g_assert_cmpstr (g_paste_item_get_value (g_list_nth_data (after_password, 1)), ==, "back");
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* Open a second, read-only connection on @path and run a single-integer query;
@@ -6439,7 +7130,7 @@ test_sqlite_schema_migration (void)
     /* Opening it is what migrates it. */
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        GList *history = NULL;
+        g_autolist (GPasteItem) history = NULL;
         gsize size = 0;
 
         g_assert_true (g_paste_storage_backend_read_history (backend, name, NULL /* cancellable */, &history, &size));
@@ -6452,8 +7143,6 @@ test_sqlite_schema_migration (void)
          * it was: that is what the column default is for. */
         g_assert_false (g_paste_item_is_favourite (item));
         g_assert_cmpstr (g_paste_item_get_uuid (item), ==, "11111111-1111-4111-8111-111111111111");
-
-        g_list_free_full (history, g_object_unref);
     }
 
     g_assert_cmpint (sqlite_raw_count (path, "PRAGMA user_version;"), ==, 3);
@@ -6484,7 +7173,7 @@ test_sqlite_cascade (void)
     g_paste_item_add_special_value (survivor, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
                                                                        g_bytes_new_static ("<u>keep</u>", 11)));
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     items = g_list_append (items, rich);
     items = g_list_append (items, survivor);
 
@@ -6500,8 +7189,6 @@ test_sqlite_cascade (void)
     /* Only the survivor and its own special value remain. */
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM items;"), ==, 1);
     g_assert_cmpint (sqlite_raw_count (path, "SELECT COUNT (*) FROM special_values;"), ==, 1);
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A database keeps its images in the store, so deleting the last file flavour
@@ -6630,7 +7317,7 @@ test_sqlite_migration_keeps_destination_images (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (22, 23, 24);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -6657,8 +7344,6 @@ test_sqlite_migration_keeps_destination_images (void)
     /* ...and go away with the last flavor storing it. */
     g_paste_storage_backend_delete_history (destination, name, NULL);
     g_assert_false (g_file_test (image_path, G_FILE_TEST_EXISTS));
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* An image row whose date GDateTime cannot hold is dropped like one with no
@@ -6685,18 +7370,86 @@ test_sqlite_image_date_out_of_range (void)
     }
 
     g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
-    sqlite3 *db = NULL;
+    /* Past year 9999, and the rows read_item () drops for having no date or
+     * no blob: counted as the read finds them. */
+    static const gchar * const damages[] = {
+        "UPDATE items SET date = 100000000000000 WHERE kind = 'Image';",
+        "UPDATE items SET date = NULL WHERE kind = 'Image';",
+        "UPDATE items SET image = NULL WHERE kind = 'Image';",
+    };
 
-    /* Past year 9999. */
-    g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
-    g_assert_cmpint (sqlite3_exec (db, "UPDATE items SET date = 100000000000000 WHERE kind = 'Image';", NULL, NULL, NULL), ==, SQLITE_OK);
-    sqlite3_close (db);
+    for (gsize i = 0; i < G_N_ELEMENTS (damages); ++i)
+    {
+        sqlite3 *db = NULL;
 
-    g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-    g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+        {
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
 
-    g_assert_cmpuint (g_list_length (loaded), ==, 1);
-    g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
+            g_paste_storage_backend_write_history (backend, name, items);
+            g_assert_cmpuint (g_paste_storage_backend_count_history (backend, name), ==, 2);
+        }
+
+        g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+        g_assert_cmpint (sqlite3_exec (db, damages[i], NULL, NULL, NULL), ==, SQLITE_OK);
+        sqlite3_close (db);
+
+        g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+        g_autolist (GPasteItem) loaded = read_history_ok (backend, name);
+
+        g_assert_cmpuint (g_list_length (loaded), ==, 1);
+        g_assert_cmpstr (g_paste_item_get_value (loaded->data), ==, "kept");
+        g_assert_cmpuint (g_paste_storage_backend_count_history (backend, name), ==, 1);
+    }
+}
+
+/* A row whose value is not UTF-8 -- another tool's, a damaged page -- is one
+ * this build makes no item of, and refuses the history as for any such row:
+ * with a warning, and no constructor's critical. So is one whose value holds a
+ * NUL, which an item would cut short at it, and a password whose name is not
+ * UTF-8, which only another tool keeps in a plain database. */
+static void
+test_sqlite_value_not_utf8 (void)
+{
+    if (g_test_subprocess ())
+    {
+        G_PASTE_TEST_IN_SUBPROCESS;
+
+        static const gchar * const damages[] = {
+            /* "latin" with its i a Latin-1 é. */
+            "UPDATE items SET value = X'6C6174E96E';",
+            "UPDATE items SET value = X'6C61740069';",
+            "UPDATE items SET kind = 'Password', name = X'E9';",
+        };
+        g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+
+        for (gsize i = 0; i < G_N_ELEMENTS (damages); ++i)
+        {
+            g_autofree gchar *name = g_strdup_printf ("sqlite-not-utf8-%" G_GSIZE_FORMAT, i);
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("latin"));
+
+            {
+                g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+                g_paste_storage_backend_write_history (backend, name, items);
+            }
+
+            g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
+            sqlite3 *db = NULL;
+
+            g_assert_cmpint (sqlite3_open (path, &db), ==, SQLITE_OK);
+            g_assert_cmpint (sqlite3_exec (db, damages[i], NULL, NULL, NULL), ==, SQLITE_OK);
+            g_assert_cmpint (sqlite3_changes (db), ==, 1);
+            sqlite3_close (db);
+
+            g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
+
+            assert_history_refused (backend, name);
+        }
+        return;
+    }
+
+    G_PASTE_TEST_TRAP_SUBPROCESS ("*not UTF-8*");
+    g_test_trap_assert_stderr_unmatched ("*CRITICAL*");
 }
 
 /* The stored blob is the source of truth for images: an item must survive the
@@ -6713,7 +7466,7 @@ test_sqlite_image_blob (void)
 
     g_autoptr (GBytes) png = test_png_bytes_colored (10, 11, 12);
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_assert_nonnull (items->data);
 
@@ -6759,13 +7512,9 @@ test_sqlite_image_blob (void)
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_ACTIVE);
     g_assert_nonnull (g_paste_image_item_get_image (image));
     g_paste_item_set_state (read, G_PASTE_ITEM_STATE_IDLE);
-
-    g_list_free_full (items, g_object_unref);
 }
 
-/* Switching histories loads with save_after=TRUE so a snapshot-rewriting
- * backend persists its read-time normalization — for an incremental backend
- * that full rewrite is skipped: the database must keep rows beyond
+/* Switching histories writes nothing back: the database must keep rows beyond
  * max-history-size (only memory is capped) instead of being truncated by a
  * write-back of the capped read. */
 static void
@@ -6783,7 +7532,7 @@ test_sqlite_no_rewrite_on_switch (void)
     /* Seed a history holding more items than the soon-to-be max size. */
     {
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-        GList *items = NULL;
+        g_autolist (GPasteItem) items = NULL;
 
         for (guint i = 0; i < 7; ++i)
         {
@@ -6792,7 +7541,6 @@ test_sqlite_no_rewrite_on_switch (void)
         }
 
         g_paste_storage_backend_write_history (backend, big_name, items);
-        g_list_free_full (items, g_object_unref);
     }
 
     g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
@@ -6800,8 +7548,7 @@ test_sqlite_no_rewrite_on_switch (void)
     g_paste_history_load (history, "sqlite-switch-start");
     g_paste_settings_set_max_history_size (settings, 5);
 
-    /* Switch through the settings key: this is the path that loads with
-     * save_after=TRUE (g_paste_history_load itself never writes back). */
+    /* Switch through the settings key, the path a daemon's switch takes. */
     g_paste_settings_set_history_name (settings, big_name);
     g_assert_true (pump_until_length (history, 5, 5000));
 
@@ -6922,10 +7669,9 @@ test_sqlite_version_guard (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_SQLITE, settings);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autofree gchar *path = g_paste_util_get_history_file_path (name, "db");
@@ -6948,10 +7694,9 @@ test_sqlite_version_guard (void)
             g_assert_null (loaded);
 
             /* A write against the newer database must not touch it. */
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Once the version is back within range, the original data is intact. */
@@ -7026,10 +7771,22 @@ test_sqlite_empty_unopenable (void)
  * name -- with the active one holding nothing to go by. A passphrase that opens
  * either is taken: the one it does not open reads as unreadable and is never
  * written over, and refusing both would leave nothing to repair the split
- * with. One that opens neither is refused, a typo as likely as not. */
+ * with. One that opens neither is refused, a typo as likely as not.
+ *
+ * In a process of its own, whose data directory holds nothing another case
+ * left under another passphrase: every such history refutes both passphrases
+ * by itself, the check answering for every history of the flavour, whether or
+ * not the pair is split. */
 static void
 test_encrypted_split_keys_take_either (void)
 {
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        return;
+    }
+
     const struct {
         GPasteStorage kind;
         const gchar  *first;
@@ -7051,18 +7808,16 @@ test_encrypted_split_keys_take_either (void)
         /* Both hold data, so neither can be silently re-keyed on open. */
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("first"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("first"));
 
             g_paste_storage_backend_write_history (backend, flavors[i].first, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("second"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("second"));
 
             g_paste_storage_backend_write_history (backend, flavors[i].second, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Each opens its own and not the other, whichever is enumerated first. */
@@ -7070,14 +7825,20 @@ test_encrypted_split_keys_take_either (void)
         g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
         g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, "passphrase three"));
 
-        /* Both must go: every test in this binary shares one XDG_DATA_HOME, and
-         * a pair no single passphrase opens would have every later can_decrypt
-         * of a third one refuse it. */
-        g_autoptr (GPasteStorageBackend) cleanup_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
-        g_autoptr (GPasteStorageBackend) cleanup_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+        /* Keyed alike, the pair is split no more: the other passphrase opens
+         * nothing. */
+        g_autoptr (GPasteStorageBackend) keyed_one = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, one);
+        g_autoptr (GPasteStorageBackend) keyed_two = g_paste_storage_backend_new_with_passphrase (flavors[i].kind, settings, two);
+        g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("second"));
 
-        g_paste_storage_backend_delete_history (cleanup_one, flavors[i].first, NULL);
-        g_paste_storage_backend_delete_history (cleanup_two, flavors[i].second, NULL);
+        g_paste_storage_backend_delete_history (keyed_two, flavors[i].second, NULL);
+        g_paste_storage_backend_write_history (keyed_one, flavors[i].second, items);
+        g_assert_true (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, one));
+        g_assert_false (g_paste_storage_passphrase_can_decrypt (flavors[i].kind, settings, two));
+
+        /* The next flavour checked alone. */
+        g_paste_storage_backend_delete_history (keyed_one, flavors[i].first, NULL);
+        g_paste_storage_backend_delete_history (keyed_one, flavors[i].second, NULL);
     }
 }
 #endif
@@ -7102,10 +7863,9 @@ test_encrypted_sqlite_absurd_kdf_params (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autofree gchar *path = g_paste_util_get_history_file_path (name, "dbs");
@@ -7123,10 +7883,9 @@ test_encrypted_sqlite_absurd_kdf_params (void)
             g_assert_null (loaded);
 
             /* And the refusal must not let a write clobber what is still there. */
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         /* Note what is deliberately *not* asserted here: that the passphrase is
@@ -7183,10 +7942,9 @@ test_encrypted_sqlite_absurd_kdf_params_empty (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("kept"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("kept"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new_with_passphrase (G_PASTE_STORAGE_ENCRYPTED_SQLITE, settings, passphrase);
@@ -7219,7 +7977,7 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_autoptr (GBytes) png = test_png_bytes ();
     g_autoptr (GDateTime) date = g_date_time_new_from_unix_local (1234567890);
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
     GPasteItem *text = g_paste_text_item_new (text_value);
 
     g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
@@ -7285,8 +8043,6 @@ test_encrypted_sqlite_roundtrip (void)
 
     g_assert_nonnull (read_png);
     g_assert_true (g_bytes_equal (read_png, png));
-
-    g_list_free_full (items, g_object_unref);
 }
 
 /* A wrong passphrase must be refused outright — reads come back empty, writes
@@ -7305,10 +8061,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
 
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, "right passphrase");
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("precious"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("precious"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
@@ -7316,10 +8071,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
             g_autolist (GPasteItem) loaded = read_history (backend, name);
             g_assert_null (loaded);
 
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("usurper"));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
         }
 
         {
@@ -7344,10 +8098,9 @@ test_encrypted_sqlite_wrong_passphrase (void)
             g_autolist (GPasteItem) loaded = read_history (backend, empty_name);
             g_assert_null (loaded);
 
-            GList *items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
+            g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_text_item_new ("fresh start"));
 
             g_paste_storage_backend_write_history (backend, empty_name, items);
-            g_list_free_full (items, g_object_unref);
 
             g_autolist (GPasteItem) refilled = read_history (backend, empty_name);
             g_assert_cmpuint (g_list_length (refilled), ==, 1);
@@ -7390,7 +8143,7 @@ test_encrypted_sqlite_rekey (void)
         {
             g_autoptr (GPasteStorageBackend) backend = g_paste_sqlite_backend_new_encrypted (settings, old_passphrase);
             GPasteItem *text = g_paste_text_item_new ("plain text entry");
-            GList *items = NULL;
+            g_autolist (GPasteItem) items = NULL;
 
             /* A special value exercises the special_values.data column. */
             g_paste_item_add_special_value (text, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
@@ -7401,16 +8154,14 @@ test_encrypted_sqlite_rekey (void)
             items = g_list_append (items, g_paste_image_item_new_from_bytes (png, date, NULL));
 
             g_paste_storage_backend_write_history (backend, name, items);
-            g_list_free_full (items, g_object_unref);
 
             /* A second history (a backup, say): the daemon re-keys every one of
              * them through this same backend, so re-keying must leave it able to
              * open the ones it has not reached yet — still with the old
              * passphrase. */
-            GList *other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
+            g_autolist (GPasteItem) other_items = g_list_append (NULL, g_paste_text_item_new (other_value));
 
             g_paste_storage_backend_write_history (backend, other_name, other_items);
-            g_list_free_full (other_items, g_object_unref);
 
             g_assert_true (g_paste_storage_backend_rekey (backend, name, new_passphrase, NULL));
             g_assert_true (g_paste_storage_backend_rekey (backend, other_name, new_passphrase, NULL));
@@ -7635,13 +8386,12 @@ test_encrypted_password_name_is_escaped (void)
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (GPasteStorageBackend) backend = g_paste_file_backend_new_encrypted (settings, "the master passphrase");
 
-    GList *items = NULL;
+    g_autolist (GPasteItem) items = NULL;
 
     items = g_list_append (items, g_paste_password_item_new (pw_name, secret, PASSWORD_TIMEOUT));
     items = g_list_append (items, g_paste_text_item_new ("the entry after it"));
 
     g_paste_storage_backend_write_history (backend, name, items);
-    g_list_free_full (items, g_object_unref);
 
     /* Both entries come back -- the document parsed -- and the name is the one
      * that went in, not a truncated or re-escaped version of it. */
@@ -7687,10 +8437,9 @@ test_history_dir_is_private (void)
     g_paste_settings_set_images_support (settings, TRUE);
 
     g_autoptr (GPasteStorageBackend) backend = g_paste_storage_backend_new (G_PASTE_STORAGE_FILE, settings);
-    GList *items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
+    g_autolist (GPasteItem) items = g_list_append (NULL, g_paste_image_item_new_from_bytes (png, date, NULL));
 
     g_paste_storage_backend_write_history (backend, name, items);
-    g_list_free_full (items, g_object_unref);
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
 
@@ -7758,24 +8507,12 @@ drain_case_histories (void)
     g_clear_pointer (&case_histories, g_ptr_array_unref);
 }
 
-/* Every case starts from the schema's defaults: the memory backend is shared by
- * the whole binary, so a key one case sets (the storage backend, most of all)
- * would otherwise reach every case after it, and a case run alone with -p would
- * see different settings. It ends with what it built drained
- * (drain_case_histories ()). */
+/* Every case starts from the schema's defaults and ends with what it built
+ * drained (drain_case_histories ()). */
 static void
 run_from_defaults (gconstpointer test)
 {
-    g_autoptr (GSettings) raw = g_settings_new (G_PASTE_SETTINGS_NAME);
-    g_autoptr (GSettingsSchema) schema = NULL;
-
-    g_object_get (raw, "settings-schema", &schema, NULL);
-
-    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
-
-    for (GStrv key = keys; *key; ++key)
-        g_settings_reset (raw, *key);
-
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
     case_histories = g_ptr_array_new_with_free_func (g_paste_weak_ref_free);
     ((GTestFunc) test) ();
     drain_case_histories ();
@@ -7814,6 +8551,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_skipped_image_swept_by_save", test_file_skipped_image_swept_by_save);
     add_test ("/history/file_sweep_bounds", test_file_sweep_bounds);
     add_test ("/history/file_legacy_images_sweep", test_file_legacy_images_sweep);
+    add_test ("/history/file_legacy_images_past_nul", test_file_legacy_images_past_nul);
     add_test ("/history/file_legacy_image_moved_home", test_file_legacy_image_moved_home);
     add_test ("/history/file_legacy_image_uncopied", test_file_legacy_image_uncopied);
     add_test ("/history/file_parser_malformed", test_file_parser_malformed);
@@ -7826,6 +8564,7 @@ main (int argc, char *argv[])
     add_test ("/history/backup_onto_current", test_backup_onto_current);
     add_test ("/history/backup_unreadable_source", test_backup_unreadable_source);
     add_test ("/history/delete_missing_history", test_delete_missing_history);
+    add_test ("/history/list_histories_has_current", test_list_histories_has_current);
 #ifdef G_PASTE_ENABLE_SQLITE
     add_test ("/history/migration_detects_backend_in_use", test_migration_detects_backend_in_use);
 #endif
@@ -7837,6 +8576,7 @@ main (int argc, char *argv[])
     add_test ("/history/file_encrypted_fallback_verified", test_file_encrypted_fallback_verified);
     add_test ("/history/file_encrypted_side_file_verified", test_file_encrypted_side_file_verified);
     add_test ("/history/file_encrypted_image_round_trip", test_file_encrypted_image_round_trip);
+    add_test ("/history/file_encrypted_refused_side_file_rewritten", test_file_encrypted_refused_side_file_rewritten);
     add_test ("/history/file_encrypting_migration_lost_side_file", test_file_encrypting_migration_lost_side_file);
 #endif
     add_test ("/history/content_kind_transitions", test_content_kind_transitions);
@@ -7854,11 +8594,16 @@ main (int argc, char *argv[])
     add_test ("/history/search_image_by_what_it_shows", test_search_image_by_what_it_shows);
     add_test ("/history/search_files_by_what_they_show", test_search_files_by_what_they_show);
     add_test ("/history/search_queries", test_search_queries);
+    add_test ("/history/search_off_main_loop", test_search_off_main_loop);
+    add_test ("/history/search_past_match_limit", test_search_past_match_limit);
     add_test ("/history/merge_refuses_image_and_password", test_merge_refuses_image_and_password);
+    add_test ("/history/repeats_measured_first", test_repeats_measured_first);
     add_test ("/history/memory_cap_after_head_removal", test_memory_cap_after_head_removal);
     add_test ("/history/memory_cap_after_replacement", test_memory_cap_after_replacement);
     add_test ("/history/replace_refused_over_cap", test_replace_refused_over_cap);
     add_test ("/history/memory_cap_after_replacement_spares_once", test_memory_cap_after_replacement_spares_once);
+    add_test ("/history/memory_cap_replacement_takes_tie", test_memory_cap_replacement_takes_tie);
+    add_test ("/history/replace_refuses_no_contents", test_replace_refuses_no_contents);
     add_test ("/history/select_favourite_over_cap", test_select_favourite_over_cap);
     add_test ("/history/select_image_over_cap", test_select_image_over_cap);
     add_test ("/history/favourite_survives_size_cap", test_favourite_survives_size_cap);
@@ -7869,11 +8614,13 @@ main (int argc, char *argv[])
     add_test ("/history/favourite_survives_replace", test_favourite_survives_replace);
     add_test ("/history/add_password_name_conflict", test_add_password_name_conflict);
     add_test ("/history/password_names_wait_for_load", test_password_names_wait_for_load);
+    add_test ("/history/add_password_placeholder_refused", test_add_password_placeholder_refused);
     add_test ("/history/add_file_refusals", test_add_file_refusals);
     add_test ("/history/add_file_tiff", test_add_file_tiff);
     add_test ("/history/add_file_swapped", test_add_file_swapped);
     add_test ("/history/copy_refusals", test_copy_refusals);
     add_test ("/history/add_file_unsearchable", test_add_file_unsearchable);
+    add_test ("/history/add_file_missing", test_add_file_missing);
     add_test ("/history/add_file_unsized", test_add_file_unsized);
     add_test ("/history/add_file_unallocated", test_add_file_unallocated);
     add_test ("/history/set_active_refused", test_set_active_refused);
@@ -7916,11 +8663,15 @@ main (int argc, char *argv[])
     add_test ("/history/file_version_guard", test_file_version_guard);
     add_test ("/history/password_dropped", test_password_dropped);
     add_test ("/history/file_long_item_read", test_file_long_item_read);
+    add_test ("/history/switch_drops_unkept_passwords", test_switch_drops_unkept_passwords);
+    add_test ("/history/delete_unnamed", test_delete_unnamed);
+    add_test ("/history/delete_store_or_sweep", test_delete_store_or_sweep);
+    add_test ("/history/loaded_head_kept_for_refused_add", test_loaded_head_kept_for_refused_add);
     add_test ("/history/reload_settings_unlocked", test_reload_settings_unlocked);
     add_test ("/history/reload_backend_announced", test_reload_backend_announced);
     add_test ("/history/reload_then_empty_drops_password", test_reload_then_empty_drops_password);
-    g_test_add_data_func ("/history/reload_then_delete_drops_password", GINT_TO_POINTER (FALSE), test_reload_then_delete_drops_password);
-    g_test_add_data_func ("/history/reload_twice_drops_password", GINT_TO_POINTER (TRUE), test_reload_then_delete_drops_password);
+    add_test ("/history/reload_then_delete_drops_password", test_reload_then_delete_drops_password_once);
+    add_test ("/history/reload_twice_drops_password", test_reload_twice_drops_password);
     add_test ("/history/load_selects_last_add", test_load_selects_last_add);
     add_test ("/history/load_keeps_add_uuid", test_load_keeps_add_uuid);
     add_test ("/history/load_keeps_password_selected", test_load_keeps_password_selected);
@@ -7961,8 +8712,9 @@ main (int argc, char *argv[])
 #endif
     add_test ("/history/sqlite_image_blob", test_sqlite_image_blob);
     add_test ("/history/sqlite_image_date_out_of_range", test_sqlite_image_date_out_of_range);
+    add_test ("/history/sqlite_value_not_utf8", test_sqlite_value_not_utf8);
     add_test ("/history/sqlite_eviction_deletes_no_image", test_sqlite_eviction_deletes_no_image);
-    add_test ("/history/sqlite_null_uuid_reconciled", test_sqlite_null_uuid_reconciled);
+    add_test ("/history/sqlite_null_uuid_adopted", test_sqlite_null_uuid_adopted);
     add_test ("/history/sqlite_no_rewrite_on_switch", test_sqlite_no_rewrite_on_switch);
     add_test ("/history/sqlite_save_elsewhere_keeps_connection", test_sqlite_save_elsewhere_keeps_connection);
     add_test ("/history/sqlite_replace_evictions", test_sqlite_replace_evictions);

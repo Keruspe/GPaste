@@ -1,28 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-ui-history-model.h>
 #include <gpaste-ui-pick-selection.h>
-
-static void
-count_changes (GListModel *model G_GNUC_UNUSED,
-               guint       position G_GNUC_UNUSED,
-               guint       removed G_GNUC_UNUSED,
-               guint       added G_GNUC_UNUSED,
-               gpointer    user_data)
-{
-    ++*(guint *) user_data;
-}
-
-static void
-count_invalidations (GPasteUiHistoryModel *model G_GNUC_UNUSED,
-                     guint64               position G_GNUC_UNUSED,
-                     guint64               n_items G_GNUC_UNUSED,
-                     gpointer              user_data)
-{
-    ++*(guint *) user_data;
-}
 
 /* A range past the rows is none of the model's, however far past: an update's
  * position comes from the daemon, and one near the top of its range must not
@@ -34,7 +16,7 @@ invalidate_out_of_range (void)
     guint invalidations = 0;
 
     g_paste_ui_history_model_set_size (model, 3);
-    g_signal_connect (model, "invalidated", G_CALLBACK (count_invalidations), &invalidations);
+    g_signal_connect_swapped (model, "invalidated", G_CALLBACK (g_paste_test_bus_count_emission), &invalidations);
 
     g_paste_ui_history_model_item_replaced (model, 3);
     g_paste_ui_history_model_item_replaced (model, G_MAXUINT64);
@@ -57,19 +39,10 @@ invalidate_keeps_items (void)
 
     GPasteUiHistoryItem *item = g_paste_ui_history_model_peek (model, 1);
 
-    g_signal_connect (model, "items-changed", G_CALLBACK (count_changes), &changes);
+    g_signal_connect_swapped (model, "items-changed", G_CALLBACK (g_paste_test_bus_count_emission), &changes);
     g_paste_ui_history_model_invalidate (model, 0, 3);
     g_assert_cmpuint (changes, ==, 0);
     g_assert_true (g_paste_ui_history_model_peek (model, 1) == item);
-}
-
-static void
-count_selection_changes (GtkSelectionModel *model G_GNUC_UNUSED,
-                         guint              position G_GNUC_UNUSED,
-                         guint              n_items G_GNUC_UNUSED,
-                         gpointer           user_data)
-{
-    ++*(guint *) user_data;
 }
 
 /* Nothing can be selected out of selection mode -- Ctrl+A and the arrow keys
@@ -86,7 +59,7 @@ pick_selection (void)
     GtkSelectionModel *selection = GTK_SELECTION_MODEL (picks);
     guint changes = 0;
 
-    g_signal_connect (selection, "selection-changed", G_CALLBACK (count_selection_changes), &changes);
+    g_signal_connect_swapped (selection, "selection-changed", G_CALLBACK (g_paste_test_bus_count_emission), &changes);
     g_assert_cmpuint (g_list_model_get_n_items (G_LIST_MODEL (selection)), ==, 3);
     g_assert_false (gtk_selection_model_select_item (selection, 1, FALSE));
     g_assert_false (gtk_selection_model_select_all (selection));

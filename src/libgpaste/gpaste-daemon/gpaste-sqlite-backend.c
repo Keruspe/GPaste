@@ -33,8 +33,9 @@
  * front of the history, so adds and selects never renumber anything), with
  * their extra MIME payloads in a `special_values` child table. The schema is
  * versioned through PRAGMA user_version so it can evolve: older databases are
- * migrated stepwise on open, newer ones are refused (every operation then
- * no-ops) rather than corrupted.
+ * migrated stepwise on open, newer ones are refused rather than corrupted:
+ * every read and write leaves one as it is, while emptying the history
+ * replaces it with an empty database, and deleting the history removes it.
  *
  * Like the plain XML backend, password items are never persisted (the file is
  * user-readable). Images are stored as blobs in the `items.image` column, which
@@ -65,6 +66,10 @@
  * guard against: past this, ranks are compacted back to 1..N on open. */
 #define G_PASTE_SQLITE_RANK_COMPACT_THRESHOLD (G_GINT64_CONSTANT (1) << 62)
 
+/* How long a connection waits out another one holding the database, in
+ * milliseconds: every connection of this backend's, its probes' included. */
+#define G_PASTE_SQLITE_BUSY_TIMEOUT 5000
+
 struct _GPasteSqliteBackend
 {
     GPasteStorageBackend parent_instance;
@@ -72,23 +77,14 @@ struct _GPasteSqliteBackend
     /* The one open connection, lazily (re)opened for the last used database.
      * The lock serializes the vfuncs: the saver runs writes one at a time, but
      * a background load can overlap an in-flight write. */
-    sqlite3    *db;
-    gchar      *db_path;
-    GMutex      lock;
-    /* The histories a write failed for since their last full one that landed:
-     * nothing retries a write, and the next add's reconciliation only drops
-     * rows, so the store would lag the model for good. The next add, which
-     * carries the whole snapshot, writes it in full instead, and the history
-     * asks for one sooner (g_paste_storage_backend_has_diverged ()). Under
-     * @diverged_lock rather than @lock, which a load may hold for as long as
-     * its read takes: the main thread asks after every write. */
-    GHashTable *diverged;
-    GMutex      diverged_lock;
+    sqlite3          *db;
+    gchar            *db_path;
+    GMutex            lock;
     /* A database deleted while @lock was taken (delete_history ()), which
-     * the cached connection must not answer for again: under @forgotten_lock,
-     * for the same reason. */
-    gchar      *forgotten;
-    GMutex      forgotten_lock;
+     * the cached connection must not answer for again: under @forgotten_lock
+     * rather than @lock, which a load may hold for as long as its read takes. */
+    gchar            *forgotten;
+    GMutex            forgotten_lock;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     /* When set, the content columns are encrypted, the ".dbs" extension is used,
@@ -396,21 +392,49 @@ g_paste_sqlite_backend_write_crypto_params (sqlite3      *db,
     return success;
 }
 
-/* Generate a fresh salt and key check for @key and store them in their own
- * transaction: what preparing a database for a passphrase needs. */
-static gboolean
+typedef enum
+{
+    G_PASTE_SQLITE_KEYING_FAILED,
+    G_PASTE_SQLITE_KEYING_KEYED,
+    /* Another connection keyed the database, or wrote to it, first. */
+    G_PASTE_SQLITE_KEYING_OVERTAKEN,
+} GPasteSqliteKeying;
+
+/* Store @salt and a key check for @key in their own transaction: what
+ * preparing a database for a passphrase needs. Under that transaction's lock,
+ * the database has to be as setup_crypto () found it before deriving @key --
+ * parameters salted @seen_salt, or none if %NULL, and no item -- or another
+ * connection keyed it, or wrote under its key, in between: replacing its
+ * parameters then would leave what it writes under a key nothing derives. */
+static GPasteSqliteKeying
 g_paste_sqlite_backend_store_crypto_params (sqlite3      *db,
                                             const guchar *salt,
                                             guint64       opslimit,
                                             guint64       memlimit,
-                                            const guchar *key)
+                                            const guchar *key,
+                                            const guchar *seen_salt)
 {
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
-        return FALSE;
+        return G_PASTE_SQLITE_KEYING_FAILED;
 
-    return g_paste_sqlite_backend_finish_transaction (db,
-                                                      g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit,
-                                                                                                  memlimit, key));
+    guchar stored_salt[crypto_pwhash_SALTBYTES];
+    guint64 stored_opslimit = 0;
+    guint64 stored_memlimit = 0;
+    g_autofree guchar *stored_check = NULL;
+    gsize stored_check_length = 0;
+    gboolean stored = g_paste_sqlite_backend_load_crypto_params (db, stored_salt, &stored_opslimit, &stored_memlimit,
+                                                                 &stored_check, &stored_check_length);
+
+    if (stored != (seen_salt != NULL) || (stored && memcmp (stored_salt, seen_salt, sizeof (stored_salt))) ||
+        g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    {
+        g_paste_sqlite_backend_exec (db, "ROLLBACK;");
+        return G_PASTE_SQLITE_KEYING_OVERTAKEN;
+    }
+
+    gboolean written = g_paste_sqlite_backend_write_crypto_params (db, salt, opslimit, memlimit, key);
+
+    return (g_paste_sqlite_backend_finish_transaction (db, written)) ? G_PASTE_SQLITE_KEYING_KEYED : G_PASTE_SQLITE_KEYING_FAILED;
 }
 
 /* Re-encrypt one content column, row by row: @ids_sql lists the rowids holding
@@ -550,6 +574,60 @@ static const struct
       "UPDATE special_values SET data = ? WHERE rowid = ?;" },
 };
 
+/* One pass of setup_crypto (): the database's own parameters taken when they
+ * check out, and %G_PASTE_SQLITE_KEYING_KEYED once @key is the one the database
+ * is keyed for. */
+static GPasteSqliteKeying
+g_paste_sqlite_backend_key_database (sqlite3     *db,
+                                     const gchar *passphrase,
+                                     guchar      *key,
+                                     gboolean    *wrong_passphrase)
+{
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = 0;
+    guint64 memlimit = 0;
+    g_autofree guchar *check = NULL;
+    gsize check_length = 0;
+
+    gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
+    /* derive_key () says why when it refuses the parameters. */
+    gboolean derived = loaded && g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
+
+    if (derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length))
+        return G_PASTE_SQLITE_KEYING_KEYED;
+
+    /* The wrong passphrase for a history that still holds data must be
+     * refused: accepting it would load empty and the next save would destroy
+     * the real content. So must parameters that are incomplete or that no key
+     * can be derived with, which are no new store, replacing them being what
+     * would make the content unreadable for good. An empty history has nothing
+     * to lose, so it is (re-)keyed for this passphrase instead of locking the
+     * user out, whichever of those it was -- and a count that cannot be read is
+     * no proof of empty. */
+    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    {
+        if (derived)
+            *wrong_passphrase = TRUE;
+        else if (!loaded)
+            g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
+
+        return G_PASTE_SQLITE_KEYING_FAILED;
+    }
+
+    guchar fresh_salt[crypto_pwhash_SALTBYTES];
+
+    randombytes_buf (fresh_salt, sizeof (fresh_salt));
+
+    if (!g_paste_sqlite_backend_derive_key (passphrase, fresh_salt, crypto_pwhash_OPSLIMIT_MODERATE, crypto_pwhash_MEMLIMIT_MODERATE, key))
+    {
+        g_warning ("sqlite: could not derive the encryption key (out of memory?)");
+        return G_PASTE_SQLITE_KEYING_FAILED;
+    }
+
+    return g_paste_sqlite_backend_store_crypto_params (db, fresh_salt, crypto_pwhash_OPSLIMIT_MODERATE, crypto_pwhash_MEMLIMIT_MODERATE,
+                                                       key, (loaded) ? salt : NULL);
+}
+
 /* Prepare the encrypted flavor on an open database: derive the key from the
  * per-database salt and verify it against the stored key check. A fresh
  * database (or one that is still empty — nothing to lose) gets a new salt and
@@ -569,48 +647,19 @@ g_paste_sqlite_backend_setup_crypto (sqlite3     *db,
     if (!g_paste_sqlite_backend_exec (db, "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value NOT NULL);"))
         return FALSE;
 
-    guchar salt[crypto_pwhash_SALTBYTES];
-    guint64 opslimit = 0;
-    guint64 memlimit = 0;
-    g_autofree guchar *check = NULL;
-    gsize check_length = 0;
-
-    gboolean loaded = g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length);
-    /* derive_key () says why when it refuses the parameters. */
-    gboolean derived = loaded && g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
-
-    if (derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length))
-        return TRUE;
-
-    /* The wrong passphrase for a history that still holds data must be
-     * refused: accepting it would load empty and the next save would destroy
-     * the real content. So must parameters that are incomplete or that no key
-     * can be derived with, which are no new store, replacing them being what
-     * would make the content unreadable for good. An empty history has nothing
-     * to lose, so it is (re-)keyed for this passphrase instead of locking the
-     * user out, whichever of those it was -- and a count that cannot be read is
-     * no proof of empty. */
-    if (g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", -1) != 0)
+    /* Twice at most: a database another connection keys while this one derives
+     * a key of its own is then read again, its parameters the ones to take. */
+    for (guint attempt = 0; attempt < 2; ++attempt)
     {
-        if (derived)
-            *wrong_passphrase = TRUE;
-        else if (!loaded)
-            g_warning ("sqlite: incomplete encryption parameters in a history holding data; not touching it");
+        GPasteSqliteKeying keying = g_paste_sqlite_backend_key_database (db, passphrase, key, wrong_passphrase);
 
-        return FALSE;
+        if (keying != G_PASTE_SQLITE_KEYING_OVERTAKEN)
+            return keying == G_PASTE_SQLITE_KEYING_KEYED;
     }
 
-    randombytes_buf (salt, sizeof (salt));
-    opslimit = crypto_pwhash_OPSLIMIT_MODERATE;
-    memlimit = crypto_pwhash_MEMLIMIT_MODERATE;
+    g_warning ("sqlite: the encryption parameters kept changing while being set up; not touching them");
 
-    if (!g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key))
-    {
-        g_warning ("sqlite: could not derive the encryption key (out of memory?)");
-        return FALSE;
-    }
-
-    return g_paste_sqlite_backend_store_crypto_params (db, salt, opslimit, memlimit, key);
+    return FALSE;
 }
 #else
 static const gchar *
@@ -699,8 +748,9 @@ g_paste_sqlite_backend_schema_version (sqlite3     *db,
 
 /* Get the (cached) connection for @db_path, opening and preparing the database
  * as needed. Returns NULL (and warns) when the database cannot be used, e.g.
- * when it was created by a newer GPaste: every operation then no-ops instead
- * of risking the data. Must be called with the backend lock held. */
+ * when it was created by a newer GPaste: a read or a write then leaves it as
+ * it is, where emptying the history replaces it (clear_history ()). Must be
+ * called with the backend lock held. */
 static sqlite3 *
 g_paste_sqlite_backend_open (GPasteStorageBackend *self,
                              const gchar          *db_path)
@@ -734,7 +784,7 @@ g_paste_sqlite_backend_open (GPasteStorageBackend *self,
         return NULL;
     }
 
-    sqlite3_busy_timeout (db, 5000);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 
     /* secure_delete zeroes what a delete frees, which SQLite keeps otherwise
      * unless built with SQLITE_SECURE_DELETE -- as Fedora's is, which is why no
@@ -856,7 +906,9 @@ g_paste_sqlite_backend_bind_content (sqlite3_stmt *stmt,
         gsize blob_length;
         g_autofree guchar *blob = g_paste_sqlite_backend_encrypt (key, data, length, &blob_length);
 
-        return sqlite3_bind_blob64 (stmt, position, blob, blob_length, SQLITE_TRANSIENT);
+        /* Handed over rather than copied once more: an image's sealed blob is
+         * its whole PNG. */
+        return sqlite3_bind_blob64 (stmt, position, g_steal_pointer (&blob), blob_length, g_free);
     }
 #else
     (void) key;
@@ -1010,6 +1062,16 @@ g_paste_sqlite_backend_rewrite_special_values (sqlite3      *db,
     return success && g_paste_sqlite_backend_write_special_values (db, key, item_id, item);
 }
 
+/* The timeout column of @item's row: only a password ever carries one, but
+ * the column is NOT NULL, so every other item stores 0. As an int64, since a
+ * timeout is a guint and the ones above G_MAXINT would otherwise be stored
+ * negative. Plaintext, being a duration, not content. */
+static gint64
+g_paste_sqlite_backend_item_timeout (GPasteItem *item)
+{
+    return (G_PASTE_IS_PASSWORD_ITEM (item)) ? (gint64) g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)) : 0;
+}
+
 /* Bind an item's content columns: uuid, kind and value at the fixed positions
  * 1-3, then the image (date, checksum, image blob) or password (name) columns
  * starting at @meta_base, with the favourite flag and the password timeout
@@ -1037,11 +1099,7 @@ g_paste_sqlite_backend_bind_item (sqlite3_stmt *stmt,
     /* Every kind has one, so it is bound outside the per-kind branches below.
      * Plaintext like rank and date: the read has to order and filter on it. */
     sqlite3_bind_int (stmt, meta_base + 4, g_paste_item_is_favourite (item));
-    /* Only a password ever carries one, but the column is NOT NULL: leaving it
-     * unbound would insert the NULL that constraint refuses. Plaintext too --
-     * it is a duration, not content. As an int64, since a timeout is a guint and
-     * the ones above G_MAXINT would otherwise be stored negative. */
-    sqlite3_bind_int64 (stmt, meta_base + 5, (G_PASTE_IS_PASSWORD_ITEM (item)) ? (gint64) g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item)) : 0);
+    sqlite3_bind_int64 (stmt, meta_base + 5, g_paste_sqlite_backend_item_timeout (item));
 
     if (G_PASTE_IS_IMAGE_ITEM (item))
     {
@@ -1080,18 +1138,52 @@ g_paste_sqlite_backend_left_out (sqlite3 *db,
 
 /* Insert @item with @rank, or move the already-stored item with the same uuid
  * to @rank (its value never changes, only its position and whether it is
- * pinned). Special values are rewritten from the item either way.
+ * pinned). Special values are written with a new row, and left as they are by
+ * a move: an item's strings never change once it is in its history, a strip
+ * or an edit putting a new item in its place (replace_item ()), so a select
+ * binds no value, image or alternative only for the conflict to discard it.
  *
  * An item too large for a row is left out, the way a password is in the plain
  * flavour, rather than failing the write: every write of its history would
- * carry it, and fail, for as long as the history held it. */
+ * carry it, and fail, for as long as the history held it.
+ *
+ * @maybe_stored says whether a row of @item may be there already: a full write
+ * has just emptied the table, and tries no move it knows cannot match. */
 static gboolean
-g_paste_sqlite_backend_upsert_item (sqlite3      *db,
-                                    const guchar *key,
-                                    GPasteItem   *item,
-                                    gint64        rank)
+g_paste_sqlite_backend_upsert_item (GPasteStorageBackend *self,
+                                    sqlite3              *db,
+                                    const guchar         *key,
+                                    GPasteItem           *item,
+                                    gint64                rank,
+                                    gboolean              maybe_stored)
 {
     sqlite3_stmt *stmt = NULL;
+
+    if (maybe_stored)
+    {
+        if (sqlite3_prepare_v2 (db, "UPDATE items SET rank = ?, favourite = ?, timeout = ? WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
+        {
+            g_warning ("sqlite: failed to prepare item move: %s", sqlite3_errmsg (db));
+            return FALSE;
+        }
+
+        sqlite3_bind_int64 (stmt, 1, rank);
+        sqlite3_bind_int (stmt, 2, g_paste_item_is_favourite (item));
+        sqlite3_bind_int64 (stmt, 3, g_paste_sqlite_backend_item_timeout (item));
+        sqlite3_bind_text (stmt, 4, g_paste_item_get_uuid (item), -1, SQLITE_STATIC);
+
+        gint moved = sqlite3_step (stmt);
+
+        sqlite3_finalize (stmt);
+        stmt = NULL;
+        if (moved != SQLITE_DONE)
+        {
+            g_warning ("sqlite: failed to move an item: %s", sqlite3_errmsg (db));
+            return FALSE;
+        }
+        if (sqlite3_changes (db))
+            return TRUE;
+    }
 
     if (sqlite3_prepare_v2 (db,
                             "INSERT INTO items (uuid, kind, value, rank, date, checksum, name, image, favourite, timeout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
@@ -1115,16 +1207,17 @@ g_paste_sqlite_backend_upsert_item (sqlite3      *db,
 
     sqlite3_finalize (stmt);
 
+    if (left_out)
+        g_paste_storage_backend_leave_out (self, item);
     if (ret != SQLITE_ROW)
         return left_out;
 
     return g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 }
 
-/* How many of @history's items this backend actually persists. Used to rank a
- * full rewrite (front item gets the highest rank) and to tell whether the store
- * has drifted from the snapshot during reconcile — one definition so the two can
- * never disagree on which items count. */
+/* How many of @history's items this backend persists, to rank a full rewrite
+ * (front item gets the highest rank): an item left out as too large keeps its
+ * rank, leaving a gap. */
 static gint64
 g_paste_sqlite_backend_count_stored (GPasteStorageBackend *self,
                                      const GList          *history)
@@ -1201,46 +1294,22 @@ g_paste_sqlite_backend_delete_database (const gchar *db_path,
  * checkpoint, for as long as the connection lives: truncated here, which writes
  * those pages back and empties the log. The encrypted flavour's too: an image's
  * date and checksum and an alternative's mime are stored in clear. Best effort:
- * a reader holding the log defers it to the next delete. */
+ * a reader holding the log defers it to the next delete -- at once, the busy
+ * timeout lifted for it, a checkpoint waiting otherwise for every reader to be
+ * done, the backend's lock held all along. */
 static void
 g_paste_sqlite_backend_forget_deleted (sqlite3 *db)
 {
+    sqlite3_busy_timeout (db, 0);
     if (sqlite3_wal_checkpoint_v2 (db, NULL, SQLITE_CHECKPOINT_TRUNCATE, NULL, NULL) != SQLITE_OK)
         g_debug ("sqlite: could not empty the write-ahead log: %s", sqlite3_errmsg (db));
-}
-
-/* Remember that a write of @name failed, or that a full one landed: see
- * @diverged. */
-static void
-g_paste_sqlite_backend_diverge (GPasteSqliteBackend *backend,
-                                const gchar         *name)
-{
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    g_hash_table_add (backend->diverged, g_strdup (name));
-}
-
-static void
-g_paste_sqlite_backend_converge (GPasteSqliteBackend *backend,
-                                 const gchar         *name)
-{
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    g_hash_table_remove (backend->diverged, name);
-}
-
-static gboolean
-g_paste_sqlite_backend_has_diverged (GPasteStorageBackend *self,
-                                     const gchar          *name)
-{
-    GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->diverged_lock);
-
-    return g_hash_table_contains (backend->diverged, name);
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
 }
 
 /* Write @history over the history called @name, @backend's lock held: see
- * write_history_file in #GPasteStorageBackendClass for what it returns. */
+ * write_history_file in #GPasteStorageBackendClass for what it returns, which
+ * its callers record: the base class for the vfunc, add_item () for the full
+ * write it makes itself. */
 static gboolean
 g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
                                      const gchar          *name,
@@ -1260,7 +1329,6 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
     {
         if (created)
             g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
-        g_paste_sqlite_backend_diverge (backend, name);
         return FALSE;
     }
 
@@ -1281,7 +1349,7 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
         if (!g_paste_storage_backend_stores_item (self, item))
             continue;
 
-        success = g_paste_sqlite_backend_upsert_item (db, key, item, rank--);
+        success = g_paste_sqlite_backend_upsert_item (self, db, key, item, rank--, FALSE);
     }
 
     if (began)
@@ -1289,14 +1357,12 @@ g_paste_sqlite_backend_write_locked (GPasteStorageBackend *self,
 
     if (success)
     {
-        g_paste_sqlite_backend_converge (backend, name);
         g_paste_sqlite_backend_forget_deleted (db);
         return TRUE;
     }
 
     if (created)
         g_paste_sqlite_backend_unlink (backend, history_file_path, NULL);
-    g_paste_sqlite_backend_diverge (backend, name);
 
     return FALSE;
 }
@@ -1465,13 +1531,27 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     GPasteItemKind kind = g_paste_item_kind_from_string (kind_str);
     /* A password's value comes back through here too, so the buffer is wiped
      * rather than merely freed once the item has taken a copy of it. */
-    g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, NULL);
+    gsize value_length = 0;
+    g_autoptr (GPasteCleartext) value = (gchar *) g_paste_sqlite_backend_read_content (stmt, 3, key, &value_length);
 
     *unreadable = FALSE;
 
     if (!value)
     {
         g_warning ("sqlite: failed to decrypt an item; dropping it");
+        *unreadable = TRUE;
+
+        return NULL;
+    }
+
+    /* The plain flavours hand back a column's bytes as they are, which only
+     * GPaste's own writes keep to UTF-8: another tool's row, or a damaged page,
+     * is one this build makes nothing of, where the constructors would refuse
+     * it with a critical. Over its whole length: a NUL in it would have the
+     * item cut it short, and the next save keep only that much. */
+    if (!g_utf8_validate_len (value, value_length, NULL))
+    {
+        g_warning ("sqlite: an item's value is not UTF-8; dropping it");
         *unreadable = TRUE;
 
         return NULL;
@@ -1485,7 +1565,8 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         return g_paste_sqlite_backend_built_item (g_paste_uris_item_new_from_str (value), unreadable);
     case G_PASTE_ITEM_KIND_PASSWORD:
     {
-        g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, NULL);
+        gsize name_length = 0;
+        g_autoptr (GPasteCleartext) name = (gchar *) g_paste_sqlite_backend_read_content (stmt, 6, key, &name_length);
 
         /* A password is always written with a name -- get_name () answers the
          * G_PASTE_PASSWORD_ITEM_NO_NAME placeholder for the ones that carry
@@ -1497,6 +1578,16 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
         if (!name)
         {
             g_warning ("sqlite: failed to decrypt a password's name; dropping it");
+            *unreadable = TRUE;
+
+            return NULL;
+        }
+
+        /* As the value above: a plain database's password row is another
+         * tool's, GPaste keeping none there. */
+        if (!g_utf8_validate_len (name, name_length, NULL))
+        {
+            g_warning ("sqlite: a password's name is not UTF-8; dropping it");
             *unreadable = TRUE;
 
             return NULL;
@@ -1566,6 +1657,27 @@ g_paste_sqlite_backend_read_item (sqlite3_stmt *stmt,
     return NULL;
 }
 
+/* A read-only connection of its own to the database at @path, for what probes
+ * it without the backend's state -- a count, a passphrase check: it creates no
+ * database, opens no special file (g_paste_storage_is_special_file ()), and
+ * waits out another connection busy with the database, as every connection of
+ * the backend's does. Without that wait its reads would fail at once, a
+ * passphrase check's then finding no parameters to refute with and counting
+ * an empty history, either way accepting a passphrase the key check refuses.
+ * %NULL when the database cannot be opened. */
+static sqlite3 *
+g_paste_sqlite_backend_open_readonly (const gchar *path)
+{
+    g_autoptr (sqlite3) db = NULL;
+
+    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+        return NULL;
+
+    sqlite3_busy_timeout (db, G_PASTE_SQLITE_BUSY_TIMEOUT);
+
+    return g_steal_pointer (&db);
+}
+
 /* What read_history_file would have returned, counted in the database rather
  * than carried out of it: same predicate, same cap, same favourites, and the
  * same image rows dropped when images are turned off.
@@ -1598,17 +1710,14 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
                                       const gchar          *name)
 {
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
-    g_autoptr (sqlite3) db = NULL;
+    /* Nor under the backend's lock, which a load holds across the key
+     * derivation and the decoding of every image -- and this runs on the main
+     * loop, which in gnome-shell is the compositor's. A stall no test
+     * measures. */
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (history_file_path);
 
-    /* A connection of its own, and none of the backend's state: so not the
-     * backend's lock either, which a load holds across the key derivation and
-     * the decoding of every image -- and this runs on the main loop, which in
-     * gnome-shell is the compositor's. A stall no test measures. */
-    if (g_paste_storage_is_special_file (history_file_path) ||
-        sqlite3_open_v2 (history_file_path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return 0;
-
-    sqlite3_busy_timeout (db, 5000);
 
     gint64 version = g_paste_sqlite_backend_query_int64 (db, "PRAGMA user_version;", 0);
 
@@ -1620,12 +1729,16 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
     gboolean images_support = g_paste_storage_backend_reads_images (self);
     const gchar *query;
 
+    /* With images, the image rows read_item () drops on purpose are left out
+     * too -- no blob, no date, or one GDateTime cannot hold -- each still
+     * taking its place under the cap, as it does in the read. */
     if (version >= 2)
     {
         query = (images_support)
             ? "SELECT COUNT (*) FROM items "
-              "WHERE favourite = 1 "
-              "   OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1);"
+              "WHERE (favourite = 1 "
+              "       OR id IN (SELECT id FROM items WHERE favourite = 0 ORDER BY rank DESC LIMIT ?1)) "
+              "  AND (kind != ?2 OR (image IS NOT NULL AND date BETWEEN ?3 AND ?4));"
             : "SELECT COUNT (*) FROM items "
               "WHERE kind != ?2 "
               "  AND (favourite = 1 "
@@ -1638,7 +1751,8 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
          * applied to all of it. */
         query = (images_support)
             ? "SELECT COUNT (*) FROM items "
-              "WHERE id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);"
+              "WHERE id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1) "
+              "  AND (kind != ?2 OR (image IS NOT NULL AND date BETWEEN ?3 AND ?4));"
             : "SELECT COUNT (*) FROM items "
               "WHERE kind != ?2 "
               "  AND id IN (SELECT id FROM items ORDER BY rank DESC LIMIT ?1);";
@@ -1658,8 +1772,17 @@ g_paste_sqlite_backend_count_history (GPasteStorageBackend *self,
 
     /* The nick the rows were written with, not a literal: it is one enum
      * registration away from being something else. */
-    if (!images_support)
-        sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (G_PASTE_ITEM_KIND_IMAGE), -1, SQLITE_STATIC);
+    sqlite3_bind_text (stmt, 2, g_paste_item_kind_to_string (G_PASTE_ITEM_KIND_IMAGE), -1, SQLITE_STATIC);
+    if (images_support)
+    {
+        /* The dates g_date_time_new_from_unix_local () takes, which read_item ()
+         * builds an image's from. */
+        g_autoptr (GDateTime) first = g_date_time_new_local (1, 1, 1, 0, 0, 0);
+        g_autoptr (GDateTime) last = g_date_time_new_local (9999, 12, 31, 23, 59, 59);
+
+        sqlite3_bind_int64 (stmt, 3, (first) ? g_date_time_to_unix (first) : G_MININT64);
+        sqlite3_bind_int64 (stmt, 4, (last) ? g_date_time_to_unix (last) : G_MAXINT64);
+    }
 
     if (sqlite3_step (stmt) == SQLITE_ROW)
         count = sqlite3_column_int64 (stmt, 0);
@@ -1679,12 +1802,20 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     g_autofree gchar *history_file_path = g_paste_storage_backend_get_history_file_path (self, name);
-    /* Opening creates the database on first read, so a fresh history shows up
-     * in listings just like the file backend's empty placeholder. */
-    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     *history = NULL;
     *size = 0;
+
+    /* As in the file flavour's read: a load given up on creates nothing. Asked
+     * under the lock a delete takes as well: a delete that cancelled this load
+     * and took the lock first is seen here, and one coming later waits for this
+     * read to be done before it unlinks. */
+    if (g_cancellable_is_cancelled (cancellable))
+        return FALSE;
+
+    /* Opening creates the database on first read, so a fresh history shows up
+     * in listings just like the file backend's empty placeholder. */
+    sqlite3 *db = g_paste_sqlite_backend_open (self, history_file_path);
 
     /* A NULL db means the (possibly encrypted) database is present but could not
      * be opened/decrypted: report the failure so a caller never mistakes it for
@@ -1729,6 +1860,10 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
     gint rc = SQLITE_DONE;
     gboolean complete = TRUE;
     gboolean cancelled = FALSE;
+    /* The rows read with no valid uuid of their own, and the one their item was
+     * given instead (see below). */
+    g_autoptr (GArray) adopted_ids = g_array_new (FALSE, FALSE, sizeof (sqlite3_int64));
+    g_autoptr (GPtrArray) adopted_uuids = g_ptr_array_new_with_free_func (g_free);
 
     /* Row by row, this being a read that does stop halfway: what has been built
      * so far is dropped by the caller either way, so the rows after the cancel
@@ -1756,6 +1891,13 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
         if (uuid && g_uuid_string_is_valid (uuid))
             g_paste_item_set_uuid (item, uuid);
+        else
+        {
+            sqlite3_int64 id = sqlite3_column_int64 (stmt, 0);
+
+            g_array_append_val (adopted_ids, id);
+            g_ptr_array_add (adopted_uuids, g_strdup (g_paste_item_get_uuid (item)));
+        }
 
         g_paste_item_set_favourite (item, sqlite3_column_int (stmt, 8));
 
@@ -1784,6 +1926,30 @@ g_paste_sqlite_backend_read_history_file (GPasteStorageBackend *self,
 
     sqlite3_finalize (sv_stmt);
     sqlite3_finalize (stmt);
+
+    /* A row another tool wrote with no valid uuid is read with the one its item
+     * was built with, and every write after this read keys on that uuid: the
+     * row is given it in the store too, once the scan is done, or a delete of
+     * the item would delete nothing and the next reconcile delete the row as
+     * one the history no longer holds (/history/sqlite_null_uuid_adopted).
+     * A row that cannot be given it leaves the history unread, as one cut
+     * short does, rather than installed over a row no write can reach. */
+    if (complete && adopted_ids->len)
+    {
+        sqlite3_stmt *adopt = NULL;
+
+        complete = sqlite3_prepare_v2 (db, "UPDATE items SET uuid = ?1 WHERE id = ?2;", -1, &adopt, NULL) == SQLITE_OK;
+        for (guint i = 0; complete && i < adopted_ids->len; ++i)
+        {
+            sqlite3_bind_text (adopt, 1, adopted_uuids->pdata[i], -1, SQLITE_STATIC);
+            sqlite3_bind_int64 (adopt, 2, g_array_index (adopted_ids, sqlite3_int64, i));
+            complete = sqlite3_step (adopt) == SQLITE_DONE;
+            sqlite3_reset (adopt);
+        }
+        if (!complete)
+            g_warning ("sqlite: could not give a row with no valid uuid one: %s", sqlite3_errmsg (db));
+        sqlite3_finalize (adopt);
+    }
 
     /* A scan cut short is not the end of the history. Handing back the rows it
      * did reach, as a successful read, is what has the caller install them as
@@ -1818,7 +1984,10 @@ g_paste_sqlite_backend_reconcile (GPasteStorageBackend *self,
                                   sqlite3              *db,
                                   const GList          *history)
 {
-    gint64 expected = g_paste_sqlite_backend_count_stored (self, history);
+    /* What this backend leaves out -- an item it does not store, or one too
+     * large -- is not counted: the model holds it and the store does not, and
+     * an extra row the store still holds would make up for it. */
+    gint64 expected = g_paste_storage_backend_count_kept (self, history);
 
     /* The common case: nothing rode along, the store already matches. Only
      * build the uuid set (and scan the table) when it actually does not, or
@@ -1912,9 +2081,14 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
     GPasteSqliteBackend *backend = G_PASTE_SQLITE_BACKEND (self);
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
 
-    if (history && g_paste_sqlite_backend_has_diverged (self, name))
+    /* A store some write left behind lags the model for good otherwise:
+     * nothing retries a write, and the reconciliation below only drops rows.
+     * An add carrying the whole snapshot writes it in full instead, the history
+     * asking for one sooner, and the store still lags should that fail too. */
+    if (history && g_paste_storage_backend_has_diverged (self, name))
     {
-        g_paste_sqlite_backend_write_locked (self, name, history);
+        if (g_paste_sqlite_backend_write_locked (self, name, history))
+            g_paste_storage_backend_converge (self, name);
         return;
     }
 
@@ -1922,7 +2096,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
 
     if (!db || !g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -1935,7 +2109,7 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
          * newest item 1, the bottom of the store, and commit it there. */
         gint64 top = g_paste_sqlite_backend_query_int64 (db, "SELECT COALESCE (MAX (rank), 0) FROM items;", -1);
 
-        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (db, key, item, top + 1));
+        success = (top >= 0 && g_paste_sqlite_backend_upsert_item (self, db, key, item, top + 1, TRUE));
     }
 
     /* A %NULL history says nothing was displaced by this add, so no row can
@@ -1951,7 +2125,36 @@ g_paste_sqlite_backend_add_item (GPasteStorageBackend *self,
      * adds -- nothing the user deleted. A checkpoint with its syncs on every
      * copy is what SQLite's own, every thousand pages, spares. */
     if (!g_paste_sqlite_backend_finish_transaction (db, success) || !reconciled)
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
+}
+
+/* The removal of @uuid from @db, under the backend's lock already: see
+ * write_locked (). */
+static void
+g_paste_sqlite_backend_remove_locked (GPasteStorageBackend *self,
+                                      sqlite3              *db,
+                                      const gchar          *name,
+                                      const gchar          *uuid)
+{
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
+    {
+        g_warning ("sqlite: failed to prepare item removal: %s", sqlite3_errmsg (db));
+        g_paste_storage_backend_diverge (self, name);
+        return;
+    }
+
+    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_STATIC);
+
+    if (sqlite3_step (stmt) != SQLITE_DONE)
+    {
+        g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
+        g_paste_storage_backend_diverge (self, name);
+    }
+
+    sqlite3_finalize (stmt);
+    g_paste_sqlite_backend_forget_deleted (db);
 }
 
 static void
@@ -1966,29 +2169,11 @@ g_paste_sqlite_backend_remove_item (GPasteStorageBackend *self,
 
     if (!db)
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
-    sqlite3_stmt *stmt = NULL;
-
-    if (sqlite3_prepare_v2 (db, "DELETE FROM items WHERE uuid = ?;", -1, &stmt, NULL) != SQLITE_OK)
-    {
-        g_warning ("sqlite: failed to prepare item removal: %s", sqlite3_errmsg (db));
-        g_paste_sqlite_backend_diverge (backend, name);
-        return;
-    }
-
-    sqlite3_bind_text (stmt, 1, uuid, -1, SQLITE_STATIC);
-
-    if (sqlite3_step (stmt) != SQLITE_DONE)
-    {
-        g_warning ("sqlite: failed to remove an item: %s", sqlite3_errmsg (db));
-        g_paste_sqlite_backend_diverge (backend, name);
-    }
-
-    sqlite3_finalize (stmt);
-    g_paste_sqlite_backend_forget_deleted (db);
+    g_paste_sqlite_backend_remove_locked (self, db, name, uuid);
 }
 
 static void
@@ -2004,7 +2189,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     if (!db)
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2015,14 +2200,13 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
      * rewrite. The encrypted flavor persists it like any other item. */
     if (!g_paste_storage_backend_stores_item (self, item))
     {
-        g_clear_pointer (&locker, g_mutex_locker_free);
-        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        g_paste_sqlite_backend_remove_locked (self, db, name, old_uuid);
         return;
     }
 
     if (!g_paste_sqlite_backend_exec (db, "BEGIN IMMEDIATE;"))
     {
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2036,7 +2220,7 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     {
         g_warning ("sqlite: failed to prepare item replacement: %s", sqlite3_errmsg (db));
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
         return;
     }
 
@@ -2047,8 +2231,9 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
     if (ret == SQLITE_OK)
         ret = sqlite3_step (stmt);
 
-    /* No row means the replaced item was never persisted (e.g. renaming a
-     * password): nothing to update. */
+    /* No row means the replaced item was never persisted -- left out as too
+     * large -- and the replacement, which this flavour stores, is then written
+     * by no update: the next full write is what puts it in. */
     gboolean found = (ret == SQLITE_ROW);
     gint64 item_id = found ? sqlite3_column_int64 (stmt, 0) : 0;
     gboolean left_out = FALSE;
@@ -2061,20 +2246,20 @@ g_paste_sqlite_backend_replace_item (GPasteStorageBackend *self,
 
     sqlite3_finalize (stmt);
 
-    /* As upsert_item () leaves one out: what it replaces is gone all the same. */
+    /* As upsert_item () leaves one out: what it replaces is gone all the same,
+     * removed under the lock already held, as for a replacement not stored. */
     if (left_out)
     {
         g_paste_sqlite_backend_exec (db, "ROLLBACK;");
-        g_clear_pointer (&locker, g_mutex_locker_free);
-        g_paste_sqlite_backend_remove_item (self, name, old_uuid);
+        g_paste_storage_backend_leave_out (self, item);
+        g_paste_sqlite_backend_remove_locked (self, db, name, old_uuid);
         return;
     }
 
-    if (success && found)
-        success = g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
+    success = success && found && g_paste_sqlite_backend_rewrite_special_values (db, key, item_id, item);
 
     if (!g_paste_sqlite_backend_finish_transaction (db, success))
-        g_paste_sqlite_backend_diverge (backend, name);
+        g_paste_storage_backend_diverge (self, name);
     else
         g_paste_sqlite_backend_forget_deleted (db);
 }
@@ -2088,10 +2273,13 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
     g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&backend->lock);
     sqlite3 *db = g_paste_sqlite_backend_open (self, db_path);
 
-    /* Keep the (now empty) database so the history is still listed. */
+    /* Keep the (now empty) database so the history is still listed. Level
+     * with the history once emptied, as a full write leaves it, whatever
+     * failed before: the next add needs no full write to catch up. */
     if (db && g_paste_sqlite_backend_exec (db, "DELETE FROM items;"))
     {
         g_paste_sqlite_backend_forget_deleted (db);
+        g_paste_storage_backend_converge (self, name);
         return;
     }
 
@@ -2106,13 +2294,16 @@ g_paste_sqlite_backend_clear_history (GPasteStorageBackend *self,
         g_paste_sqlite_backend_unlink (backend, db_path, &error);
 
         if (!error && g_paste_sqlite_backend_open (self, db_path))
+        {
+            g_paste_storage_backend_converge (self, name);
             return;
+        }
 
         if (error)
             g_warning ("sqlite: could not replace “%s” with an empty history: %s", db_path, error->message);
     }
 
-    g_paste_sqlite_backend_diverge (backend, name);
+    g_paste_storage_backend_diverge (self, name);
 }
 
 /**************/
@@ -2191,6 +2382,12 @@ g_paste_sqlite_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    /* The pages under the passphrase being retired leave the database file now
+     * rather than once its last connection closes: the live history's backend
+     * holds one, and the file alone, its log lost with a process dying
+     * meanwhile, would open under that passphrase. */
+    g_paste_sqlite_backend_forget_deleted (db);
+
     /* Committed. This instance deliberately stays keyed to the passphrase it was
      * built with: a passphrase change re-keys every history through one backend,
      * so adopting the new one here would make the next history — still encrypted
@@ -2223,7 +2420,11 @@ g_paste_sqlite_backend_delete_history (GPasteStorageBackend *self,
      * that would hold the main loop, gnome-shell's compositor for the in-shell
      * daemon. The database goes without it, and should the connection cached
      * still be this one's, the next open drops it rather than write to a file
-     * no longer listed. */
+     * no longer listed. Dropping it checkpoints nothing and unlinks no log:
+     * SQLite skips that for a database unlinked under its connection
+     * (SQLITE_FCNTL_HAS_MOVED), so a database written under the name meanwhile
+     * keeps the commits its own log holds
+     * (/storage/sqlite/forgotten-spares-new-log). */
     if (!g_mutex_trylock (&backend->lock))
     {
         g_mutex_lock (&backend->forgotten_lock);
@@ -2251,12 +2452,10 @@ g_paste_sqlite_backend_finalize (GObject *object)
     /* With the connection, here rather than in dispose (): the write vfuncs
      * read it for as long as they can run, which is until the last reference
      * goes. */
-    g_clear_pointer (&self->diverged, g_hash_table_unref);
     g_clear_pointer (&self->db, g_paste_sqlite_backend_close);
     g_clear_pointer (&self->db_path, g_free);
     g_clear_pointer (&self->forgotten, g_free);
     g_mutex_clear (&self->lock);
-    g_mutex_clear (&self->diverged_lock);
     g_mutex_clear (&self->forgotten_lock);
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     g_clear_pointer (&self->key, g_paste_sqlite_backend_free_key);
@@ -2279,16 +2478,10 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
                                          gboolean             *has_data)
 {
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (self, name);
-    g_autoptr (sqlite3) db = NULL;
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (path);
 
-    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return FALSE;
-
-    /* As on every other connection: another one busy with the database is
-     * waited out. Without it the reads below fail at once, the meta read
-     * leaving nothing to refute with and the count reading as an empty
-     * history, either way accepting a passphrase the key check refuses. */
-    sqlite3_busy_timeout (db, 5000);
 
     guchar salt[crypto_pwhash_SALTBYTES];
     guint64 opslimit = 0;
@@ -2303,7 +2496,18 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
     /* Where every other derived key lives: the stack is pageable, so a key on it
      * can reach the swap between here and the memzero below. */
     guchar *key = gcr_secure_memory_alloc (crypto_secretbox_KEYBYTES);
-    gboolean derived = g_paste_sqlite_backend_derive_key (passphrase, salt, opslimit, memlimit, key);
+    g_autoptr (GError) derive_error = NULL;
+    gboolean derived = g_paste_crypto_derive_key (passphrase, strlen (passphrase), salt, opslimit, memlimit,
+                                                  key, crypto_secretbox_KEYBYTES, &derive_error);
+
+    /* Parameters out of range are the file's, a derivation that did not
+     * complete is a check not made, as in the file flavour's refutation. */
+    if (!derived)
+    {
+        g_warning ("sqlite: %s", derive_error->message);
+        if (g_error_matches (derive_error, G_IO_ERROR, G_IO_ERROR_FAILED))
+            g_paste_storage_backend_set_unverifiable (self);
+    }
 
     *checks_out = derived && g_paste_sqlite_backend_key_checks_out (key, check, check_length);
     g_paste_sqlite_backend_free_key (key);
@@ -2324,22 +2528,33 @@ g_paste_sqlite_backend_check_passphrase (GPasteStorageBackend *self,
  *
  * Whether the database at @path holds an item, which is what its key check
  * refutes a passphrase over: an empty one is keyed afresh by whatever opens it.
- * Read-only, as verifying has to be, and with no key: nothing but the count is
- * asked. A database that cannot be read holds nothing to go by.
+ * Read-only, as verifying has to be, and with no key: nothing but the count and
+ * the parameters the check needs are asked. A database that cannot be read, or
+ * whose parameters are missing or ask for what no key is derived for, holds
+ * nothing to go by.
  *
  * Returns: whether a wrong passphrase would be refused over the database
  */
 gboolean
 g_paste_sqlite_backend_database_has_items (const gchar *path)
 {
-    g_autoptr (sqlite3) db = NULL;
+    g_autoptr (sqlite3) db = g_paste_sqlite_backend_open_readonly (path);
 
-    if (g_paste_storage_is_special_file (path) || sqlite3_open_v2 (path, &db, SQLITE_OPEN_READONLY, NULL) != SQLITE_OK)
+    if (!db)
         return FALSE;
 
-    /* As check_passphrase () does, another connection busy with it is waited
-     * out rather than read as an empty database. */
-    sqlite3_busy_timeout (db, 5000);
+    guchar salt[crypto_pwhash_SALTBYTES];
+    guint64 opslimit = 0;
+    guint64 memlimit = 0;
+    /* Loaded and not read: load_crypto_params () answers for whole parameters
+     * alone, and a database without its key check is no more verifiable than
+     * one without its salt. */
+    g_autofree guchar *check = NULL;
+    gsize check_length = 0;
+
+    if (!g_paste_sqlite_backend_load_crypto_params (db, salt, &opslimit, &memlimit, &check, &check_length) ||
+        !g_paste_crypto_parameters_derivable (opslimit, memlimit))
+        return FALSE;
 
     return g_paste_sqlite_backend_query_int64 (db, "SELECT COUNT (*) FROM items;", 0) > 0;
 }
@@ -2385,7 +2600,6 @@ g_paste_sqlite_backend_class_init (GPasteSqliteBackendClass *klass)
     storage_class->remove_item = g_paste_sqlite_backend_remove_item;
     storage_class->replace_item = g_paste_sqlite_backend_replace_item;
     storage_class->clear_history = g_paste_sqlite_backend_clear_history;
-    storage_class->has_diverged = g_paste_sqlite_backend_has_diverged;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     storage_class->rekey = g_paste_sqlite_backend_rekey;
@@ -2400,8 +2614,6 @@ static void
 g_paste_sqlite_backend_init (GPasteSqliteBackend *self)
 {
     g_mutex_init (&self->lock);
-    self->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-    g_mutex_init (&self->diverged_lock);
     g_mutex_init (&self->forgotten_lock);
 }
 

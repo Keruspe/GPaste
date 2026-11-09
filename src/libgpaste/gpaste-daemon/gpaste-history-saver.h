@@ -16,7 +16,6 @@ G_PASTE_FINAL_TYPE (HistorySaver, history_saver, HISTORY_SAVER, GObject)
  * @user_data: the @owner passed to g_paste_history_saver_new()
  * @history: (transfer full) (element-type GPasteItem): the loaded items
  * @size: the total size of the loaded items
- * @save_after: whether the load was triggered by a switch and should be persisted back
  * @readable: %FALSE when the history exists on disk but could not be read back,
  *            so @history is empty only because the read failed and must never be
  *            written back over the intact data
@@ -27,7 +26,6 @@ G_PASTE_FINAL_TYPE (HistorySaver, history_saver, HISTORY_SAVER, GObject)
 typedef void (*GPasteHistorySaverLoadedFunc) (gpointer  user_data,
                                               GList    *history,
                                               gsize     size,
-                                              gboolean  save_after,
                                               gboolean  readable);
 
 /**
@@ -66,11 +64,9 @@ void     g_paste_history_saver_record        (GPasteHistorySaver   *self,
                                               const gchar          *uuid,
                                               GList                *history);
 void     g_paste_history_saver_load          (GPasteHistorySaver   *self,
-                                              const gchar          *name,
-                                              gboolean              save_after);
+                                              const gchar          *name);
 void     g_paste_history_saver_load_when_released (GPasteHistorySaver   *self,
-                                                   const gchar          *name,
-                                                   gboolean              save_after);
+                                                   const gchar          *name);
 void     g_paste_history_saver_copy          (GPasteHistorySaver   *self,
                                               GPasteStorageBackend *backend,
                                               const gchar          *source,

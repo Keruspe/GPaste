@@ -440,11 +440,12 @@ on_histories_ready (GObject      *source_object,
      * a time, but a daemon coming back announces nothing of what went while
      * it was away -- a migration run without importing leaves only the default
      * history -- and a row left standing for one would create it anew when
-     * clicked. The default row stays, as above, and so does the current one,
-     * which a storage keeping nothing does not list -- the one this listing
-     * was asked under and the one now, a switch landing while it was out. Named
-     * first and dropped after, since dropping one edits the list being
-     * walked. */
+     * clicked. The default row stays, as above, and so does the current one:
+     * the one this listing was asked under and the one now, a switch landing
+     * while it was out, and one a GPaste 51.0 to 51.2 over a storage keeping
+     * nothing leaves out of its listing, which this daemon lists whether
+     * stored or not. Named first and dropped after, since dropping one edits
+     * the list being walked. */
     g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
 
     for (const GList *h = self->histories; h; h = h->next)
@@ -600,7 +601,10 @@ g_paste_ui_panel_do_switch (GPasteUiPanel *self)
                                    on_switched,
                                    data);
 
-    gtk_widget_grab_focus (self->search_entry);
+    /* On to the search, but only when it is open: GTK hands the focus to a
+     * widget its closed bar hides all the same, where no key reaches anything. */
+    if (gtk_widget_get_mapped (self->search_entry))
+        gtk_widget_grab_focus (self->search_entry);
 }
 
 static void
@@ -899,7 +903,7 @@ g_paste_ui_panel_init (GPasteUiPanel *self)
 
     GtkWidget *switch_entry = adw_entry_row_new ();
     self->switch_entry = ADW_ENTRY_ROW (switch_entry);
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch or Create"));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (switch_entry), _("Switch or Create"));
     /* An AdwEntryRow has no subtitle to say it, and that a name nobody has used
      * before makes a history rather than failing to find one is not something a
      * user can be expected to guess. */

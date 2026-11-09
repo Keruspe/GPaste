@@ -13,6 +13,13 @@ G_BEGIN_DECLS
  * passphrase copies the files whole. */
 void g_paste_storage_backend_read_whole (GPasteStorageBackend *self);
 
+/* That a passphrase check of @self could not be made at all: the key could not
+ * be derived, or the history not read once open. Neither refutes nor confirms
+ * the passphrase, and g_paste_storage_passphrase_can_decrypt () refuses one
+ * it could not check rather than take it for right. */
+void     g_paste_storage_backend_set_unverifiable (GPasteStorageBackend *self);
+gboolean g_paste_storage_backend_is_unverifiable  (GPasteStorageBackend *self);
+
 /* What a read of @self keeps: the non-favourite items up to this many, and
  * images or not. A count asks the same, to answer what a read would return. */
 guint64  g_paste_storage_backend_get_read_cap (GPasteStorageBackend *self);
@@ -43,6 +50,30 @@ gboolean g_paste_storage_is_special_file (const gchar *path);
  * would have the history believed gone, back once that store is opened. */
 gboolean g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
                                                   const gchar          *name);
+
+/* What a backend with incremental writes records of them, for
+ * g_paste_storage_backend_has_diverged () to answer from as it answers from
+ * the full writes it sees: that a write of the history called @name failed,
+ * the store lagging the history until a full write or an emptying of it
+ * lands, or that one did. */
+void g_paste_storage_backend_diverge  (GPasteStorageBackend *self,
+                                       const gchar          *name);
+void g_paste_storage_backend_converge (GPasteStorageBackend *self,
+                                       const gchar          *name);
+
+/* That a write of @self left @item out of its store as too large for it, the
+ * rest of its history written around it; and whether a write of @self left
+ * @item out, that or the item being one @self does not store at all
+ * (g_paste_storage_backend_stores_item ()): what a reader checking the store
+ * holds every item it was handed has to excuse. And how many of @history's
+ * items a write of @self keeps, those it does not leave out, counted under
+ * one hold of the records. */
+void     g_paste_storage_backend_leave_out  (GPasteStorageBackend *self,
+                                             GPasteItem           *item);
+gboolean g_paste_storage_backend_left_out   (GPasteStorageBackend *self,
+                                             GPasteItem           *item);
+gint64   g_paste_storage_backend_count_kept (GPasteStorageBackend *self,
+                                             const GList          *history);
 
 /* How many times this process has let go of the storage lock
  * (g_paste_storage_backend_unlock ()), and g_paste_storage_backend_lock () from

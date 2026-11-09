@@ -5,11 +5,66 @@
  * shortcut row hand their setting, and what each leaves behind; and what the
  * storage buttons ask the daemon, and when. */
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-3/gpaste-client.h>
+
+#include <dlfcn.h>
+
+#include <gdk/x11/gdkx.h>
+
+#include <gpaste-gtk4/gpaste-gtk-preferences-widget.h>
 
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-preferences-group.c"
 #include "../../src/libgpaste/gpaste-gtk4/gpaste-gtk-shortcut-row.c"
+
+#define main preferences_main
+#include "../../src/preferences/gpaste-preferences.c"
+#undef main
+
+/* The translations the suite has, each holding an &, which a label read as
+ * markup would leave blank: the Storage group's description and a row the
+ * behaviour page builds by hand. */
+static const struct
+{
+    const gchar *msgid;
+    const gchar *translation;
+} translations[] = {
+    { "Choose how the history is stored on disk (plain or encrypted).", "Plain & encrypted storage" },
+    { "Enable the GNOME Shell Extension",                               "Shell & extension"         },
+};
+
+const gchar *
+g_dgettext (const gchar *domain,
+            const gchar *msgid)
+{
+    typedef const gchar *(*Dgettext) (const gchar *, const gchar *);
+    Dgettext original = (Dgettext) dlsym (RTLD_NEXT, "g_dgettext");
+
+    for (gsize i = 0; i < G_N_ELEMENTS (translations); ++i)
+    {
+        if (g_paste_str_equal (msgid, translations[i].msgid))
+            return translations[i].translation;
+    }
+
+    return original (domain, msgid);
+}
+
+/* The settings the last g_paste_settings_new () built: the preferences widget
+ * and dialog keep theirs to themselves. */
+static GPasteSettings *last_settings;
+
+GPasteSettings *
+g_paste_settings_new (void)
+{
+    typedef GPasteSettings *(*New) (void);
+    New original = (New) dlsym (RTLD_NEXT, "g_paste_settings_new");
+
+    g_assert_nonnull (original);
+
+    return last_settings = original ();
+}
 
 /* The client the storage buttons ask, faked: what the daemon's presence reads,
  * which calls went out, and the answer they wait for. */
@@ -156,6 +211,17 @@ counted_release (GApplication *app G_GNUC_UNUSED)
 
 static gboolean have_display;
 
+/* Whether libgpaste-gtk4's own dialog and widget cannot be built here, skipping
+ * the case if so: they register the library's GPasteGtkPreferencesGroup, which
+ * the copy compiled in above registers too wherever the library's calls do not
+ * reach the executable's -- under -Bsymbolic, or a link assuming no semantic
+ * interposition (tests/ui/meson.build). */
+static gboolean
+library_widgets_clash (void)
+{
+    return !g_paste_test_env_library_interposable ("The library's calls bind inside it, the group type registered twice");
+}
+
 /* @group in a window of its own, presented. */
 static GtkWindow *
 present_group (GPasteGtkPreferencesGroup *group)
@@ -166,6 +232,47 @@ present_group (GPasteGtkPreferencesGroup *group)
     gtk_window_present (window);
 
     return window;
+}
+
+/* What the rows and the groups show is plain text: an & a translation holds is
+ * shown as written, rather than a label Pango refuses, blank, with a warning. */
+static void
+test_plain_text (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    static const gchar *const shown[] = {
+        "Fish & chips", "Salt & vinegar", "Malt & cider", "Cod & haddock", "Tartare & lemon", "Pop & push", "Mushy & peas",
+    };
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    GPasteGtkPreferencesGroup *group = g_paste_gtk_preferences_group_new ("Fish & chips");
+    AdwSwitchRow *row = g_paste_gtk_preferences_group_add_boolean_setting (group, "Salt & vinegar", G_PASTE_TRACK_CHANGES_SETTING, settings);
+
+    adw_action_row_set_subtitle (ADW_ACTION_ROW (row), "Malt & cider");
+    g_paste_gtk_preferences_group_add_range_setting (group, "Cod & haddock", G_PASTE_MAX_HISTORY_SIZE_SETTING, 0, 1000, 1, settings);
+    g_paste_gtk_preferences_group_add_text_setting (group, "Tartare & lemon", G_PASTE_UPLOAD_COMMAND_SETTING, settings);
+    g_paste_gtk_preferences_group_add_shortcut_setting (group, "Pop & push", G_PASTE_POP_SETTING, settings);
+    g_paste_gtk_preferences_group_add_button (group, "Mushy & peas", NULL, NULL);
+
+    GtkWindow *window = present_group (group);
+
+    for (gsize i = 0; i < G_N_ELEMENTS (shown); ++i)
+        g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (window), shown[i]));
+    gtk_window_destroy (window);
+
+    if (library_widgets_clash ())
+        return;
+
+    window = GTK_WINDOW (gtk_window_new ());
+    gtk_window_set_child (window, g_paste_gtk_preferences_widget_new ());
+    gtk_window_present (window);
+    for (gsize i = 0; i < G_N_ELEMENTS (translations); ++i)
+        g_assert_true (g_paste_test_gtk_shows_label (GTK_WIDGET (window), translations[i].translation));
+    gtk_window_destroy (window);
 }
 
 /* A range row commits only a value its range takes: a field emptied, or
@@ -255,15 +362,18 @@ apply_shown (GtkWidget *widget)
     return FALSE;
 }
 
-static void
-drain (void)
+static gboolean
+apply_up (gconstpointer row,
+          gconstpointer arg G_GNUC_UNUSED)
 {
-    for (guint i = 0; i < 20; ++i)
-    {
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
-        g_usleep (10 * 1000);
-    }
+    return apply_shown ((GtkWidget *) row);
+}
+
+static gboolean
+row_says (gconstpointer row,
+          gconstpointer text)
+{
+    return g_paste_str_equal (gtk_editable_get_text ((GtkEditable *) row), text);
 }
 
 /* A write of the setting from elsewhere -- the row's own Reset to Default,
@@ -283,15 +393,20 @@ test_text_written_elsewhere (void)
     AdwEntryRow *row = g_paste_gtk_preferences_group_add_text_setting (group, "Command", G_PASTE_UPLOAD_COMMAND_SETTING, settings);
     GtkWindow *window = present_group (group);
 
-    drain ();
+    /* The apply button not coming is what nothing announces: the main context
+     * runs a while before each check that it is not up, on a mapped row. */
+    g_paste_test_bus_wait_until (g_paste_test_gtk_widget_mapped, row, NULL);
+    g_assert_true (gtk_widget_get_mapped (GTK_WIDGET (row)));
+    g_paste_test_bus_pump (200);
     g_assert_false (apply_shown (GTK_WIDGET (row)));
     g_paste_settings_set_upload_command (settings, "written elsewhere");
-    drain ();
+    g_paste_test_bus_wait_until (row_says, row, "written elsewhere");
     g_assert_cmpstr (gtk_editable_get_text (GTK_EDITABLE (row)), ==, "written elsewhere");
+    g_paste_test_bus_pump (200);
     g_assert_false (apply_shown (GTK_WIDGET (row)));
 
     gtk_editable_set_text (GTK_EDITABLE (row), "typed");
-    drain ();
+    g_paste_test_bus_wait_until (apply_up, row, NULL);
     g_assert_true (apply_shown (GTK_WIDGET (row)));
 
     gtk_window_destroy (window);
@@ -332,8 +447,9 @@ test_reset_menu_goes_with_row (void)
     gtk_window_destroy (window);
 }
 
-/* Shift is no modifier for a global shortcut: a key it is added to still types
- * or selects. A function key stands alone, Shift or not. */
+/* Shift is no modifier for a global shortcut with a key it leaves typing or
+ * selecting, and one with a key it leaves doing neither. A function key stands
+ * alone, Shift or not. */
 static void
 test_shortcut_shift_alone (void)
 {
@@ -341,11 +457,19 @@ test_shortcut_shift_alone (void)
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_exclam, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Return, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Left, GDK_SHIFT_MASK));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_KP_Home, GDK_SHIFT_MASK));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Tab, GDK_SHIFT_MASK));
     g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_v, 0));
+    g_assert_false (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Pause, 0));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_A, GDK_SHIFT_MASK | GDK_CONTROL_MASK));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_v, GDK_SUPER_MASK));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, 0));
     g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_F9, GDK_SHIFT_MASK));
+
+    /* With a key that neither types nor moves, Shift is a modifier. */
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Pause, GDK_SHIFT_MASK));
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Print, GDK_SHIFT_MASK));
+    g_assert_true (g_paste_gtk_shortcut_row_accepts (GDK_KEY_Menu, GDK_SHIFT_MASK));
 
     /* What is captured is the key pressed: a keypad key is no main-row one,
      * Shift+Tab's ISO_Left_Tab is Tab. */
@@ -542,6 +666,45 @@ test_storage_refused_without_window (void)
     g_test_trap_assert_stderr ("*Could not change the storage backend: Password selection could not be identified*");
 }
 
+/* A migration that fails once its preferences dialog is closed, with the
+ * application's window still up -- the graphical tool's, which the dialog was
+ * over -- says why on that window. */
+static void
+test_storage_refused_after_dialog (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GError) error = NULL;
+
+    application = G_APPLICATION (adw_application_new ("org.gnome.GPaste.Preferences.Storage", G_APPLICATION_NON_UNIQUE));
+    g_application_register (application, NULL, &error);
+    g_assert_no_error (error);
+
+    GtkWindow *window = GTK_WINDOW (adw_application_window_new (GTK_APPLICATION (application)));
+    StorageRows rows = present_storage_rows (settings, NULL);
+
+    gtk_window_present (window);
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    activate (rows.migration);
+    answer (g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "Password selection could not be identified"));
+
+    AdwDialog *dialog = adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (window));
+
+    g_assert_true (ADW_IS_ALERT_DIALOG (dialog));
+    g_assert_cmpstr (adw_alert_dialog_get_body (ADW_ALERT_DIALOG (dialog)), ==, "Password selection could not be identified");
+
+    g_object_unref (rows.page);
+    gtk_window_destroy (window);
+    g_clear_object (&application);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+}
+
 /* Nothing goes to a daemon that is not serving yet: the request waits for it,
  * the migration's gate unopened meanwhile, and gives up -- the button back,
  * the gate never opened -- when none comes. The application is held while the
@@ -665,6 +828,126 @@ test_passphrase_sensitivity (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_SETTING);
 }
 
+/* The standalone preferences' window is the application's: what a second
+ * launch raises, and what the shell matches to the desktop entry. */
+static void
+test_standalone_window (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GtkApplication) app = GTK_APPLICATION (adw_application_new ("org.gnome.GPaste.Preferences.Test", G_APPLICATION_NON_UNIQUE));
+
+    g_autofree gchar *prgname = g_strdup (g_get_prgname ());
+
+    g_application_register (G_APPLICATION (app), NULL, &error);
+    g_assert_no_error (error);
+    present_preferences (app);
+
+    GList *windows = gtk_application_get_windows (app);
+
+    g_assert_cmpuint (g_list_length (windows), ==, 1);
+
+    /* The window is realized by then: its WM_CLASS is the one the shell
+     * reads. */
+    GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (windows->data));
+    XClassHint hint = { 0 };
+
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    g_assert_true (XGetClassHint (gdk_x11_display_get_xdisplay (gdk_surface_get_display (surface)), gdk_x11_surface_get_xid (surface), &hint));
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    g_assert_cmpstr (hint.res_name, ==, "org.gnome.GPaste.Preferences.Test");
+    XFree (hint.res_name);
+    XFree (hint.res_class);
+
+    gtk_window_destroy (windows->data);
+    g_set_prgname (prgname);
+}
+
+static gboolean
+has_width (gconstpointer widget,
+           gconstpointer arg G_GNUC_UNUSED)
+{
+    return gtk_widget_get_width ((GtkWidget *) widget) > 0;
+}
+
+/* The embeddable widget comes up without libadwaita warning that its
+ * breakpoint bin was given no least size. */
+static void
+test_widget_presented (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    GtkWindow *window = GTK_WINDOW (gtk_window_new ());
+    GtkWidget *widget = g_paste_gtk_preferences_widget_new ();
+
+    gtk_window_set_child (window, widget);
+    gtk_window_present (window);
+    g_paste_test_bus_wait_until (has_width, widget, NULL);
+    g_assert_cmpint (gtk_widget_get_width (widget), >, 0);
+    gtk_window_destroy (window);
+}
+
+static void
+record_order (gpointer data,
+              GObject *where_the_object_was)
+{
+    GPtrArray *order = data;
+
+    g_ptr_array_add (order, where_the_object_was);
+}
+
+/* The rows of the widget or the dialog bind to their settings without holding
+ * a reference: letting go of either lets go of every row before the settings,
+ * the last page's included -- a row holding a reference of its own on them, as
+ * the passphrase row does, keeps them past the first row whatever the order.
+ * The dialog is presented first, which is when it puts its pages up. */
+static void
+test_settings_go_last (gconstpointer user_data)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+    if (library_widgets_clash ())
+        return;
+
+    gboolean dialog = GPOINTER_TO_INT (user_data);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    GtkWidget *preferences = (dialog) ? GTK_WIDGET (g_paste_gtk_preferences_dialog_new (NULL)) : g_paste_gtk_preferences_widget_new ();
+    GPasteSettings *settings = last_settings;
+    g_autoptr (GPtrArray) order = g_ptr_array_new ();
+
+    if (dialog)
+        adw_dialog_present (ADW_DIALOG (preferences), GTK_WIDGET (window));
+    else
+        adw_window_set_content (ADW_WINDOW (window), preferences);
+    gtk_window_present (window);
+
+    g_autoptr (GPtrArray) rows = g_paste_test_gtk_find_all (preferences, ADW_TYPE_PREFERENCES_ROW);
+
+    g_assert_cmpuint (rows->len, >, 1);
+    for (guint i = 0; i < rows->len; ++i)
+        g_object_weak_ref (rows->pdata[i], record_order, order);
+    g_object_weak_ref (G_OBJECT (settings), record_order, order);
+    gtk_window_destroy (window);
+    g_assert_cmpuint (order->len, ==, rows->len + 1);
+    g_assert_true (order->pdata[rows->len] == (gpointer) settings);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -678,15 +961,21 @@ main (int argc, char *argv[])
     g_test_add_func ("/preferences/text/applied", test_text_applied);
     g_test_add_func ("/preferences/text/written-elsewhere", test_text_written_elsewhere);
     g_test_add_func ("/preferences/reset-menu/goes-with-row", test_reset_menu_goes_with_row);
+    g_test_add_func ("/preferences/plain-text", test_plain_text);
     g_test_add_func ("/preferences/shortcut/shift-alone", test_shortcut_shift_alone);
     g_test_add_func ("/preferences/shortcut/disarmed-on-leave", test_shortcut_disarmed_on_leave);
     g_test_add_func ("/preferences/shortcut/disposed", test_shortcut_disposed);
     g_test_add_func ("/preferences/storage/refused", test_storage_refused);
+    g_test_add_func ("/preferences/storage/refused-after-dialog", test_storage_refused_after_dialog);
     g_test_add_func ("/preferences/storage/refused-without-window", test_storage_refused_without_window);
     g_test_add_func ("/preferences/storage/refused-without-window/subprocess", test_storage_refused_without_window_subprocess);
     g_test_add_func ("/preferences/storage/waits-for-daemon", test_storage_waits_for_daemon);
     g_test_add_func ("/preferences/passphrase/refused", test_passphrase_refused);
     g_test_add_func ("/preferences/passphrase/sensitivity", test_passphrase_sensitivity);
+    g_test_add_func ("/preferences/standalone/application-window", test_standalone_window);
+    g_test_add_func ("/preferences/widget/presented", test_widget_presented);
+    g_test_add_data_func ("/preferences/widget/settings-go-last", GINT_TO_POINTER (FALSE), test_settings_go_last);
+    g_test_add_data_func ("/preferences/dialog/settings-go-last", GINT_TO_POINTER (TRUE), test_settings_go_last);
 
     return g_paste_test_env_run ();
 }

@@ -189,10 +189,12 @@ gtk_accel_to_portal_trigger (const gchar *accel)
     if (!gtk_accelerator_parse (accel, &keyval, &mods) || !keyval)
         return NULL;
 
-    /* Settings written by an older GPaste (or by hand) can name the keypad
-     * variant of a key; the portal takes one name, so give it the primary
-     * spelling of the alias group rather than whichever one was stored. The
-     * capture side has to agree, which is why the rule is shared. */
+    /* Settings written by an older GPaste (or by hand) can name an alias of a
+     * key -- ISO_Left_Tab for Tab, ISO_Enter for Return; the portal takes one
+     * name, so give it the primary spelling of the alias group rather than
+     * whichever one was stored. A keypad key is a key of its own, and keeps
+     * its name (g_paste_keyval_canonicalize ()). The capture side has to agree,
+     * which is why the rule is shared. */
     keyval = g_paste_keyval_canonicalize (keyval);
 
     const gchar *key_name = gdk_keyval_name (keyval);
@@ -261,24 +263,24 @@ build_shortcuts_variant (GPasteGlobalShortcutClient *self)
 
 struct _PortalRequestData
 {
-    GWeakRef                       client;            /* weakly: see portal_request_data_new () */
-    GTask                         *task;
-    GDBusConnection               *connection;
-    GCancellable                  *cancellable;
-    gchar                         *request_path;      /* the Request we are subscribed to */
-    gchar                         *owner;             /* the portal this request went to, %NULL while nobody owns the name */
-    guint                          signal_id;
-    guint                          owner_signal_id;  /* unique subscription added when activation supplies an owner */
-    GDBusSignalCallback            response_callback;
-    guint                          activation_watch; /* finds the owner even if the client is disposed during activation */
-    guint                          owner_watch;      /* the unique owner dying ends even retired creates */
-    guint64                        generation;        /* the generation this request was made for */
-    gboolean                       awaiting_response; /* the method replied: only Response is left */
-    gboolean                       responded;         /* Response came first: only the method reply is left */
-    gboolean                       creates_session;   /* its Response is what a session handle arrives on */
-    gboolean                       retired;           /* kept only for the session it may still be answered with */
-    gboolean                       returned;          /* its task has been answered, and may not be answered twice */
-    guint                          retire_source;     /* gives up on a retired request the portal never answers */
+    GWeakRef            client;            /* weakly: see portal_request_data_new () */
+    GTask              *task;
+    GDBusConnection    *connection;
+    GCancellable       *cancellable;
+    gchar              *request_path;      /* the Request we are subscribed to */
+    gchar              *owner;             /* the portal this request went to, %NULL while nobody owns the name */
+    guint               signal_id;
+    guint               owner_signal_id;   /* unique subscription added when activation supplies an owner */
+    GDBusSignalCallback response_callback;
+    guint               activation_watch;  /* finds the owner even if the client is disposed during activation */
+    guint               owner_watch;       /* the unique owner dying ends even retired creates */
+    guint64             generation;        /* the generation this request was made for */
+    gboolean            awaiting_response; /* the method replied: only Response is left */
+    gboolean            responded;         /* Response came first: only the method reply is left */
+    gboolean            creates_session;   /* its Response is what a session handle arrives on */
+    gboolean            retired;           /* kept only for the session it may still be answered with */
+    gboolean            returned;          /* its task has been answered, and may not be answered twice */
+    guint               retire_source;     /* gives up on a retired request the portal never answers */
 };
 
 static _PortalRequestData *
@@ -353,9 +355,7 @@ portal_request_data_free (_PortalRequestData *data)
      * dispose () drops the list itself, and a request that outlives it frees
      * itself here without ever reading it. */
     if (client)
-    {
         client->requests = g_slist_remove (client->requests, data);
-    }
 
     g_clear_handle_id (&data->retire_source, g_source_remove);
     g_clear_handle_id (&data->owner_watch, g_bus_unwatch_name);
@@ -371,6 +371,8 @@ portal_request_data_free (_PortalRequestData *data)
     g_clear_pointer (&data->owner, g_free);
     g_free (data);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_PortalRequestData, portal_request_data_free)
 
 /* The portal builds the Request object path from our unique name and the
  * handle_token we hand it, and it is free to emit Response before the method
@@ -518,9 +520,9 @@ portal_request_return_boolean (_PortalRequestData *data,
 typedef struct
 {
     GDBusConnection *connection;
-    gchar *handle;
-    gchar *owner;
-    guint retries;
+    gchar           *handle;
+    gchar           *owner;
+    guint            retries;
 } PortalCloseData;
 
 static void
@@ -855,7 +857,6 @@ on_session_closed_signal (GDBusConnection *connection G_GNUC_UNUSED,
     if (!self)
         return;
 
-
     if (!g_paste_str_equal (path, self->session_handle) ||
         !g_paste_str_equal (sender, self->session_owner))
         return;
@@ -1056,9 +1057,7 @@ on_session_created (GDBusConnection *conn G_GNUC_UNUSED,
          * (2) must not disable recovery when the portal restarts. A superseded
          * request says nothing about the set we hold now. */
         if (!data->retired && portal_request_is_current (data, self))
-        {
             self->session_revoked = response == 1;
-        }
 
         portal_request_take_error (data, g_error_new (G_IO_ERROR,
             data->retired || !portal_request_is_current (data, self) ? G_IO_ERROR_CANCELLED : G_IO_ERROR_FAILED,
@@ -1100,7 +1099,6 @@ on_session_created (GDBusConnection *conn G_GNUC_UNUSED,
         portal_request_done (data);
         return;
     }
-
 
     g_set_str (&self->session_handle, handle);
 
@@ -1239,7 +1237,7 @@ start_create_session_async (GPasteGlobalShortcutClient *self,
 typedef struct
 {
     GWeakRef client;
-    guint64 generation;
+    guint64  generation;
 } PortalBindData;
 
 static void
@@ -1250,12 +1248,14 @@ portal_bind_data_free (gpointer user_data)
     g_weak_ref_clear (&data->client);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PortalBindData, portal_bind_data_free)
+
 static gboolean retry_grab_all (gpointer user_data);
 
 static void
-on_bind_done (GObject      *source   G_GNUC_UNUSED,
-                       GAsyncResult *result,
-                       gpointer      user_data G_GNUC_UNUSED)
+on_bind_done (GObject      *source    G_GNUC_UNUSED,
+              GAsyncResult *result,
+              gpointer      user_data G_GNUC_UNUSED)
 {
     GTask *task = G_TASK (result);
     /* Weakly, and through the task's own data rather than its source object: a
@@ -1269,7 +1269,6 @@ on_bind_done (GObject      *source   G_GNUC_UNUSED,
 
     if (!self)
         return;
-
 
     if (!self->shortcuts || data->generation != self->generation)
         return;
@@ -1352,7 +1351,6 @@ retry_grab_all (gpointer user_data)
 
     if (!self)
         return G_SOURCE_REMOVE;
-
 
     self->retry_source = 0;
 
@@ -1462,11 +1460,13 @@ g_paste_global_shortcut_client_g_signal (GDBusProxy  *proxy,
         const gchar *shortcut_id;
         guint64 timestamp G_GNUC_UNUSED;
         g_autoptr (GVariant) options = NULL;
+        const gchar *activation_token = NULL;
         g_variant_get (parameters, "(&o&st@a{sv})",
                        &session_handle, &shortcut_id, &timestamp, &options);
+        g_variant_lookup (options, "activation_token", "&s", &activation_token);
 
         if (g_paste_str_equal (session_handle, self->session_handle))
-            g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id);
+            g_signal_emit (self, signals[KEYBINDING_ACTIVATED], 0, shortcut_id, activation_token);
     }
 }
 
@@ -1582,6 +1582,8 @@ g_paste_global_shortcut_client_class_init (GPasteGlobalShortcutClientClass *klas
      * GPasteGlobalShortcutClient::keybinding-activated:
      * @client: the object on which the signal was emitted
      * @id: the id of the activated shortcut (its dconf key)
+     * @activation_token: (nullable): the token the portal handed with it, which
+     *     a window opened in answer is raised with
      *
      * The "keybinding-activated" signal is emitted when a registered shortcut
      * is pressed by the user.
@@ -1592,9 +1594,10 @@ g_paste_global_shortcut_client_class_init (GPasteGlobalShortcutClientClass *klas
                                                   0,
                                                   NULL, /* accumulator */
                                                   NULL, /* accumulator data */
-                                                  g_cclosure_marshal_VOID__STRING,
+                                                  NULL, /* marshaller */
                                                   G_TYPE_NONE,
-                                                  1,
+                                                  2,
+                                                  G_TYPE_STRING,
                                                   G_TYPE_STRING);
 }
 

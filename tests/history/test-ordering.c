@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include "gpaste-test-history.h"
+
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
@@ -47,6 +49,7 @@ static Barrier barrier;
 static gboolean (*real_write) (GPasteStorageBackend *, const gchar *, const GList *);
 static gboolean (*real_read) (GPasteStorageBackend *, const gchar *, GCancellable *, GList **, gsize *);
 static void (*real_add_item) (GPasteStorageBackend *, const gchar *, GPasteItem *, const GList *);
+static void (*real_clear) (GPasteStorageBackend *, const gchar *, const GList *);
 
 /* Holds the worker writing @name, when the case asked for that, until the case
  * releases it; answers whether it did. */
@@ -120,6 +123,9 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *backend,
     return written;
 }
 
+/* How many incremental adds carried a snapshot of the history to reconcile. */
+static guint adds_with_snapshot;
+
 /* What an incremental backend is handed for an add, held the same way. */
 void
 g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
@@ -129,7 +135,22 @@ g_paste_storage_backend_add_item (GPasteStorageBackend *backend,
 {
     gboolean held = hold_write (name, history);
 
+    if (history)
+        ++adds_with_snapshot;
+
     real_add_item (backend, name, item, history);
+    mark_written (held);
+}
+
+/* What an incremental backend is handed for an emptying, held the same way. */
+void
+g_paste_storage_backend_clear_history (GPasteStorageBackend *backend,
+                                       const gchar          *name,
+                                       const GList          *history)
+{
+    gboolean held = hold_write (name, history);
+
+    real_clear (backend, name, history);
     mark_written (held);
 }
 
@@ -209,20 +230,6 @@ release_eventually (gpointer data G_GNUC_UNUSED)
 }
 
 static gboolean
-history_loaded (gconstpointer data,
-                gconstpointer arg G_GNUC_UNUSED)
-{
-    return !g_paste_history_is_loading ((GPasteHistory *) data);
-}
-
-static void
-wait_load (GPasteHistory *history)
-{
-    g_paste_test_bus_wait_until (history_loaded, history, NULL);
-    g_assert_false (g_paste_history_is_loading (history));
-}
-
-static gboolean
 is_released (void)
 {
     g_mutex_lock (&barrier.mutex);
@@ -236,8 +243,7 @@ static void
 finish_history (GPasteHistory *history)
 {
     g_paste_history_flush (history);
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
 }
 
 /* A history called @name holding one stored item in @storage, loaded, with
@@ -249,21 +255,9 @@ fixture_in (GPasteSettings       **settings,
             const gchar           *name,
             GPasteStorage          storage)
 {
+    /* Every case starts from the schema's defaults. */
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
     *settings = g_paste_settings_new ();
-
-    /* The keys the history and its storage read, back to the schema's defaults:
-     * the memory backend is shared by the whole binary, so a key one case set
-     * would otherwise reach every case after it. A key the code under test
-     * comes to read belongs here too. */
-    static const gchar *reset_keys[] = {
-        G_PASTE_GROWING_LINES_SETTING, G_PASTE_HISTORY_NAME_SETTING, G_PASTE_IMAGES_SUPPORT_SETTING,
-        G_PASTE_MAX_HISTORY_SIZE_SETTING, G_PASTE_MAX_MEMORY_USAGE_SETTING, G_PASTE_MAX_TEXT_ITEM_SIZE_SETTING,
-        G_PASTE_MIN_TEXT_ITEM_SIZE_SETTING, G_PASTE_PASSWORD_TIMEOUT_SETTING, G_PASTE_RICH_TEXT_SUPPORT_SETTING,
-        G_PASTE_TRIM_ITEMS_SETTING,
-    };
-
-    for (guint i = 0; i < G_N_ELEMENTS (reset_keys); ++i)
-        g_paste_settings_reset (*settings, reset_keys[i]);
     g_paste_settings_set_growing_lines (*settings, FALSE);
     g_paste_settings_set_storage_backend (*settings, storage);
     *backend = g_paste_storage_backend_new (storage, *settings);
@@ -455,20 +449,6 @@ leave_with_write_out (GPasteHistory *history,
     wait_load (history);
 }
 
-/* As in test-history.c. */
-static void
-backup_history (const GPasteDaemonMethods *methods,
-                const gchar               *history,
-                const gchar               *backup,
-                GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_backup_history_async (methods, history, backup, g_paste_test_env_keep_result, &result);
-    g_paste_test_env_wait_result (&result);
-    g_paste_daemon_methods_backup_history_finish (result, error);
-}
-
 /* The current history is backed up from its model, which holds what is still
  * on its way to the store, in the background: the call holds the main thread
  * for none of the writes out, and the copy lands behind them, its write coming
@@ -494,8 +474,7 @@ test_backup_current (void)
     written_after_held = "backup-current-copy";
     g_paste_daemon_methods_backup_history_async (&methods, "backup-current", "backup-current-copy", g_paste_test_env_keep_result, &result);
     g_assert_false (is_released ());
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     g_assert_null (result);
     release_worker ();
     g_thread_join (g_steal_pointer (&release));
@@ -681,10 +660,6 @@ test_backup_other (void)
     g_assert_cmpstr (g_paste_item_get_real_value (items->data), ==, "accepted");
 }
 
-static void empty_history (const GPasteDaemonMethods *methods,
-                           const gchar               *name,
-                           GError                   **error);
-
 /* A history a backup still queued reads is not deleted, nor the one it writes
  * emptied, until the copy has landed: drained first, the copy would run on the
  * main thread, and left behind the unlink it would read a store that is gone
@@ -758,28 +733,6 @@ test_backup_loading (void)
     g_autofree gchar *path = g_paste_storage_backend_get_history_file_path (backend, "backup-loading-copy");
 
     g_assert_false (g_file_test (path, G_FILE_TEST_EXISTS));
-}
-
-static void
-on_emptied (GObject      *source G_GNUC_UNUSED,
-            GAsyncResult *result,
-            gpointer      user_data)
-{
-    g_set_object ((GAsyncResult **) user_data, result);
-}
-
-/* EmptyHistory, waited for as its D-Bus answer is. */
-static void
-empty_history (const GPasteDaemonMethods *methods,
-               const gchar               *name,
-               GError                   **error)
-{
-    g_autoptr (GAsyncResult) result = NULL;
-
-    g_paste_daemon_methods_empty_history_async (methods, name, on_emptied, &result);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
-    g_paste_daemon_methods_empty_history_finish (result, error);
 }
 
 /* An emptied current history is backed up empty, from its model like any
@@ -875,12 +828,11 @@ test_empty_other_off_main_loop (void)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "emptied-elsewhere", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "emptied-elsewhere", g_paste_test_env_keep_result, &result);
     wait_worker ();
     g_assert_null (result);
     release_worker ();
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
     g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
     g_assert_no_error (error);
     finish_history (history);
@@ -915,7 +867,7 @@ test_empty_other_then_switch (void)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "empty-then-switch-to", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-then-switch-to", g_paste_test_env_keep_result, &result);
     wait_worker ();
     g_paste_history_switch (history, "empty-then-switch-to");
 
@@ -923,8 +875,7 @@ test_empty_other_then_switch (void)
 
     wait_load (history);
     g_thread_join (g_steal_pointer (&release));
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
     g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
     g_assert_no_error (error);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
@@ -955,7 +906,7 @@ test_empty_other_flushed (void)
     const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
     g_autoptr (GAsyncResult) result = NULL;
 
-    g_paste_daemon_methods_empty_history_async (&methods, "empty-flushed", on_emptied, &result);
+    g_paste_daemon_methods_empty_history_async (&methods, "empty-flushed", g_paste_test_env_keep_result, &result);
     wait_worker ();
 
     g_autoptr (GThread) release = g_thread_new ("release-emptying", release_later, NULL);
@@ -966,8 +917,7 @@ test_empty_other_flushed (void)
     g_autolist (GPasteItem) items = read_items (backend, "empty-flushed");
 
     g_assert_null (items);
-    while (!result)
-        g_main_context_iteration (NULL, TRUE);
+    g_paste_test_env_wait_result (&result);
 }
 
 /* Another history is emptied in the flavour the history runs on, as it is
@@ -1276,6 +1226,98 @@ test_count_pending_incremental (void)
 }
 #endif
 
+#ifdef G_PASTE_ENABLE_SQLITE
+/* Another history emptied is counted as empty while its emptying is still
+ * out: the daemon has answered it as emptied, and a listing counting the store
+ * would paint the old count back over the 0. */
+static void
+test_count_pending_emptied_other (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture (&settings, &backend, &history, "count-stays-current");
+
+    g_autolist (GPasteItem) other = g_list_prepend (NULL, g_paste_text_item_new ("other stored item"));
+
+    real_write (backend, "count-emptied-elsewhere", other);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 1);
+    g_mutex_lock (&barrier.mutex);
+    barrier.name = "count-emptied-elsewhere";
+    barrier.hold_write = TRUE;
+    g_mutex_unlock (&barrier.mutex);
+
+    g_autoptr (GPasteDaemon3) skeleton = g_paste_daemon3_skeleton_new ();
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .skeleton = skeleton };
+    g_autoptr (GAsyncResult) result = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_empty_history_async (&methods, "count-emptied-elsewhere", g_paste_test_env_keep_result, &result);
+    wait_worker ();
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 0);
+    release_worker ();
+    g_paste_test_env_wait_result (&result);
+    g_assert_true (g_paste_daemon_methods_empty_history_finish (result, &error));
+    g_assert_no_error (error);
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied-elsewhere"), ==, 0);
+}
+
+/* An incremental store's emptying carries no snapshot either, and a history
+ * emptied and left before it lands holds nothing all the same, whatever its
+ * store still holds. */
+static void
+test_count_pending_emptied (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+    g_autoptr (GError) error = NULL;
+
+    fixture_in (&settings, &backend, &history, "count-emptied", G_PASTE_STORAGE_SQLITE);
+    g_paste_history_add (history, g_paste_text_item_new ("first"));
+    g_paste_history_add (history, g_paste_text_item_new ("second"));
+    finish_history (history);
+    g_paste_history_resume (history);
+
+    barrier.hold_write = TRUE;
+    g_assert_true (g_paste_history_empty (history, &error));
+    g_assert_no_error (error);
+    wait_worker ();
+    g_paste_history_switch (history, "count-emptied-next");
+
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied"), ==, 0);
+    release_worker ();
+    wait_load (history);
+    finish_history (history);
+    g_assert_cmpuint (g_paste_history_get_size (history, "count-emptied"), ==, 0);
+}
+
+/* Selecting an item moves it and displaces nothing: its write carries no copy
+ * of the whole history to reconcile, which nothing could be dropped by. */
+static void
+test_select_carries_no_snapshot (void)
+{
+    g_autoptr (GPasteSettings) settings = NULL;
+    g_autoptr (GPasteStorageBackend) backend = NULL;
+    g_autoptr (GPasteHistory) history = NULL;
+
+    fixture_in (&settings, &backend, &history, "select-no-snapshot", G_PASTE_STORAGE_SQLITE);
+    g_paste_history_add (history, g_paste_text_item_new ("first"));
+    g_paste_history_add (history, g_paste_text_item_new ("second"));
+    finish_history (history);
+    g_paste_history_resume (history);
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 2)));
+
+    adds_with_snapshot = 0;
+    g_assert_true (g_paste_history_select (history, uuid));
+    finish_history (history);
+    g_assert_cmpuint (adds_with_snapshot, ==, 0);
+}
+#endif
+
 /* A password renamed while a write holding it is out: the write stores the
  * name and timeout it was recorded with, the rename putting a new item in its
  * place rather than writing over the one a worker reads. */
@@ -1394,8 +1436,10 @@ main (int    argc,
     real_write = dlsym (RTLD_NEXT, "g_paste_storage_backend_write_history");
     real_read = dlsym (RTLD_NEXT, "g_paste_storage_backend_read_history");
     real_add_item = dlsym (RTLD_NEXT, "g_paste_storage_backend_add_item");
+    real_clear = dlsym (RTLD_NEXT, "g_paste_storage_backend_clear_history");
     g_assert_nonnull (real_write);
     g_assert_nonnull (real_read);
+    g_assert_nonnull (real_clear);
     g_assert_nonnull (real_add_item);
 
     g_test_add_func ("/history-ordering/delete-pending", test_delete_pending);
@@ -1426,6 +1470,9 @@ main (int    argc,
 #ifdef G_PASTE_ENABLE_SQLITE
     g_test_add_func ("/history-ordering/count-pending-password-changes", test_count_pending_password_changes);
     g_test_add_func ("/history-ordering/count-pending-incremental", test_count_pending_incremental);
+    g_test_add_func ("/history-ordering/count-pending-emptied", test_count_pending_emptied);
+    g_test_add_func ("/history-ordering/count-pending-emptied-other", test_count_pending_emptied_other);
+    g_test_add_func ("/history-ordering/select-no-snapshot", test_select_carries_no_snapshot);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-images-off", GINT_TO_POINTER (COUNT_INCREMENTAL | COUNT_IMAGES), test_count_pending_settings);
     g_test_add_data_func ("/history-ordering/count-pending-incremental-capped", GINT_TO_POINTER (COUNT_INCREMENTAL), test_count_pending_settings);
 #endif

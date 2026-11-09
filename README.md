@@ -103,7 +103,7 @@ On Debian, Ubuntu and other deb-based distributions:
 # Build dependencies
 sudo apt install meson ninja-build build-essential pkg-config gettext \
                  libglib2.0-dev libgtk-4-dev libadwaita-1-dev libgcr-4-dev \
-                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center \
+                 libxfixes-dev libdbus-1-dev systemd-dev gnome-control-center-dev \
                  gobject-introspection libgirepository1.0-dev valac
 # and the libmutter-N-dev of the mutter GNOME Shell runs on
 
@@ -119,7 +119,8 @@ three, and without the extension and the bindings.
 dbus, systemd and gnome-control-center are wanted for their pkg-config files
 alone, which say where the D-Bus service and interface files, the systemd user
 unit and the control-center keybinding files go. Fedora ships systemd's in the
-base package, which is why only the apt line names it. A packager who would
+base package, which is why only the apt line names it, and Debian ships
+gnome-control-center's in its -dev package. A packager who would
 rather not pull any of them in can name the four directories outright —
 `-Ddbus-services-dir`, `-Ddbus-interfaces-dir`, `-Dsystemd-user-unit-dir` and
 `-Dcontrol-center-keybindings-dir` — and dbus and gnome-control-center are still
@@ -130,11 +131,15 @@ Then, wherever you are:
 ```bash
 git clone https://github.com/Keruspe/GPaste.git
 cd GPaste
-meson setup build
+meson setup build --prefix=/usr
 ninja -C build
 sudo ninja -C build install
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
+
+`--prefix=/usr` puts GPaste where the system looks for it: under meson's default
+`/usr/local`, distributions like Fedora find neither its libraries nor its
+typelibs, and the schemas compiled above would be another directory's.
 
 GPaste currently needs GLib 2.90, GTK 4.24, libadwaita 1.10, gcr 4 and Meson
 1.9. That libadwaita is newer than anything Debian ships outside experimental,
@@ -181,7 +186,7 @@ meson setup build -Dgnome-shell=false -Dintrospection=false -Dvapi=false
 All of them are configurable in the preferences.
 
 Uploading runs whatever the `upload-command` preference names, defaulting to
-`curl -sS --data-binary @- https://paste.rs`. Any command that takes the item on its
+`curl -sS --data-binary @- https://paste.c-net.org/`. Any command that takes the item on its
 standard input and answers the url on its standard output will do —
 `wgetpaste`, `pastebinit` and `nc termbin.com 9999` among them.
 
@@ -193,6 +198,7 @@ Inside the graphical tool, which has a few of its own:
 | <kbd>Ctrl</kbd>+<kbd>N</kbd> | Add a new item |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> | Add a new password |
 | <kbd>Ctrl</kbd>+<kbd>0</kbd>…<kbd>9</kbd> | Paste the item at that index |
+| <kbd>Delete</kbd> | Delete the history focused in the sidebar |
 | <kbd>Ctrl</kbd>+<kbd>,</kbd> | Show the preferences |
 | <kbd>Ctrl</kbd>+<kbd>?</kbd> | Show the keyboard shortcuts |
 | <kbd>Ctrl</kbd>+<kbd>W</kbd> or <kbd>Esc</kbd> | Close the window |
@@ -236,8 +242,8 @@ gpaste-client daemon-version   # confirm which one is running
 
 ## Development
 
-Three libraries are installed, each with its own pkg-config file, headers,
-GIR and VAPI:
+Three libraries are installed, each with its own pkg-config file, headers
+and GIR, and a VAPI for `gpaste-3` and `gpaste-gtk4`:
 
 | Library | pkg-config | GIR | Contents |
 |---|---|---|---|
@@ -257,11 +263,11 @@ ninja -C build test
 Each C test binary runs on its own in-memory settings and private D-Bus, so it
 needs `dbus-daemon`; a supervisor reaps that bus even if a test crashes. The UI
 tests open their windows on a private `Xvfb` and are skipped without it. The
-`history-switcher` and `indicator` JavaScript tests use Node.js with actor and
-bus doubles. They check history switcher drafts, dialogs, counts and focus,
-plus the indicator's daemon status, item actions, upload callbacks and teardown.
-They are omitted when Node.js is unavailable and touch no settings, bus or
-display. None of the tests touches the desktop session.
+GNOME Shell extension's JavaScript tests (`tests/gnome-shell/`) run its modules
+under Node.js with actor and bus doubles: the menu, its rows and their actions,
+the history switcher, the tracking switch, the storage prompt, the in-shell
+daemon's runner and the extension's own enable and disable. They are omitted
+when Node.js is unavailable and touch no settings, bus or display. None of the tests touches the desktop session.
 
 [`AGENTS.md`](AGENTS.md) documents the coding style and repository
 conventions in more detail, and each part of the tree has an `AGENTS.md` of its
@@ -288,8 +294,8 @@ or through [PayPal](https://paypal.me/keruspe/) if you are not on GitHub.
 ## Releases
 
 The latest release for GNOME 51 is
-[GPaste 51.2](https://www.imagination-land.org/posts/2026-10-26-gpaste-51.2-released.html)
-([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.2.tar.xz)).
+[GPaste 51.3](https://www.imagination-land.org/posts/2026-11-02-gpaste-51.3-released.html)
+([tarball](https://www.imagination-land.org/files/gpaste/GPaste-51.3.tar.xz)).
 
 Release announcements and everything else about GPaste are
 [on my blog](https://www.imagination-land.org/tags/GPaste.html). See

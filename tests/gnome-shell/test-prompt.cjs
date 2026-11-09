@@ -8,13 +8,14 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const {Signals, loadShipped, shipped} = require('./suite.cjs');
 
 const errors = [];
 const dialogs = [];
 
-// Signals as the shell's actors carry them, enough to emit one by hand.
-class Actor {
+class Actor extends Signals {
     constructor(params = {}) {
+        super();
         Object.assign(this, params);
         this.children = [];
         this.visible = true;
@@ -22,17 +23,6 @@ class Actor {
     }
 
     add_child(child) { this.children.push(child); }
-
-    connect(signal, handler) {
-        (this._handlers ??= []).push({signal, handler});
-    }
-
-    emit(signal) {
-        for (const {signal: name, handler} of this._handlers ?? []) {
-            if (name === signal)
-                handler(this);
-        }
-    }
 
     get_text() { return ''; }
 }
@@ -52,7 +42,12 @@ class ModalDialog extends Actor {
         dialogs.push(this);
     }
 
-    addButton(params) { return new Actor(params); }
+    addButton(params) {
+        const button = new Actor(params);
+
+        (this.buttons ??= []).push(button);
+        return button;
+    }
     setInitialKeyFocus() {}
     open() { this.opened = true; return true; }
     close() { this.emit('closed'); this.destroy(); }
@@ -89,28 +84,45 @@ const context = vm.createContext({
             storage_label: storage => `storage ${storage}`,
             can_import: () => false,
             backend_changes: () => false,
-            remember_state: () => [false, false],
+            cleanup_warns: () => false,
+            remember_state: () => [false, true],
+            // What it was asked, to be told apart from anything prompt.js
+            // would decide for itself.
+            remember_answer: (switchOn, canForget) => `answer(${switchOn}, ${canForget})`,
         },
         PromptText: new Proxy({}, {get: (target, name) => name}),
         StorageRemember: {UNCHANGED: 0, YES: 1, NO: 2},
         prompt_text: text => text,
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace(/^export const /gm, 'const ');
-vm.runInContext(`${source}\nthis.Prompt = GPasteShellPrompt;`, context);
+loadShipped(context, {Prompt: 'GPasteShellPrompt'});
 
 function request() {
     return {
         answers: [],
         get_confirm: () => true,
         get_description: () => null,
+        // What the C side works out, marked as remember_answer () is.
+        get_shown_description() { return `shown(${this.get_description() ?? this.get_confirm()})`; },
+        get_accept_label() { return `accept(${this.get_confirm()})`; },
         get_error_message: () => null,
         get_remember: () => 0,
         offers_remember: () => false,
-        reply_passphrase(passphrase) { this.answers.push(passphrase); },
+        reply_passphrase(passphrase, remember) {
+            this.answers.push(passphrase);
+            this.remember = remember;
+        },
         dismiss() { this.answers.push('dismissed'); },
     };
+}
+
+function confirmRequest() {
+    return Object.assign(request(), {
+        get_title: () => 'Delete?',
+        get_description: () => 'Images go',
+        get_accept_label: () => 'Delete',
+        reply_confirm() { this.answers.push('confirmed'); },
+    });
 }
 
 // The actors under @actor, depth first.
@@ -119,6 +131,11 @@ function* actors(actor) {
         yield child;
         yield* actors(child);
     }
+}
+
+// A migration offering the one backend in use, and keeping it.
+function migrationRequest() {
+    return Object.assign(request(), {get_current: () => 0, get_offered: () => [0], can_keep: () => true});
 }
 
 const prompt = new context.Prompt();
@@ -158,6 +175,30 @@ assert.equal(dialogs.length, 3);
 assert.ok(dialogs.slice(1).every(dialog => dialog.opened));
 dialogs.slice(1).forEach(dialog => dialog.close());
 
+// A confirmation shows what its caller worded, Cancel being its default and
+// Escape's, and answers yes from its other button alone: closed, it declines.
+{
+    const accepted = confirmRequest();
+
+    prompt.vfunc_confirm(accepted);
+
+    const dialog = dialogs.at(-1);
+    const [message] = dialog.contentLayout.children;
+
+    assert.equal(message.title, 'Delete?');
+    assert.equal(message.description, 'Images go');
+    assert.deepEqual(dialog.buttons.map(button => [button.label, Boolean(button.default), button.key]),
+        [['CANCEL', true, 0], ['Delete', false, undefined]]);
+    dialog.buttons[1].action();
+    assert.deepEqual(accepted.answers, ['confirmed']);
+
+    const declined = confirmRequest();
+
+    prompt.vfunc_confirm(declined);
+    dialogs.at(-1).buttons[0].action();
+    assert.deepEqual(declined.answers, ['dismissed']);
+}
+
 // Shut down while one waits: the question is dismissed rather than left
 // pending, the report goes to the log, and the session is no longer watched.
 sessionMode.update(true);
@@ -169,7 +210,55 @@ prompt.shutdown();
 assert.deepEqual(abandoned.answers, ['dismissed']);
 assert.deepEqual(errors, ['GPaste: Title: Message']);
 assert.equal(sessionMode.handler, null);
-assert.equal(dialogs.length, 3);
+assert.equal(dialogs.length, 5);
+
+// Asked anything once shut down, unlocked or not -- the storage layer asking
+// again as a dismissal unblocks it -- it puts no dialog up: a question is
+// dismissed and a report goes to the log.
+for (const locked of [false, true]) {
+    sessionMode.update(locked);
+
+    const late = request();
+    const lateMigration = migrationRequest();
+    const lateConfirm = confirmRequest();
+    const shownBefore = dialogs.length;
+
+    errors.length = 0;
+    prompt.vfunc_passphrase(late);
+    prompt.vfunc_migration(lateMigration);
+    prompt.vfunc_confirm(lateConfirm);
+    prompt.vfunc_report('Late', 'Report');
+    assert.equal(dialogs.length, shownBefore);
+    assert.deepEqual(late.answers, ['dismissed']);
+    assert.deepEqual(lateMigration.answers, ['dismissed']);
+    assert.deepEqual(lateConfirm.answers, ['dismissed']);
+    assert.deepEqual(errors, ['GPaste: Late: Report']);
+}
+
+// Shut down with a dialog up, unlocked: it is closed, its request answered as
+// a closed dialog answers, and that answer asking again, as the storage layer
+// can, finds the prompt shut down already rather than putting a dialog up for
+// an extension gone.
+{
+    sessionMode.update(false);
+
+    const closing = new context.Prompt();
+    const upNow = request();
+    const askedAgain = migrationRequest();
+
+    upNow.reply_passphrase = function (passphrase) {
+        this.answers.push(passphrase);
+        closing.vfunc_migration(askedAgain);
+    };
+    closing.vfunc_passphrase(upNow);
+
+    const shownBefore = dialogs.length;
+
+    closing.shutdown();
+    assert.deepEqual(upNow.answers, [null]);
+    assert.deepEqual(askedAgain.answers, ['dismissed']);
+    assert.equal(dialogs.length, shownBefore);
+}
 
 // The migration dialog names "Keep as is" only where it offers it: not for a
 // backend this build cannot open, which is on no list.
@@ -178,11 +267,12 @@ const migrationPrompt = new context.Prompt();
 sessionMode.update(false);
 
 for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], [9, false, 'MIGRATION_DESCRIPTION_UNKEPT']]) {
+    const replied = [];
     const migration = {
         get_current: () => current,
         get_offered: () => [0, 1],
         can_keep: () => keep,
-        reply_migration() {},
+        reply_migration: (...answer) => replied.push(answer),
         dismiss() {},
     };
     const shownBefore = dialogs.length;
@@ -193,7 +283,31 @@ for (const [current, keep, description] of [[0, true, 'MIGRATION_DESCRIPTION'], 
     const [migrationContent] = dialogs.at(-1).contentLayout.children;
 
     assert.equal(migrationContent.description, description);
+    assert.equal(dialogs.at(-1).buttons.some(button => button.label === 'MIGRATION_KEEP'), keep);
+
+    // With nothing picked, Apply is greyed out, and answers nothing however
+    // it is reached (_onApply ()).
+    if (!keep) {
+        const apply = dialogs.at(-1).buttons.find(button => button.label === 'MIGRATION_ACCEPT');
+
+        assert.equal(apply.reactive, false);
+        apply.action();
+        assert.deepEqual(replied, []);
+    }
+
     dialogs.at(-1).close();
+}
+
+// Destroyed without being closed, a dialog still answers its request, once.
+{
+    const destroying = new context.Prompt();
+    const destroyed = request();
+
+    destroying.vfunc_passphrase(destroyed);
+    dialogs.at(-1).destroy();
+    assert.deepEqual(destroyed.answers, [null]);
+    destroying.shutdown();
+    assert.deepEqual(destroyed.answers, [null]);
 }
 
 migrationPrompt.shutdown();
@@ -219,10 +333,28 @@ const [otherContent] = dialogs.at(-2).contentLayout.children;
 const [ownContent] = dialogs.at(-1).contentLayout.children;
 const switches = content => [...actors(content)].filter(actor => actor instanceof CheckBox);
 
-assert.equal(otherContent.description, 'Other histories');
+assert.equal(otherContent.description, 'shown(Other histories)');
 assert.equal(switches(otherContent).length, 0);
-assert.equal(ownContent.description, 'PASSPHRASE_DESCRIPTION');
+assert.equal(ownContent.description, 'shown(false)');
+assert.equal(dialogs.at(-1)._okButton.label, 'accept(false)');
 assert.deepEqual(switches(ownContent).map(box => box.label), ['REMEMBER']);
+assert.ok([...actors(ownContent)].some(actor => actor.text === 'REMEMBER_SUBTITLE'));
+
+// What the switch answers is the C side's, asked with where it was left and
+// whether off means forgetting; without one, it is asked with neither.
+switches(ownContent)[0].checked = true;
+dialogs.at(-1)._onOk();
+assert.equal(own.remember, 'answer(true, true)');
+dialogs.at(-2)._onOk();
+assert.equal(other.remember, 'answer(false, false)');
 dialogs.slice(-2).forEach(dialog => dialog.close());
 
-console.log('Prompt: lock screen, strength meter, migration description and other histories passed');
+// Both prompts say one thing: every word one shows, the other shows too.
+const words = (file, pattern) => new Set([...fs.readFileSync(file, 'utf8').matchAll(pattern)].map(m => m[1]));
+const shellWords = words(shipped(), /PromptText\.([A-Z_]+)/g);
+const adwWords = words(shipped('../daemon/gpaste-prompt-adw.c'), /G_PASTE_PROMPT_TEXT_([A-Z_]+)/g);
+
+assert.deepEqual([...adwWords].filter(word => !shellWords.has(word)), []);
+assert.deepEqual([...shellWords].filter(word => !adwWords.has(word)), []);
+
+console.log('Prompt: lock screen, strength meter, migration description, other histories and wording passed');

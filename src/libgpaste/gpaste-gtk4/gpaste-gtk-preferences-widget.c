@@ -7,23 +7,21 @@
 struct _GPasteGtkPreferencesWidget
 {
     AdwBin parent_instance;
+
+    GPasteSettings *settings; /* kept alive for the bound rows' lifetime */
 };
 
-typedef struct
-{
-    GPasteSettings *settings;
-} GPasteGtkPreferencesWidgetPrivate;
-
-G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE (PreferencesWidget, preferences_widget, ADW_TYPE_BIN)
+G_PASTE_GTK_DEFINE_TYPE (PreferencesWidget, preferences_widget, ADW_TYPE_BIN)
 
 static void
 g_paste_gtk_preferences_widget_dispose (GObject *object)
 {
-    GPasteGtkPreferencesWidgetPrivate *priv = g_paste_gtk_preferences_widget_get_instance_private (G_PASTE_GTK_PREFERENCES_WIDGET (object));
+    GPasteGtkPreferencesWidget *self = G_PASTE_GTK_PREFERENCES_WIDGET (object);
 
-    g_clear_object (&priv->settings);
-
+    /* As in g_paste_gtk_preferences_dialog_dispose (): the rows go first. */
     G_OBJECT_CLASS (g_paste_gtk_preferences_widget_parent_class)->dispose (object);
+
+    g_clear_object (&self->settings);
 }
 
 static void
@@ -47,10 +45,7 @@ add_page (AdwViewStack       *s,
 static void
 g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 {
-    /* The rows bind to (and reset through) this settings object without holding
-     * a reference, so it has to outlive them: keep it on the widget. */
-    GPasteGtkPreferencesWidgetPrivate *priv = g_paste_gtk_preferences_widget_get_instance_private (self);
-    GPasteSettings *settings = priv->settings = g_paste_settings_new ();
+    GPasteSettings *settings = self->settings = g_paste_settings_new ();
     GtkWidget *stack = adw_view_stack_new ();
     AdwViewStack *s = ADW_VIEW_STACK (stack);
 
@@ -77,6 +72,10 @@ g_paste_gtk_preferences_widget_init (GPasteGtkPreferencesWidget *self)
 
     GtkWidget *bin = adw_breakpoint_bin_new ();
     adw_breakpoint_bin_set_child (ADW_BREAKPOINT_BIN (bin), box);
+    /* A breakpoint bin has to be told the least it is given, which it reads its
+     * breakpoints against and libadwaita warns about the lack of: the size
+     * the HIG has a window go down to. */
+    gtk_widget_set_size_request (bin, 360, 294);
 
     AdwBreakpoint *breakpoint = adw_breakpoint_new (adw_breakpoint_condition_parse ("max-width: 500px"));
     adw_breakpoint_add_setters (breakpoint,

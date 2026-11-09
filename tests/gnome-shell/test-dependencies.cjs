@@ -5,8 +5,8 @@
 // nothing waits on is said with and at which level, and what a reply a newer
 // request replaced is read as.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {loadShipped, runSuite} = require('./suite.cjs');
 
 const said = {error: [], debug: []};
 
@@ -45,13 +45,11 @@ const context = vm.createContext({
     Config: {LIBMUTTER_API_VERSION: '18'},
     gi: {require() {}},
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace(/^export /gm, '');
-vm.runInContext(`${source}\nthis.helpers = {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone};`, context);
+loadShipped(context, {helpers: '{logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone, widthWithoutRevealed}'});
 
-const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = context.helpers;
+const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone, widthWithoutRevealed} = context.helpers;
 
-(async () => {
+runSuite('Dependencies', async () => {
     // A call failing as its daemon left is told from one failing otherwise, and
     // one failing with no GLib.Error at all is that second kind, not a
     // TypeError of its own.
@@ -100,5 +98,17 @@ const {logFailure, debugFailure, replaceCancellable, awaitReply, daemonGone} = c
     await assert.rejects(awaitReply(live, Promise.reject(new GLibError(IOErrorEnum, IOErrorEnum.FAILED, 'failed'))), /failed/);
     await assert.rejects(awaitReply(live, Promise.reject(new TypeError('broken'))), TypeError);
 
-    console.log('Dependencies: failure levels, replaced requests and their replies passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+    // A row asks for its width less each button it shows only while looked at,
+    // with the spacing the box puts before it -- a hidden one is left out of
+    // the box already -- and never for less than its minimum.
+    {
+        const row = {layout_manager: {spacing: 6}};
+        const button = (visible, width) => ({visible, get_preferred_width: () => [width, width]});
+
+        assert.deepEqual([...widthWithoutRevealed(row, [30, 544], [button(true, 16), button(true, 16)], -1)], [30, 500]);
+        assert.deepEqual([...widthWithoutRevealed(row, [30, 522], [button(true, 16), button(false, 16)], -1)], [30, 500]);
+        assert.deepEqual([...widthWithoutRevealed(row, [30, 40], [button(true, 16)], -1)], [30, 30]);
+    }
+
+    console.log('Dependencies: failure levels, replaced requests and their replies, and revealed widths passed');
+});

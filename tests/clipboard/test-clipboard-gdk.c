@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-gtk4/gpaste-gtk-util.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
@@ -10,14 +11,44 @@
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include "../../src/daemon/gpaste-clipboard-x11-hints.h"
+
+#include <string.h>
+
+/* The texts wiped as they were freed which held @wiped_secret: a published
+ * password's copies are. Counted by the text provider compiled in below, which
+ * frees through this in g_paste_util_free_cleartext ()'s place: a stand-in of
+ * the suite's own rather than the library's function defined again, which a
+ * static libgpaste-daemon would define a second time. */
+static const gchar *wiped_secret;
+static guint wipes_of_secret;
+
+static void
+counted_free_cleartext (GPasteCleartext *cleartext)
+{
+    if (wiped_secret && cleartext && g_str_equal (cleartext, wiped_secret))
+        ++wipes_of_secret;
+
+    g_paste_util_free_cleartext (cleartext);
+}
+
+#define g_paste_util_free_cleartext counted_free_cleartext
+#include "../../src/daemon/gpaste-text-content-provider.c"
+#undef g_paste_util_free_cleartext
 
 /* Drive the backend's actual ownership and read callbacks without a display or
  * a live clipboard. GTK transport is the only part replaced by this fixture. */
 static GdkContentFormats *formats;
 static GTask *pending_text;
 static GTask *pending_texture;
+/* A value read out, a colour's or a file list's, and the type it asked for. */
+static GTask *pending_value;
+static GType pending_value_type;
+static GValue read_value = G_VALUE_INIT;
 static guint publications;
+/* What the last publication offered. */
+static GdkContentProvider *published;
 /* Whether GDK refuses a claim, as it does one another client won meanwhile. */
 static gboolean refuse_claims;
 /* What the hints workaround answers here: whether it can convert this display at
@@ -46,17 +77,40 @@ mock_local (GdkClipboard *clipboard G_GNUC_UNUSED)
 
 static gboolean
 mock_set_content (GdkClipboard       *clipboard G_GNUC_UNUSED,
-                  GdkContentProvider *content G_GNUC_UNUSED)
+                  GdkContentProvider *content)
 {
     ++publications;
+    g_set_object (&published, content);
     return !refuse_claims;
 }
 
 static void
-mock_read_text (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                GCancellable        *cancellable,
-                GAsyncReadyCallback  callback,
-                gpointer             user_data)
+mock_read_value (GdkClipboard       *clipboard   G_GNUC_UNUSED,
+                 GType               type,
+                 int                 io_priority G_GNUC_UNUSED,
+                 GCancellable       *cancellable,
+                 GAsyncReadyCallback callback,
+                 gpointer            user_data)
+{
+    g_assert_null (pending_value);
+    pending_value = g_task_new (NULL, cancellable, callback, user_data);
+    pending_value_type = type;
+}
+
+/* Transfer none, as GTK's: the value lives until the next read. */
+static const GValue *
+mock_read_value_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
+                        GAsyncResult *result,
+                        GError      **error)
+{
+    return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+static void
+mock_read_text (GdkClipboard       *clipboard G_GNUC_UNUSED,
+                GCancellable       *cancellable,
+                GAsyncReadyCallback callback,
+                gpointer            user_data)
 {
     g_assert_null (pending_text);
     pending_text = g_task_new (NULL, cancellable, callback, user_data);
@@ -71,10 +125,10 @@ mock_read_text_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
 }
 
 static void
-mock_read_texture (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                   GCancellable        *cancellable,
-                   GAsyncReadyCallback  callback,
-                   gpointer             user_data)
+mock_read_texture (GdkClipboard       *clipboard G_GNUC_UNUSED,
+                   GCancellable       *cancellable,
+                   GAsyncReadyCallback callback,
+                   gpointer            user_data)
 {
     g_assert_null (pending_texture);
     pending_texture = g_task_new (NULL, cancellable, callback, user_data);
@@ -92,12 +146,12 @@ mock_read_texture_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
  * the hint in its formats serves. The mimetype asked for is kept, that being what
  * says which list the read came from. */
 static void
-mock_read_mime (GdkClipboard        *clipboard G_GNUC_UNUSED,
-                const char         **mime_types,
-                int                  io_priority G_GNUC_UNUSED,
-                GCancellable        *cancellable,
-                GAsyncReadyCallback  callback,
-                gpointer             user_data)
+mock_read_mime (GdkClipboard       *clipboard   G_GNUC_UNUSED,
+                const char        **mime_types,
+                int                 io_priority G_GNUC_UNUSED,
+                GCancellable       *cancellable,
+                GAsyncReadyCallback callback,
+                gpointer            user_data)
 {
     g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
 
@@ -110,10 +164,10 @@ mock_read_mime (GdkClipboard        *clipboard G_GNUC_UNUSED,
 }
 
 static GInputStream *
-mock_read_mime_finish (GdkClipboard  *clipboard G_GNUC_UNUSED,
-                       GAsyncResult  *result,
-                       const char   **out_mime_type,
-                       GError       **error)
+mock_read_mime_finish (GdkClipboard *clipboard G_GNUC_UNUSED,
+                       GAsyncResult *result,
+                       const char  **out_mime_type,
+                       GError      **error)
 {
     *out_mime_type = requested_mime;
 
@@ -125,7 +179,7 @@ mock_read_mime_finish (GdkClipboard  *clipboard G_GNUC_UNUSED,
  * could convert at all, and what it says about the owner, are the fixture's to
  * answer. */
 static GPasteClipboardX11Hints *
-mock_hints_new (GdkClipboard *clipboard G_GNUC_UNUSED,
+mock_hints_new (GdkClipboard *clipboard    G_GNUC_UNUSED,
                 gboolean      is_clipboard G_GNUC_UNUSED)
 {
     return NULL;
@@ -144,7 +198,7 @@ mock_hints_cancelled (GCancellable *cancellable G_GNUC_UNUSED,
 }
 
 static void
-mock_hints_read (GPasteClipboardX11Hints *self G_GNUC_UNUSED,
+mock_hints_read (GPasteClipboardX11Hints *self   G_GNUC_UNUSED,
                  GPasteClipboardUpdate   *update)
 {
     if (!hold_hints)
@@ -174,6 +228,8 @@ mock_hints_get_owner (GPasteClipboardX11Hints *self G_GNUC_UNUSED)
 #define gdk_clipboard_read_texture_async mock_read_texture
 #define gdk_clipboard_read_texture_finish mock_read_texture_finish
 #define gdk_clipboard_read_async mock_read_mime
+#define gdk_clipboard_read_value_async mock_read_value
+#define gdk_clipboard_read_value_finish mock_read_value_finish
 #define gdk_clipboard_read_finish mock_read_mime_finish
 #define g_paste_clipboard_x11_hints_new mock_hints_new
 #define g_paste_clipboard_x11_hints_read mock_hints_read
@@ -198,14 +254,14 @@ pump (guint milliseconds)
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         g_usleep (1000);
     } while (g_get_monotonic_time () < end);
 
     /* What became due during the last sleep runs too, as in test-clipboard's
      * pump_for (): an assertion that a timer has
      * fired by now must not race it. */
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 static void
@@ -228,11 +284,23 @@ set_hinted_formats (void)
     formats = gdk_content_formats_union (g_steal_pointer (&formats), hint);
 }
 
+/* Every case starts from the schema's defaults. fixture_setup () checks it
+ * does, the fixture before it having left storage-backend away from its
+ * default. */
+static GPasteSettings *
+make_settings (void)
+{
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
+
+    return g_paste_settings_new ();
+}
+
 static void
 fixture_setup (Fixture      *f,
                gconstpointer user_data G_GNUC_UNUSED)
 {
-    f->settings = g_paste_settings_new ();
+    f->settings = make_settings ();
+    g_assert_cmpint (g_paste_settings_get_storage_backend (f->settings), ==, G_PASTE_STORAGE_FILE);
     g_paste_settings_set_storage_backend (f->settings, G_PASTE_STORAGE_NOOP);
     g_paste_settings_set_synchronize_clipboards (f->settings, FALSE);
     f->history = g_paste_history_new (f->settings);
@@ -271,7 +339,15 @@ fixture_teardown (Fixture      *f,
         g_task_return_pointer (pending_texture, NULL, NULL);
         g_clear_object (&pending_texture);
     }
+    if (pending_value)
+    {
+        g_task_return_pointer (pending_value, NULL, NULL);
+        g_clear_object (&pending_value);
+    }
     pump (10);
+    g_clear_object (&published);
+    if (G_IS_VALUE (&read_value))
+        g_value_unset (&read_value);
     g_clear_object (&f->manager);
     f->clipboard->settings = NULL;
     g_clear_object (&f->clipboard);
@@ -736,6 +812,36 @@ formats_deadline (Fixture      *f,
     g_assert_cmpuint (publications, ==, before + 1);
 }
 
+/* An owner claiming the selection inside a release's grace is an owner like any
+ * other: its empty formats announce it, and the selection is read for it --
+ * waited on until its targets come, past the grace -- rather than answered as
+ * though they were the targets of the owner that left. */
+static void
+formats_claimed_during_grace (Fixture      *f,
+                              gconstpointer user_data G_GNUC_UNUSED)
+{
+    guint before = publications;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+
+    g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpuint (publications, ==, before);
+
+    set_formats (TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("claimed"), g_free);
+    g_clear_object (&pending_text);
+    pump (10);
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "claimed");
+}
+
 /* A selection nobody owns is not the ambiguity the long deadline is for: X has
  * already said so when the empty formats arrive, so the only thing left to cover
  * is the gap a release and the claim after it pass through, and the head is back
@@ -770,14 +876,10 @@ formats_release (Fixture      *f,
     g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
 }
 
-/* An owner gone once it has served the text, the hints' own TARGETS left
- * unanswered -- a paste helper exiting after a set number of requests: its
- * release ends what is left of the update as the deadline would, rather than
- * giving up on the text it read, and the copy is recorded as a text whose hint
- * could not be asked. */
+/* An owner serving its text, the hints' own TARGETS held unanswered, and then
+ * releasing the selection. */
 static void
-release_after_text (Fixture      *f,
-                    gconstpointer user_data G_GNUC_UNUSED)
+serve_text_then_release (Fixture *f)
 {
     hold_hints = TRUE;
     g_paste_clipboard_gdk_on_real_changed (f->clipboard);
@@ -792,11 +894,122 @@ release_after_text (Fixture      *f,
     hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
     set_formats (FALSE);
     g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+}
+
+/* An owner gone once it has served the text, the hints' own TARGETS left
+ * unanswered -- a paste helper exiting after a set number of requests: its
+ * release ends what is left of the update as the deadline would, rather than
+ * giving up on the text it read, and the copy is recorded as a text whose hint
+ * could not be asked. */
+static void
+release_after_text (Fixture      *f,
+                    gconstpointer user_data G_GNUC_UNUSED)
+{
+    serve_text_then_release (f);
     pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
     hold_hints = FALSE;
 
     g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+}
+
+/* As release_after_text (), with the selections kept in step: the copy reaches
+ * the primary selection as any copy does, the release's grace waiting for the
+ * read it ended to answer, and the history's head -- that copy -- goes back on
+ * the clipboard once the grace is over, as /meta/release/after-text-synced has
+ * it of the mutter backend. */
+static void
+release_after_text_synced (Fixture      *f,
+                           gconstpointer user_data G_GNUC_UNUSED)
+{
+    /* Driven by nothing but the manager, which reads it once on adding it. */
+    g_autoptr (GPasteClipboardGdk) primary = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
+
+    primary->settings = f->settings;
+    g_paste_clipboards_manager_add_clipboard (f->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_synchronize_clipboards (f->settings, TRUE);
+
+    serve_text_then_release (f);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "served then gone");
+
+    /* Borrowed, as the fixture's own clipboard has it. */
+    primary->settings = NULL;
+}
+
+/* As release_after_text_synced (), the released read overtaken by an owner that
+ * serves a copy of its own and leaves in turn, all before the first read's
+ * conclusion -- an idle, behind the events of the main loop's own priority.
+ * That conclusion arms nothing: the second release's grace waits for the
+ * second read, whose copy reaches the primary selection as any copy does. */
+static void
+release_overtaken_arms_nothing (Fixture      *f,
+                                gconstpointer user_data G_GNUC_UNUSED)
+{
+    /* As in release_after_text_synced (). */
+    g_autoptr (GPasteClipboardGdk) primary = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
+
+    primary->settings = f->settings;
+    g_paste_clipboards_manager_add_clipboard (f->manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_synchronize_clipboards (f->settings, TRUE);
+
+    serve_text_then_release (f);
+
+    GPasteClipboardUpdate *first = f->clipboard->update;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    set_formats (TRUE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_nonnull (pending_text);
+    g_task_return_pointer (pending_text, g_strdup ("second copy"), g_free);
+    g_clear_object (&pending_text);
+    /* One turn at a time, which dispatches the text's answer ahead of the
+     * idle the first read concludes from. */
+    for (guint i = 0; i < 100 && !f->clipboard->update->produced; ++i)
+        g_main_context_iteration (NULL, FALSE);
+    g_assert_true (f->clipboard->update->produced);
+    g_assert_false (first->concluded);
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_NONE;
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "second copy");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)), ==, "second copy");
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "second copy");
+
+    primary->settings = NULL;
+}
+
+/* As /meta/release/publish-before-conclusion: a password published between a
+ * release and the conclusion of the read it ended supersedes that read, which
+ * still records its copy. */
+static void
+release_publish (Fixture      *f,
+                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    serve_text_then_release (f);
+    g_assert_true (g_paste_clipboards_manager_select (f->manager, f->password));
+    /* Pumped past the grace rather than waited on: the publication supersedes
+     * the read and the grace at once, leaving is_reading () nothing to wait for
+     * while the read's conclusion, which records the copy, is still to run. */
+    pump (2 * G_PASTE_CLIPBOARD_GDK_RELEASE_GRACE);
+    hold_hints = FALSE;
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)), ==, "secret");
+    /* The gone owner served it whole: recorded, above the history's head. */
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 0)), ==, "served then gone");
+    g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (f->history, 1)), ==, "replacement");
 }
 
 static void
@@ -861,6 +1074,151 @@ formats_deadline_slow_owner (Fixture      *f,
     g_assert_cmpuint (publications, ==, before);
 }
 
+static void
+offer_value (GType type)
+{
+    g_clear_pointer (&formats, gdk_content_formats_unref);
+    formats = gdk_content_formats_new_for_gtype (type);
+}
+
+/* The value read out answered, a red colour or a file list of two. */
+static void
+answer_value (void)
+{
+    g_autoptr (GTask) task = g_steal_pointer (&pending_value);
+
+    g_assert_nonnull (task);
+    if (G_IS_VALUE (&read_value))
+        g_value_unset (&read_value);
+    g_value_init (&read_value, pending_value_type);
+    if (pending_value_type == GDK_TYPE_RGBA)
+    {
+        static const GdkRGBA red = { 1., 0., 0., 1. };
+
+        g_value_set_boxed (&read_value, &red);
+    }
+    else
+    {
+        g_autoslist (GFile) files = g_slist_append (NULL, g_file_new_for_path ("/tmp/a"));
+
+        files = g_slist_append (files, g_file_new_for_path ("/tmp/b"));
+        g_value_take_boxed (&read_value, gdk_file_list_new_from_list (files));
+    }
+    g_task_return_pointer (task, &read_value, NULL);
+}
+
+/* A copy of a @type value, announced the way GTK does it: empty formats first,
+ * and the targets next (see hints_unavailable ()). */
+static void
+copy_value (Fixture *f,
+            GType    type)
+{
+    set_formats (FALSE);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    offer_value (type);
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    pump (10);
+    g_assert_true (pending_value_type == type);
+    answer_value ();
+    pump (10);
+}
+
+/* A colour, and a file list, copied are read through GDK's value reads and
+ * recorded as what they are; the same colour copied again is no new copy. */
+static void
+read_value_kinds (Fixture      *f,
+                  gconstpointer user_data)
+{
+    GType type = (GType) GPOINTER_TO_SIZE (user_data);
+    GPasteItemKind kind = (type == GDK_TYPE_RGBA) ? G_PASTE_ITEM_KIND_COLOR : G_PASTE_ITEM_KIND_URIS;
+
+    copy_value (f, type);
+    g_assert_cmpint (g_paste_item_get_kind (g_paste_history_get (f->history, 0)), ==, kind);
+
+    if (kind != G_PASTE_ITEM_KIND_COLOR)
+        return;
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (f->history, 0)));
+    guint length = g_paste_history_get_length (f->history);
+    guint updates = 0;
+
+    g_signal_connect_swapped (f->history, "update", G_CALLBACK (g_paste_test_bus_count_emission), &updates);
+    copy_value (f, type);
+    g_assert_cmpuint (g_paste_history_get_length (f->history), ==, length);
+    g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (f->history, 0)), ==, uuid);
+    g_assert_cmpuint (updates, ==, 0);
+    g_signal_handlers_disconnect_by_data (f->history, &updates);
+}
+
+/* A colour put back on the clipboard is offered as one, a file list as one,
+ * and an image as one: each a typed value GTK serialises, not bare text. */
+static void
+publish_kinds (Fixture      *f,
+               gconstpointer user_data G_GNUC_UNUSED)
+{
+    static const guchar pixels[] = { 1, 2, 3, 255 };
+    g_autoptr (GBytes) data = g_bytes_new_static (pixels, sizeof (pixels));
+    g_autoptr (GdkTexture) texture = gdk_memory_texture_new (1, 1, GDK_MEMORY_R8G8B8A8, data, 4);
+    g_autoptr (GPasteItem) color = g_paste_color_item_new_from_str ("#ff0000");
+    g_autoptr (GPasteItem) uris = g_paste_uris_item_new_from_str ("file:///tmp/a\nfile:///tmp/b");
+    g_autoptr (GPasteItem) image = g_paste_image_item_new (texture);
+    struct { GPasteItem *item; GType type; } cases[] = {
+        { color, GDK_TYPE_RGBA      },
+        { uris,  GDK_TYPE_FILE_LIST },
+        { image, GDK_TYPE_TEXTURE   },
+    };
+
+    g_paste_item_set_state (image, G_PASTE_ITEM_STATE_ACTIVE);
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_clear_object (&published);
+        g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), cases[i].item, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+        g_assert_nonnull (published);
+
+        g_autoptr (GdkContentFormats) offered = gdk_content_provider_ref_formats (published);
+
+        g_assert_true (gdk_content_formats_contain_gtype (offered, cases[i].type));
+    }
+}
+
+/* A password published is wiped from the provider serving it once that goes,
+ * as the content cache wipes its own copy, rather than left in freed memory. */
+static void
+publish_wipes_password (Fixture      *f,
+                        gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_assert_cmpint (g_paste_clipboard_provider_select_item_full (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard), f->password, TRUE), ==, G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED);
+    g_assert_nonnull (published);
+
+    wiped_secret = "secret";
+    wipes_of_secret = 0;
+    g_clear_object (&published);
+    wiped_secret = NULL;
+    g_assert_cmpuint (wipes_of_secret, ==, 1);
+}
+
+/* An owner whose targets GDK names nothing of -- only names with no mimetype,
+ * or TARGETS refused -- has them come back as the same empty formats as the
+ * change before them: answered at once as an owner offering nothing handled,
+ * the cache ignored so nothing is published over it, rather than waited on
+ * for the whole deadline and left unidentified. */
+static void
+formats_unmapped_targets (Fixture      *f,
+                          gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_paste_clipboards_manager_select (f->manager, f->password);
+    guint before = publications;
+
+    hints_owner = G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME;
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+    g_assert_true (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_paste_clipboard_gdk_on_real_changed (f->clipboard);
+
+    g_assert_false (g_paste_clipboard_gdk_is_reading (f->clipboard));
+    g_assert_cmpuint (publications, ==, before);
+    g_assert_false (g_paste_clipboard_provider_is_empty (G_PASTE_CLIPBOARD_PROVIDER (f->clipboard)));
+}
+
 /* Where the workaround cannot convert the selection, the hints are read off the
  * formats GDK does answer: a hint named there is recognised, and one it drops --
  * every hint a foreign owner offers, as GTK stands -- reads as a selection saying
@@ -911,9 +1269,15 @@ on_disposed_wait (GPasteClipboardProvider *provider,
 }
 
 static void
+never_notified (void)
+{
+    g_assert_not_reached ();
+}
+
+static void
 formats_wait_dispose (void)
 {
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteSettings) settings = make_settings ();
     GPasteClipboardGdk *clipboard = g_object_new (G_PASTE_TYPE_CLIPBOARD_GDK, NULL);
     GWeakRef weak;
     gboolean answered = FALSE;
@@ -924,10 +1288,14 @@ formats_wait_dispose (void)
     g_paste_clipboard_gdk_update (clipboard, TRUE, on_disposed_wait, &answered);
     g_assert_nonnull (clipboard->formats_wait);
 
-    /* No real GdkClipboard to disconnect from: dispose () the way it runs, minus
-     * the part that needs one. */
-    g_paste_clipboard_gdk_supersede_formats_wait (clipboard);
-    clipboard->settings = NULL;
+    /* The provider's own dispose (), at its last reference, with a stand-in for
+     * the GdkClipboard it disconnects from: any instance holding the handler
+     * does. */
+    GObject *real = g_object_new (G_TYPE_OBJECT, NULL);
+
+    clipboard->real = (GdkClipboard *) real;
+    clipboard->c_signals[C_CHANGED] = g_signal_connect (real, "notify", G_CALLBACK (never_notified), NULL);
+    clipboard->settings = g_object_ref (settings);
     g_object_unref (clipboard);
     g_assert_null (g_weak_ref_get (&weak));
 
@@ -968,7 +1336,16 @@ main (int argc, char **argv)
     g_test_add ("/gdk/formats/deadline-slow-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_SOME), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/deadline-unknown-owner", Fixture, GINT_TO_POINTER (G_PASTE_CLIPBOARD_X11_HINTS_OWNER_UNKNOWN), fixture_setup, formats_deadline_slow_owner, fixture_teardown);
     g_test_add ("/gdk/formats/release", Fixture, NULL, fixture_setup, formats_release, fixture_teardown);
+    g_test_add ("/gdk/formats/claimed-during-grace", Fixture, NULL, fixture_setup, formats_claimed_during_grace, fixture_teardown);
+    g_test_add ("/gdk/formats/unmapped-targets", Fixture, NULL, fixture_setup, formats_unmapped_targets, fixture_teardown);
+    g_test_add ("/gdk/read/color", Fixture, GSIZE_TO_POINTER (GDK_TYPE_RGBA), fixture_setup, read_value_kinds, fixture_teardown);
+    g_test_add ("/gdk/read/file-list", Fixture, GSIZE_TO_POINTER (GDK_TYPE_FILE_LIST), fixture_setup, read_value_kinds, fixture_teardown);
+    g_test_add ("/gdk/publish/kinds", Fixture, NULL, fixture_setup, publish_kinds, fixture_teardown);
+    g_test_add ("/gdk/publish/wipes-password", Fixture, NULL, fixture_setup, publish_wipes_password, fixture_teardown);
     g_test_add ("/gdk/formats/release-after-text", Fixture, NULL, fixture_setup, release_after_text, fixture_teardown);
+    g_test_add ("/gdk/formats/release-after-text-synced", Fixture, NULL, fixture_setup, release_after_text_synced, fixture_teardown);
+    g_test_add ("/gdk/formats/overtaken-release-arms-nothing", Fixture, NULL, fixture_setup, release_overtaken_arms_nothing, fixture_teardown);
+    g_test_add ("/gdk/formats/release-publish", Fixture, NULL, fixture_setup, release_publish, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable", Fixture, GINT_TO_POINTER (FALSE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/hints/unavailable-hinted", Fixture, GINT_TO_POINTER (TRUE), fixture_setup, hints_unavailable, fixture_teardown);
     g_test_add ("/gdk/formats/stale-read-publication", Fixture, NULL, fixture_setup, stale_read_and_publication, fixture_teardown);

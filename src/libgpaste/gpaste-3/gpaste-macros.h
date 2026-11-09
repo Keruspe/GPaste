@@ -62,6 +62,8 @@ G_BEGIN_DECLS
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8"); \
     textdomain (GETTEXT_PACKAGE)
 
+/* Part of the installed headers since 51.0, so a consumer may call them, in C
+ * or in C++: written so that both compile them (tests/build/). */
 #ifndef __GI_SCANNER__
 
 /* Data for a GSource whose callback needs a GObject the source does not
@@ -85,7 +87,7 @@ g_paste_weak_ref_new (gpointer object)
 static inline void
 g_paste_weak_ref_free (gpointer data)
 {
-    g_autofree GWeakRef *ref = data;
+    g_autofree GWeakRef *ref = (GWeakRef *) data;
 
     g_weak_ref_clear (ref);
 }

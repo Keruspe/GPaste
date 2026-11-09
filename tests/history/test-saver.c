@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -221,7 +222,6 @@ static void
 on_loaded (gpointer owner G_GNUC_UNUSED,
            GList   *history,
            gsize    size G_GNUC_UNUSED,
-           gboolean save_after G_GNUC_UNUSED,
            gboolean readable G_GNUC_UNUSED)
 {
     g_autolist (GPasteItem) items = history;
@@ -253,8 +253,7 @@ finish_worker (TestBackend        *backend,
     g_cond_broadcast (&backend->cond);
     g_mutex_unlock (&backend->mutex);
     g_paste_history_saver_drain (saver);
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
 }
 
 static void
@@ -308,7 +307,7 @@ test_incremental_load_waits (void)
         g_assert_true (g_cond_wait_until (&backend->cond, &backend->mutex, deadline));
     g_mutex_unlock (&backend->mutex);
 
-    g_paste_history_saver_load (saver, "B", FALSE);
+    g_paste_history_saver_load (saver, "B");
     /* Long enough for a read started at once to have been counted. */
     g_usleep (100 * 1000);
     g_assert_cmpuint (backend->reads, ==, 0);

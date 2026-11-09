@@ -25,9 +25,9 @@ G_BEGIN_DECLS
 #define G_PASTE_GTK_DEFINE_TYPE_WITH_PRIVATE(TypeName, type_name, ParentTypeName) \
     G_DEFINE_TYPE_WITH_PRIVATE (GPasteGtk##TypeName, g_paste_gtk_##type_name, ParentTypeName)
 
-#define G_PASTE_GTK_INIT_APPLICATION(name)                                                             \
+#define G_PASTE_GTK_INIT_APPLICATION_FULL(name, flags)                                                 \
     G_PASTE_INIT_GETTEXT ();                                                                           \
-    AdwApplication *adw = adw_application_new ("org.gnome.GPaste." name, G_APPLICATION_DEFAULT_FLAGS); \
+    AdwApplication *adw = adw_application_new ("org.gnome.GPaste." name, flags);                       \
     GtkApplication *app = GTK_APPLICATION (adw);                                                       \
     GApplication *gapp = G_APPLICATION (app);                                                          \
     g_autoptr (GError) error = NULL;                                                                   \
@@ -49,5 +49,7 @@ G_BEGIN_DECLS
         g_application_activate (gapp);                                                                 \
         return g_application_run (gapp, 0, NULL);                                                      \
     }
+
+#define G_PASTE_GTK_INIT_APPLICATION(name) G_PASTE_GTK_INIT_APPLICATION_FULL (name, G_APPLICATION_DEFAULT_FLAGS)
 
 G_END_DECLS

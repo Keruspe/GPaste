@@ -14,13 +14,14 @@
  * go back to g_paste_clipboard_update_read_mimes () against its formats, and
  * this file, its tests and the xfixes dependency can go. */
 
-#include <errno.h>
 #include "gpaste-clipboard-x11-hints.h"
 
 #include <gdk/x11/gdkx.h>
 
 #include <X11/Xatom.h>
 #include <X11/extensions/Xfixes.h>
+
+#include <errno.h>
 
 struct _GPasteClipboardX11Hints
 {
@@ -58,7 +59,15 @@ struct _GPasteClipboardX11Hints
      * by. They name the server's clock as of startup instead (server_time ()),
      * which the current owner acquired the selection before and so accepts;
      * CurrentTime, which GDK's own reads use there, is what an owner applying
-     * that ICCCM rule refuses outright. */
+     * that ICCCM rule refuses outright.
+     *
+     * That rule refuses GDK too, though: the TARGETS a GdkX11Clipboard asks for
+     * as it is created go out at CurrentTime, so such an owner, there before
+     * GDK's clipboard was, leaves its formats empty, and update () waits those
+     * out without asking the hints anything. The clock pays off only where a
+     * GdkClipboard predates the providers and has seen an ownership change
+     * since -- the passphrase prompt's entry makes one -- and the rest is
+     * GTK's to fix, by not converting at CurrentTime. */
     gint        xfixes_event_base;
     Time        selection_timestamp;
 };
@@ -114,9 +123,10 @@ typedef struct
  * it would be refusing GTK too, so pasting from that application into any GTK app
  * would already be failing. And the difference decides one thing -- whether text
  * already sitting on a selection when the daemon starts is recognised as a
- * password before the next copy replaces it (@selection_timestamp) -- for the
- * reads made before the first ownership notification, every conversion after one
- * carrying a real timestamp instead. */
+ * password before the next copy replaces it, where a bootstrap read reaches
+ * the hints at all (@selection_timestamp) -- for the reads made before the first
+ * ownership notification, every conversion after one carrying a real timestamp
+ * instead. */
 #define G_PASTE_CLIPBOARD_X11_HINTS_SERVER_TIME_TIMEOUT 250
 
 /* A requestor window kept past its conversion: see release_window ().
@@ -353,12 +363,13 @@ g_paste_clipboard_x11_hints_on_xevent (GdkDisplay              *display,
  * GDK cannot be asked this reliably. gdk_clipboard_read_async () -- which since
  * GTK 4.24 no longer crashes on "TARGETS" -- goes through a selection input
  * stream that takes the first SelectionNotify naming its selection and target
- * (gdk/x11/gdkselectioninputstream-x11.c), whatever property or requestor it
- * names: every read of one target waits in one slot, and for TARGETS that slot is
- * shared with the request GTK makes itself on every owner change. One reply that
- * never comes -- an owner that serves the text and exits -- has every later reply
- * land on the request before it for the rest of the session: copies lost, hints
- * read for the wrong copy, passwords stored as text.
+ * on the display's leader window (gdk/x11/gdkselectioninputstream-x11.c),
+ * whatever property it names -- and every GDK read names that same window as
+ * its requestor: every read of one target waits in one slot, and for TARGETS
+ * that slot is shared with the request GTK makes itself on every owner change.
+ * One reply that never comes -- an owner that serves the text and exits -- has
+ * every later reply land on the request before it for the rest of the session:
+ * copies lost, hints read for the wrong copy, passwords stored as text.
  *
  * So each conversion is made on an InputOnly requestor window of its own, which
  * every SelectionNotify names, refusals included: a reply is always attributable,

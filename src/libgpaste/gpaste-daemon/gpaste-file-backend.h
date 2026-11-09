@@ -32,6 +32,7 @@ gchar *g_paste_file_backend_image_path     (const gchar *history_name,
 gchar *g_paste_file_backend_encrypted_path (const gchar *path);
 
 void g_paste_file_backend_sweep_legacy_images (void);
+void g_paste_file_backend_sweep_unstored      (void);
 
 void g_paste_file_backend_delete_files (const gchar *name,
                                         gboolean     encrypted,
@@ -40,16 +41,33 @@ void g_paste_file_backend_delete_files (const gchar *name,
 /* What a re-key puts beside each file it changes: the file's replacement under
  * the new key, and the original under a second name while the replacements go
  * in. Both are named from the file alone, and the second, beside the history's
- * own, is the longest file an encrypted history
- * needs (g_paste_storage_name_fits ()). */
+ * own, is the longest file an encrypted history needs
+ * (g_paste_storage_name_fits ()). */
 #define G_PASTE_FILE_BACKEND_REKEY_NEW ".rekey"
 #define G_PASTE_FILE_BACKEND_REKEY_OLD ".rekey-old"
+
+/* An image's file is named by its checksum and this suffix, and the encrypted
+ * flavour's side file by the image's name and the mark, as ".xmls" follows
+ * ".xml" (g_paste_file_backend_encrypted_path ()). The writer and the sweep
+ * recognising what it wrote both read them here. */
+#define G_PASTE_FILE_BACKEND_IMAGE_SUFFIX ".png"
+#define G_PASTE_FILE_BACKEND_SIDE_MARK    "s"
+#define G_PASTE_FILE_BACKEND_SIDE_SUFFIX  G_PASTE_FILE_BACKEND_IMAGE_SUFFIX G_PASTE_FILE_BACKEND_SIDE_MARK
+
+/* What a file is written under, beside its final name, until it is whole and
+ * put in place (_g_paste_file_backend_beside ()). */
+#define G_PASTE_FILE_BACKEND_TEMP_SUFFIX ".tmp"
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
 GPasteStorageBackend *g_paste_file_backend_new_encrypted (GPasteSettings *settings,
                                                           const gchar    *passphrase);
 
 void g_paste_file_backend_settle_rekeys (void);
+
+GStrv    g_paste_file_backend_refused_images (GPasteStorageBackend *self,
+                                              const gchar          *history_name);
+gboolean g_paste_file_backend_reads_any      (GPasteStorageBackend *self,
+                                              const gchar * const  *paths);
 #endif
 
 G_END_DECLS

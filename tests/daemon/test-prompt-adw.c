@@ -7,6 +7,7 @@
 
 #include <gpaste-test-env.h>
 #include <gpaste-test-bus.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-daemon/gpaste-prompt.h>
 
 /* The private bus has no keyring, and looking one up warns, which g_test makes
@@ -67,6 +68,19 @@ on_passphrase_answered (GObject      *source,
     answer->done = TRUE;
 }
 
+static void
+on_confirm_answered (GObject      *source,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    Answer *answer = user_data;
+    g_autoptr (GError) error = NULL;
+
+    answer->confirmed = g_paste_prompt_confirm_finish (G_PASTE_PROMPT (source), result, &error);
+    g_assert_no_error (error);
+    answer->done = TRUE;
+}
+
 static gboolean
 answered (gconstpointer data,
           gconstpointer arg G_GNUC_UNUSED)
@@ -92,27 +106,40 @@ shown_window (void)
     return windows->data;
 }
 
+/* Escape, as the window answers it: the shortcut bound to it, run on the
+ * window. That pins the binding and what it does, not the key's delivery --
+ * GTK has no public way to synthesise a key event, and a real one needs XTest
+ * on the suite's Xvfb. A bubble-phase controller on the window sees the key
+ * whichever child has the focus, the password entry's text included, which is
+ * what a delivery test would show. */
 static void
-collect (GtkWidget *widget,
-         GType      type,
-         GPtrArray *found)
+press_escape (GtkWindow *window)
 {
-    if (G_TYPE_CHECK_INSTANCE_TYPE (widget, type))
-        g_ptr_array_add (found, widget);
+    g_autoptr (GListModel) controllers = gtk_widget_observe_controllers (GTK_WIDGET (window));
 
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-        collect (child, type, found);
-}
+    for (guint i = 0; i < g_list_model_get_n_items (controllers); ++i)
+    {
+        g_autoptr (GObject) controller = g_list_model_get_item (controllers, i);
 
-static GPtrArray *
-find_all (GtkWindow *window,
-          GType      type)
-{
-    GPtrArray *found = g_ptr_array_new ();
+        if (!GTK_IS_SHORTCUT_CONTROLLER (controller))
+            continue;
 
-    collect (GTK_WIDGET (window), type, found);
+        for (guint j = 0; j < g_list_model_get_n_items (G_LIST_MODEL (controller)); ++j)
+        {
+            g_autoptr (GtkShortcut) shortcut = g_list_model_get_item (G_LIST_MODEL (controller), j);
+            GtkShortcutTrigger *trigger = gtk_shortcut_get_trigger (shortcut);
 
-    return found;
+            if (GTK_IS_KEYVAL_TRIGGER (trigger) &&
+                gtk_keyval_trigger_get_keyval (GTK_KEYVAL_TRIGGER (trigger)) == GDK_KEY_Escape &&
+                !gtk_keyval_trigger_get_modifiers (GTK_KEYVAL_TRIGGER (trigger)))
+            {
+                g_assert_true (gtk_shortcut_action_activate (gtk_shortcut_get_action (shortcut), 0, GTK_WIDGET (window), NULL));
+                return;
+            }
+        }
+    }
+
+    g_assert_not_reached ();
 }
 
 /* Whether some label shows @text, markup parsed or not. */
@@ -120,28 +147,11 @@ static gboolean
 shows (GtkWindow   *window,
        const gchar *text)
 {
-    g_autoptr (GPtrArray) labels = find_all (window, GTK_TYPE_LABEL);
+    g_autoptr (GPtrArray) labels = g_paste_test_gtk_find_all (GTK_WIDGET (window), GTK_TYPE_LABEL);
 
     for (guint i = 0; i < labels->len; ++i)
     {
         if (g_strrstr (gtk_label_get_text (labels->pdata[i]), text))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-/* Whether a button says @label: the Keep button's words are quoted in the
- * description too. */
-static gboolean
-has_button (GtkWindow   *window,
-            const gchar *label)
-{
-    g_autoptr (GPtrArray) buttons = find_all (window, GTK_TYPE_BUTTON);
-
-    for (guint i = 0; i < buttons->len; ++i)
-    {
-        if (!g_strcmp0 (gtk_button_get_label (buttons->pdata[i]), label))
             return TRUE;
     }
 
@@ -154,7 +164,7 @@ static gboolean
 has_description (GtkWindow   *window,
                  const gchar *text)
 {
-    g_autoptr (GPtrArray) groups = find_all (window, ADW_TYPE_PREFERENCES_GROUP);
+    g_autoptr (GPtrArray) groups = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_PREFERENCES_GROUP);
     g_autofree gchar *escaped = g_markup_escape_text (text, -1);
 
     for (guint i = 0; i < groups->len; ++i)
@@ -170,8 +180,8 @@ has_description (GtkWindow   *window,
 static void
 assert_plain_rows (GtkWindow *window)
 {
-    g_autoptr (GPtrArray) rows = find_all (window, ADW_TYPE_PREFERENCES_ROW);
-    g_autoptr (GPtrArray) banners = find_all (window, ADW_TYPE_BANNER);
+    g_autoptr (GPtrArray) rows = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_PREFERENCES_ROW);
+    g_autoptr (GPtrArray) banners = g_paste_test_gtk_find_all (GTK_WIDGET (window), ADW_TYPE_BANNER);
 
     g_assert_cmpuint (rows->len, >, 0);
     for (guint i = 0; i < rows->len; ++i)
@@ -241,11 +251,20 @@ test_migration_current_picked (void)
     g_assert_true (gtk_check_button_get_active (dialog->backend_checks[0]));
     g_assert_false (gtk_check_button_get_active (dialog->backend_checks[1]));
     g_assert_true (gtk_widget_get_sensitive (dialog->apply));
-    g_assert_true (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
+    /* Asked of the buttons: the Keep button's words are quoted in the
+     * description too. */
+    g_assert_nonnull (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
     g_assert_true (has_description (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION)));
 
     gtk_check_button_set_active (dialog->backend_checks[1], TRUE);
     g_assert_false (gtk_check_button_get_active (dialog->backend_checks[0]));
+
+    /* Deleting the old data without importing it is warned about
+     * (g_paste_prompt_cleanup_warns ()). */
+    g_assert_false (adw_banner_get_revealed (dialog->warning));
+    adw_switch_row_set_active (dialog->cleanup_row, TRUE);
+    g_assert_true (adw_banner_get_revealed (dialog->warning));
+    adw_switch_row_set_active (dialog->cleanup_row, FALSE);
     g_signal_emit_by_name (dialog->apply, "clicked");
     wait_for (&answer);
     g_assert_true (answer.confirmed);
@@ -275,7 +294,7 @@ test_migration_nothing_picked (void)
     for (guint i = 0; i < G_N_ELEMENTS (offered); ++i)
         g_assert_false (gtk_check_button_get_active (dialog->backend_checks[i]));
     g_assert_false (gtk_widget_get_sensitive (dialog->apply));
-    g_assert_false (has_button (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
+    g_assert_null (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_KEEP)));
     /* Nor is the button named. */
     g_assert_true (has_description (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT)));
     on_apply (NULL, dialog);
@@ -307,6 +326,41 @@ test_migration_dismissed (void)
     gtk_window_destroy (shown_window ());
     wait_for (&answer);
     g_assert_false (answer.confirmed);
+}
+
+/* Escape closes every prompt as its close button does: a dismissal for the two
+ * that ask something, the window gone for the report. */
+static void
+test_escape_closes (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    Answer migration = { 0 };
+    Answer passphrase = { 0 };
+
+    g_paste_prompt_migration_async (prompt, offered, G_N_ELEMENTS (offered), G_PASTE_STORAGE_FILE, on_migration_answered, &migration);
+    press_escape (shown_window ());
+    wait_for (&migration);
+    g_assert_false (migration.confirmed);
+
+    g_paste_prompt_passphrase_async (prompt, FALSE, NULL, G_PASTE_STORAGE_REMEMBER_UNCHANGED, on_passphrase_answered, &passphrase);
+    press_escape (shown_window ());
+    wait_for (&passphrase);
+    g_assert_null (passphrase.passphrase);
+
+    g_paste_prompt_report (prompt, "Title", "Message");
+
+    GtkWindow *report = shown_window ();
+
+    g_object_add_weak_pointer (G_OBJECT (report), (gpointer *) &report);
+    press_escape (report);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &report, NULL);
+    g_assert_null (report);
 }
 
 /* What went wrong is shown as written, beside the standing explanation, a "&"
@@ -360,6 +414,7 @@ test_passphrase_confirmed (gconstpointer user_data)
     PassphraseDialog *dialog = g_object_get_data (G_OBJECT (window), "gpaste-passphrase-dialog");
 
     assert_plain_rows (window);
+    g_assert_cmpstr (gtk_button_get_label (GTK_BUTTON (dialog->ok)), ==, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT));
     g_assert_false (gtk_widget_get_sensitive (dialog->ok));
     gtk_editable_set_text (dialog->entry, "correct horse");
     gtk_editable_set_text (dialog->confirm_entry, "correct hors");
@@ -371,11 +426,30 @@ test_passphrase_confirmed (gconstpointer user_data)
 
     gtk_editable_set_text (dialog->confirm_entry, "correct horse");
     g_assert_true (gtk_widget_get_sensitive (dialog->ok));
+
+    /* The switch turned on, where the build offers one, is the passphrase to
+     * remember (g_paste_prompt_remember_answer ()). */
+    gboolean offered = dialog->remember != NULL;
+
+    if (offered)
+        adw_switch_row_set_active (ADW_SWITCH_ROW (dialog->remember), TRUE);
     g_signal_emit_by_name ((GPOINTER_TO_INT (user_data)) ? dialog->confirm_entry : dialog->entry, "entry-activated");
     wait_for (&answer);
     g_assert_nonnull (answer.passphrase);
     g_assert_cmpstr (g_paste_passphrase_peek (answer.passphrase), ==, "correct horse");
+    g_assert_cmpint (answer.remember, ==, (offered) ? G_PASTE_STORAGE_REMEMBER_YES : G_PASTE_STORAGE_REMEMBER_UNCHANGED);
     g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
+}
+
+/* On is to remember, and off to forget only where something is remembered:
+ * finding the switch off and leaving it there asks nothing. */
+static void
+test_remember_answer (void)
+{
+    g_assert_cmpint (g_paste_prompt_remember_answer (TRUE, FALSE), ==, G_PASTE_STORAGE_REMEMBER_YES);
+    g_assert_cmpint (g_paste_prompt_remember_answer (TRUE, TRUE), ==, G_PASTE_STORAGE_REMEMBER_YES);
+    g_assert_cmpint (g_paste_prompt_remember_answer (FALSE, TRUE), ==, G_PASTE_STORAGE_REMEMBER_NO);
+    g_assert_cmpint (g_paste_prompt_remember_answer (FALSE, FALSE), ==, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
 }
 
 /* A passphrase asked for other histories says what it is wanted for in place
@@ -401,6 +475,7 @@ test_passphrase_other_histories (void)
 
     assert_plain_rows (window);
     g_assert_true (shows (window, description));
+    g_assert_nonnull (g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT)));
     g_assert_false (shows (window, g_paste_prompt_text (G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION)));
     g_assert_null (dialog->remember);
 
@@ -411,6 +486,59 @@ test_passphrase_other_histories (void)
     g_assert_cmpstr (g_paste_passphrase_peek (answer.passphrase), ==, "previous one");
     g_assert_cmpint (answer.remember, ==, G_PASTE_STORAGE_REMEMBER_UNCHANGED);
     g_clear_pointer (&answer.passphrase, g_paste_passphrase_free);
+}
+
+/* A confirmation shows what its caller worded, escaped, and answers yes from
+ * its destructive button alone; Cancel is what Enter answers with, and has the
+ * focus; Cancel, Escape and the window going decline. */
+static void
+test_confirm_answered (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("no display");
+        return;
+    }
+
+    static const gchar *description = "Images of \"a & b <c>\" go";
+    g_autoptr (GPastePrompt) prompt = g_paste_prompt_adw_new (app);
+    Answer accepted = { 0 };
+    Answer cancelled = { .confirmed = TRUE };
+    Answer escaped = { 0 };
+    Answer closed = { 0 };
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &accepted);
+
+    GtkWindow *window = shown_window ();
+    GtkWidget *accept = g_paste_test_gtk_find_button (GTK_WIDGET (window), "Delete");
+    GtkWidget *cancel = g_paste_test_gtk_find_button (GTK_WIDGET (window), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+
+    g_assert_nonnull (accept);
+    g_assert_nonnull (cancel);
+    g_assert_true (shows (window, description));
+    g_assert_true (gtk_widget_has_css_class (accept, "destructive-action"));
+    g_assert_true (gtk_window_get_default_widget (window) == cancel);
+    g_assert_true (gtk_window_get_focus (window) == cancel);
+    g_signal_emit_by_name (accept, "clicked");
+    wait_for (&accepted);
+    g_assert_true (accepted.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &cancelled);
+    cancel = g_paste_test_gtk_find_button (GTK_WIDGET (shown_window ()), g_paste_prompt_text (G_PASTE_PROMPT_TEXT_CANCEL));
+    g_assert_nonnull (cancel);
+    g_signal_emit_by_name (cancel, "clicked");
+    wait_for (&cancelled);
+    g_assert_false (cancelled.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &escaped);
+    press_escape (shown_window ());
+    wait_for (&escaped);
+    g_assert_false (escaped.confirmed);
+
+    g_paste_prompt_confirm_async (prompt, "Delete?", description, "Delete", on_confirm_answered, &closed);
+    gtk_window_destroy (shown_window ());
+    wait_for (&closed);
+    g_assert_false (closed.confirmed);
 }
 
 /* A report says what it was given, a "&" in it included. */
@@ -457,11 +585,14 @@ main (int argc, char *argv[])
 #endif
     g_test_add_func ("/prompt-adw/migration/nothing-picked", test_migration_nothing_picked);
     g_test_add_func ("/prompt-adw/migration/dismissed", test_migration_dismissed);
+    g_test_add_func ("/prompt-adw/escape", test_escape_closes);
     g_test_add_func ("/prompt-adw/passphrase/error-shown", test_passphrase_error_shown);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed", GINT_TO_POINTER (TRUE), test_passphrase_confirmed);
     g_test_add_data_func ("/prompt-adw/passphrase/confirmed_first_entry", GINT_TO_POINTER (FALSE), test_passphrase_confirmed);
     g_test_add_func ("/prompt-adw/passphrase/other-histories", test_passphrase_other_histories);
+    g_test_add_func ("/prompt-adw/passphrase/remember-answer", test_remember_answer);
     g_test_add_func ("/prompt-adw/report/shown", test_report_shown);
+    g_test_add_func ("/prompt-adw/confirm/answered", test_confirm_answered);
 
     return g_paste_test_env_run ();
 }

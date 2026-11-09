@@ -4,6 +4,7 @@
 #pragma once
 
 #include <gpaste-3/gpaste-macros.h>
+#include <gpaste-3/gpaste-settings.h>
 #include <gpaste-3/gpaste-storage.h>
 #include <gpaste-3/gpaste-util.h>
 
@@ -12,11 +13,11 @@
 G_BEGIN_DECLS
 
 /* The half of the utility helpers only the daemon library has ever used: where
- * a history lives on disk, and the XML escaping the file backend writes it
- * with. They sit here rather than in libgpaste's gpaste-util.h because nothing
- * outside this library -- not the UI, not the command line, not the extension
- * -- calls them, and this header is not installed, so they stay off the
- * introspection data. */
+ * a history lives on disk, the XML escaping the file backend writes it with,
+ * and what the memory cap comes to in bytes. They sit here rather than in
+ * libgpaste's gpaste-util.h because nothing outside this library -- not the
+ * UI, not the command line, not the extension -- calls them, and this header
+ * is not installed, so they stay off the introspection data. */
 
 gchar *g_paste_util_replace (const gchar *text,
                              const gchar *pattern,
@@ -37,11 +38,9 @@ GFile *g_paste_util_get_history_file      (const gchar *name,
                                            const gchar *extension);
 
 /* Whether the @storage flavour stores a history of @name: what is on disk under
- * that flavour's extension, whether or not this build can open it. The second
- * asks it of every flavour that stores anything. */
-gboolean g_paste_util_history_is_stored          (const gchar  *name,
-                                                  GPasteStorage storage);
-gboolean g_paste_util_history_is_stored_anywhere (const gchar  *name);
+ * that flavour's extension, whether or not this build can open it. */
+gboolean g_paste_util_history_is_stored (const gchar  *name,
+                                         GPasteStorage storage);
 
 gboolean g_paste_util_ensure_history_dir_exists (void);
 
@@ -87,5 +86,12 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteCleartext, g_paste_util_free_cleartext)
 GStrv g_paste_util_list_directory (GFile        *dir,
                                    const gchar  *attribute,
                                    GError      **error);
+
+/* max-memory-usage in bytes, the setting counting MiB: what the history keeps
+ * at most, and so what AddFile reads, GetItems repeats and the mutter backend
+ * reads at most too, which is why they all go through here. In 64 bits, the
+ * schema allowing up to 16383 MiB: a caller narrowing it to a gsize clamps it
+ * first, as 4096 MiB or more would wrap on a 32-bit build. */
+guint64 g_paste_util_max_memory (GPasteSettings *settings);
 
 G_END_DECLS

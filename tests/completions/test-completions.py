@@ -12,8 +12,11 @@ a table could carry -- so this checks instead that none of them has fallen
 behind: every verb and alias has to be offered by all three shells where a verb
 goes (bash's by running it, zsh's and fish's from the lists they offer), and
 every canonical verb given an entry of its own in the man page. Bash is also the one completion
-offering options verb by verb, so every verb whose arguments name items has to
-be offered --use-index there; zsh and fish offer every option anywhere. And
+offering options verb by verb, so each verb has to be offered there exactly the
+options its row names, and --use-index with them when its arguments name items
+-- the general options aside, which every line answers and bash offers where it
+sees fit; zsh and fish offer every option anywhere. Every option in options[]
+has to be in the man page's OPTIONS, --help printing them straight from it. And
 zsh and fish list an item's text as it is, so what their completions hand over
 has to hold no control character: the escape sequences a page can put on the
 clipboard would reach the terminal on TAB.
@@ -29,41 +32,94 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# { argc, verb, aliases, extra_args, needs_client, reads_pipe, item_args, ... }
-# rows; the verb-less forms have NULL for both names.
+# { argc, verb, aliases, extra_args, needs_client, reads_pipe, item_args,
+# options, ... } rows; the verb-less forms have NULL for both names.
 COMMAND = re.compile(
     r'^\s*\{\s*\d+,\s*(?:"(?P<verb>[^"]+)"|NULL),\s*(?:"(?P<aliases>[^"]*)"|NULL),'
-    r'\s*\w+,\s*\w+,\s*\w+,\s*(?P<item_args>\w+),', re.M)
+    r'\s*\w+,\s*\w+,\s*\w+,\s*(?P<item_args>\w+),\s*"(?P<options>[a-z]*)",', re.M)
+
+# { "name", 'letter', has_arg, arg, group, ... } rows.
+OPTION = re.compile(
+    r'^\s*\{\s*"(?P<name>[\w-]+)",\s*\'(?P<letter>\w)\',\s*(?P<has_arg>\w+),\s*(?:NULL|N_ \("(?P<arg>[^"]*)"\)),'
+    r'\s*(?P<group>\w+),', re.M)
 
 
-def verbs():
+def table_rows(rows):
+    """@rows, the body of a C table, with its comments blanked -- a row after
+    one on its line then starts it -- and how many rows it holds: its
+    top-level braces, those in strings and character literals aside."""
+    def blank(match):
+        return match.group(1) or re.sub(r'[^\n]', ' ', match.group(0))
+
+    rows = re.sub(r'/\*.*?\*/|//[^\n]*|("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\')', blank, rows, flags=re.S)
+    depth = count = 0
+    for token in re.finditer(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|[{}]', rows):
+        if token.group(0) == '{':
+            count += depth == 0
+            depth += 1
+        elif token.group(0) == '}':
+            depth -= 1
+    return rows, count
+
+
+def read_table(name, pattern, shape):
+    """Every row of gpaste-client.c's static const table @name, matched by
+    @pattern: one in a shape it does not match -- two on one line, say -- would
+    otherwise go unchecked rather than fail."""
     body = (ROOT / 'src/client/gpaste-client.c').read_text()
-    table = body[body.index('static const Command commands[] = {'):]
-    table = table[:table.index('\n};')]
+    rows = body[body.index(f'{name}[] = {{'):]
+    rows = rows[rows.index('{') + 1:rows.index('\n};')]
+    rows, count = table_rows(rows)
+    matches = list(pattern.finditer(rows))
+    if len(matches) != count or not matches:
+        sys.exit(f'read {len(matches)} of the {count} {name}[] rows; write each as {shape}')
+    return matches
 
-    # Every row has to be read: one in a shape COMMAND does not match would
-    # otherwise go unchecked rather than fail.
-    rows = sum(1 for line in table.splitlines() if line.lstrip().startswith('{'))
-    matches = list(COMMAND.finditer(table))
-    if len(matches) != rows:
-        sys.exit(f'read {len(matches)} of the {rows} commands[] rows; write each as '
-                 '{ argc, "verb" or NULL, "aliases" or NULL, extra_args, needs_client, reads_pipe, item_args, ... } '
-                 'with bare words and no comment before item_args')
 
-    canonical, every, items = [], set(), set()
+def option_rows():
+    return read_table('static const Option options', OPTION,
+                      '{ "name", \'letter\', has_arg, NULL or N_ ("arg"), group, ... }')
+
+
+def options():
+    """Each option's long and short names, by its letter, and the letters of
+    the general ones."""
+    matches = option_rows()
+    names = {m['letter']: (f'--{m["name"]}', f'-{m["letter"]}') for m in matches}
+    return names, {m['letter'] for m in matches if m['group'] == 'OPTION_GROUP_GENERAL'}
+
+
+def verbs(names):
+    """The canonical verbs, every name a verb goes by, and the options each
+    name has to be offered: those its row reads, and --use-index for the verbs
+    whose arguments name items -- under '' for no verb at all, which the
+    verb-less rows answer between them."""
+    matches = read_table('static const Command commands', COMMAND,
+                         '{ argc, "verb" or NULL, "aliases" or NULL, extra_args, needs_client, reads_pipe, '
+                         'item_args, "options", ... } with bare words and no comment before the options')
+
+    def named(letters):
+        unknown = sorted(set(letters) - names.keys())
+        if unknown:
+            sys.exit(f'commands[] names options options[] does not have: {", ".join(unknown)}')
+        return {name for letter in letters for name in names[letter]}
+
+    canonical, every, wanted = [], set(), {'': set()}
     for m in matches:
         if not m['verb']:
+            wanted[''] |= named(m['options'])
             continue
-        names = [m['verb'], *(m['aliases'] or '').split()]
+        verb_names = [m['verb'], *(m['aliases'] or '').split()]
         canonical.append(m['verb'])
-        every.update(names)
-        if m['item_args'] != '0':
-            items.update(names)
+        every.update(verb_names)
+        # A name two verbs answer to is offered what either reads.
+        for name in verb_names:
+            wanted.setdefault(name, set()).update(named(m['options'] + ('i' if m['item_args'] != '0' else '')))
 
     if not canonical:
         sys.exit('found no commands to check against')
 
-    return canonical, every, items
+    return canonical, every, wanted
 
 
 def bash_options(names):
@@ -76,10 +132,11 @@ def bash_options(names):
 
 
 def fake_client(scratch):
-    """A gpaste-client whose history holds one item, with an escape sequence and
-    a bell in it, and the environment that puts it first on PATH."""
+    """A gpaste-client whose history holds two items, one with an escape
+    sequence and a bell in it, one a long text, and the environment that puts
+    it first on PATH."""
     fake = scratch / 'gpaste-client'
-    fake.write_text("#!/bin/sh\nprintf '1: a\\033]0;title\\007b\\n'\n")
+    fake.write_text("#!/bin/sh\nprintf '1: a\\033]0;title\\007b\\n'\nprintf '2: %s\\n' '" + 'x' * 4000 + "'\n")
     fake.chmod(0o755)
     return dict(os.environ, PATH=f'{scratch}{os.pathsep}{os.environ.get("PATH", "")}')
 
@@ -169,21 +226,63 @@ def bash_behaviour():
 
     # History names straight off disk, any of which may hold what the shell
     # would expand: offered quoted, each once, none of them run -- under the
-    # bash before 5.2 too, which expands an array subscript once more.
-    for compat in (None, '51'):
+    # bash before 5.2 too, which expands an array subscript once more, and
+    # under a failglob the user set, three of the patterns matching nothing. A
+    # name may start with a dot.
+    for compat, stubs in ((None, ':'), ('51', ':'), (None, 'shopt -s failglob')):
         with tempfile.TemporaryDirectory() as data, tempfile.TemporaryDirectory() as cwd:
             histories = Path(data) / 'gpaste'
             histories.mkdir()
-            for name in ('$(touch ran).xml', 'my work.xml', 'plain.xml', 'plain.db'):
+            for name in ('$(touch ran).xml', 'my work.xml', 'plain.xml', '.dot.xml'):
                 (histories / name).touch()
             env = dict(os.environ, XDG_DATA_HOME=data)
             if compat:
                 env['BASH_COMPAT'] = compat
-            offered = bash_complete(['gpaste-client', 'switch-history', ''], env=env, cwd=cwd)
+            offered = bash_complete(['gpaste-client', 'switch-history', ''], env=env, cwd=cwd, stubs=stubs)
             if (Path(cwd) / 'ran').exists():
                 failures.append(f'a history name was run as a command (BASH_COMPAT={compat})')
-            if sorted(offered) != sorted(['\\$\\(touch\\ ran\\)', 'my\\ work', 'plain']):
-                failures.append(f'history names offered as {offered} (BASH_COMPAT={compat})')
+            if sorted(offered) != sorted(['\\$\\(touch\\ ran\\)', 'my\\ work', 'plain', '.dot']):
+                failures.append(f'history names offered as {offered} (BASH_COMPAT={compat}, {stubs})')
+            # Inside a quote the user opened, a name goes in as it is.
+            for quote in ("'", '"'):
+                offered = bash_complete(['gpaste-client', 'switch-history', f'{quote}my w'], env=env, cwd=cwd)
+                if offered != ['my work']:
+                    failures.append(f'{quote}my w completed as {offered}')
+
+    # A name holding a colon, which bash breaks the word at: bash-completion,
+    # where it is installed, puts the pieces back together, and what is offered
+    # goes in after the colon.
+    bash_completion = Path('/usr/share/bash-completion/bash_completion')
+    if bash_completion.exists():
+        with tempfile.TemporaryDirectory() as data:
+            histories = Path(data) / 'gpaste'
+            histories.mkdir()
+            for name in ('work:2024.xml', 'work:2025.xml'):
+                (histories / name).touch()
+            script = ('source "$1"; source "$2"; COMP_WORDS=(gpaste-client sh work : 202); COMP_CWORD=4; '
+                      'COMP_LINE="gpaste-client sh work:202"; COMP_POINT=${#COMP_LINE}; _gpaste-client; '
+                      'printf \'%s\\n\' "${COMPREPLY[@]}"')
+            out = subprocess.run(['bash', '-c', script, 'bash', str(bash_completion), str(ROOT / 'data/completions/gpaste-client')],
+                                 capture_output=True, text=True, check=True, env=dict(os.environ, XDG_DATA_HOME=data)).stdout
+            if sorted(out.split()) != ['2024', '2025']:
+                failures.append(f'work:202 completed as {out.split()}')
+
+    # A path holding a space is one candidate, and file takes one path alone.
+    with tempfile.TemporaryDirectory() as cwd:
+        (Path(cwd) / 'my notes.txt').touch()
+        offered = bash_complete(['gpaste-client', 'file', 'my'], cwd=cwd)
+        if offered != ['my notes.txt']:
+            failures.append(f'a path with a space offered as {offered}')
+        offered = bash_complete(['gpaste-client', 'file', 'my notes.txt', ''], cwd=cwd)
+        if offered:
+            failures.append(f'a second path offered as {offered}')
+
+    # The value a bundle's last letter takes is no argument: nothing is offered
+    # for it, as for the bare option's.
+    for words in (['gpaste-client', 'make-password', '-ot', ''], ['gpaste-client', '-ot', '']):
+        offered = bash_complete(words)
+        if offered:
+            failures.append(f'{" ".join(words)} offered {offered} for the value')
 
     # A word typed of a name matches it however the shell has to quote the rest:
     # a control character makes all of it $'...', which no letter of the name
@@ -219,11 +318,102 @@ def bash_behaviour():
         if offered != [expected]:
             failures.append(f'{" ".join(words)} offered {offered}, not {expected}')
 
-    if '--favourites' not in bash_options(['']).get('', set()):
-        failures.append('no --favourites for a line with no verb')
-    for verb, options in bash_options(['list-histories', 'lh']).items():
-        if '--zero' not in options:
-            failures.append(f'no --zero after {verb}, which it reads')
+    return failures
+
+
+def zsh_run(body, env=None):
+    """@body run with the zsh completion loaded, _describe and _arguments
+    stubbed to print what they are handed."""
+    script = ('_describe () { print -rl -- "${(@P)${@[-1]}}"; }; _arguments () { print -rl -- "$@"; }; '
+              'source "$1" >/dev/null; ' + body)
+    return subprocess.run(['zsh', '-f', '-c', script, 'zsh', str(ROOT / 'data/completions/_gpaste-client')],
+                          capture_output=True, text=True, check=True, env=env).stdout.splitlines()
+
+
+def zsh_behaviour(every):
+    """What the zsh completion has to get right beyond the verbs it offers,
+    @every the names a verb goes by."""
+    failures = []
+
+    with tempfile.TemporaryDirectory() as data:
+        (Path(data) / 'gpaste').mkdir()
+        (Path(data) / 'gpaste' / 'work:2024.xml').touch()
+        (Path(data) / 'gpaste' / '.dot.xml').touch()
+        (Path(data) / 'gpaste' / 'ab\\cd.xml').touch()
+        (Path(data) / 'gpaste' / 'a\\:b.xml').touch()
+        offered = zsh_run('_gpaste-client_histories', env=dict(os.environ, XDG_DATA_HOME=data))
+        # The backslashes doubled, then the colons escaped: what _describe
+        # reads back as the names themselves.
+        if sorted(offered) != sorted(['.dot', 'work\\:2024', 'ab\\\\cd', 'a\\\\\\:b']):
+            failures.append(f'history names offered as {offered}')
+
+    # file takes one path alone.
+    specs = zsh_run("words=('file' 'notes' ''); CURRENT=3; typeset -A opt_args; _gpaste-client_arguments")
+    if '1:file:_files' not in specs:
+        failures.append(f'file completed by {specs[-1:]}, not its one path')
+
+    # The options after the verb are its own as much as before it, and
+    # --use-index there too makes the item arguments indexes.
+    for words, current, expected in ((['delete', '-i', ''], 3, '1:item:_gpaste-client_indexes'),
+                                     (['delete', '-oi', ''], 3, '1:item:_gpaste-client_indexes'),
+                                     (['merge', '-d', 'i', ''], 4, '*:item:_gpaste-client_uuids')):
+        quoted = ' '.join(f"'{w}'" for w in words)
+        specs = zsh_run(f'words=({quoted}); CURRENT={current}; typeset -A opt_args; _gpaste-client_arguments')
+        if expected not in specs:
+            failures.append(f'{" ".join(words)} completed by {specs[-1:]}, not {expected}')
+        if not any('--use-index' in spec for spec in specs):
+            failures.append(f'{" ".join(words)} knows no options after the verb')
+
+    # After any verb, taking arguments or not.
+    for verb in sorted(every):
+        specs = zsh_run(f"words=('{verb}' ''); CURRENT=2; typeset -A opt_args; _gpaste-client_arguments")
+        if not any('--zero' in spec for spec in specs):
+            failures.append(f'no options completed after {verb}')
+
+    return failures
+
+
+def fish_behaviour():
+    """What the fish completion has to get right beyond the verbs it offers: a
+    history offered for the first argument alone, the verb read as getopt_long
+    reads the line -- past an option's value, a bundle's included, and never an
+    argument spelled like a verb -- a name holding a line break or a tab left
+    out rather than offered in pieces, and one path alone for file."""
+    failures = []
+
+    def complete(line, env=None, cwd=None):
+        """The candidates fish offers for @line, without their descriptions."""
+        out = subprocess.run(['fish', '--no-config', '-c', 'source $argv[1]; complete -C $argv[2]',
+                              str(ROOT / 'data/completions/gpaste-client.fish'), line],
+                             capture_output=True, text=True, check=True, env=env, cwd=cwd).stdout
+        return [c.split('\t')[0] for c in out.splitlines()]
+
+    with tempfile.TemporaryDirectory() as data:
+        (Path(data) / 'gpaste').mkdir()
+        for name in ('work', 'a\tb', 'x\ny'):
+            (Path(data) / 'gpaste' / f'{name}.xml').touch()
+        env = dict(os.environ, XDG_DATA_HOME=data)
+        for line, offered in (('gpaste-client switch-history ', True),
+                              ('gpaste-client backup-history work ', False),
+                              ('gpaste-client -ft 5 sh ', True),
+                              ('gpaste-client add-password sh ', False)):
+            candidates = complete(line, env)
+            if ('work' in candidates) != offered:
+                failures.append(f'"{line}" offers {candidates}')
+            if offered and set(candidates) != {'work'}:
+                failures.append(f'"{line}" offers names in pieces: {candidates}')
+
+        candidates = complete('gpaste-client -t 30 ', env)
+        if 'history' not in candidates:
+            failures.append(f'"gpaste-client -t 30 " offers no verb: {candidates}')
+
+    # file takes one path alone.
+    with tempfile.TemporaryDirectory() as cwd:
+        (Path(cwd) / 'notes.txt').touch()
+        for line, offered in (('gpaste-client file ', True), ('gpaste-client file notes.txt ', False)):
+            candidates = complete(line, cwd=cwd)
+            if ('notes.txt' in candidates) != offered:
+                failures.append(f'"{line}" offers {candidates}')
 
     return failures
 
@@ -258,28 +448,48 @@ def man_verbs():
     return {m.strip('[]') for m in re.findall(r'^\.TP\n\.B gpaste-client (\[?[\w-]+\]?)', body, re.M)}
 
 
-def undocumented_options():
-    """The options parse_cmdline () takes that --help (show_help ()) or the man
-    page's OPTIONS leave out, each written with its short form beside it."""
-    body = (ROOT / 'src/client/gpaste-client.c').read_text()
-    table = body[body.index('struct option long_options[] = {'):]
-    table = table[:table.index('};')]
-    options = re.findall(r'\{\s*"([\w-]+)",\s*\w+,\s*NULL,\s*\'(\w)\'\s*\}', table)
-    if not options:
-        sys.exit('found no long_options[] to check against')
-    help_body = body[body.index('show_help (FILE *out)\n{'):]
-    help_body = help_body[:help_body.index('\n}\n')]
+def unnamed_values(man=None):
+    """The options whose value --help and the man page name differently, or
+    one of them not at all: --help prints the arg its row gives, and an
+    option taking a value with none there reads as a flag. @man is the man
+    page's text, the tree's unless given."""
+    man = man if man is not None else (ROOT / 'man/1/gpaste-client.1').read_text()
+    man = man[man.index('.SH "OPTIONS"'):]
+    failures = []
+
+    for m in option_rows():
+        takes = m['has_arg'] == 'required_argument'
+        if takes != bool(m['arg']):
+            failures.append(f'options[] gives --{m["name"]} {"no" if takes else "an"} argument for --help, '
+                            f'though it takes {"one" if takes else "none"}')
+        entry = re.search(rf'^\.B -{m["letter"]}, --{m["name"]}\b(?P<rest>.*)$', man, re.M)
+        shown = f' <{m["arg"]}>' if m['arg'] else ''
+        if entry and entry['rest'] != shown:
+            failures.append(f'the man page gives --{m["name"]}{entry["rest"]}, where --help gives --{m["name"]}{shown}')
+
+    return failures
+
+
+def undocumented_options(names):
+    """The options the man page's OPTIONS leave out, each written with its short
+    form beside it."""
     man = (ROOT / 'man/1/gpaste-client.1').read_text()
     man = man[man.index('.SH "OPTIONS"'):]
 
-    return ([f'--help leaves out -{short}, --{name}' for name, short in options if f'-{short}, --{name}' not in help_body] +
-            [f'the man page leaves out -{short}, --{name}' for name, short in options
-             if not re.search(rf'^\.B -{short}, --{name}\b', man, re.M)])
+    return [f'the man page leaves out {short}, {long}' for long, short in names.values()
+            if not re.search(rf'^\.B {short}, {long}\b', man, re.M)]
 
 
 def main():
-    canonical, every, items = verbs()
+    option_names, general = options()
+    canonical, every, wanted = verbs(option_names)
     failures = []
+    # The man page check, on one naming a value for a flag, as no man page of
+    # the tree's does: one reading past it would pass any man page.
+    flag = next(m for m in option_rows() if m['has_arg'] == 'no_argument')
+    if not unnamed_values(f'.SH "OPTIONS"\n.B -{flag["letter"]}, --{flag["name"]} <n>\n'):
+        failures.append(f'the man page check reads past a value given to --{flag["name"]}, which takes none')
+    failures += unnamed_values()
 
     offered = {'data/completions/_gpaste-client': zsh_verbs(),
                'data/completions/gpaste-client.fish': fish_verbs()}
@@ -292,26 +502,36 @@ def main():
 
     if shutil.which('bash'):
         failures += [f'data/completions/gpaste-client: {f}' for f in bash_behaviour()]
-        missing = sorted(verb for verb, options in bash_options(sorted(items)).items()
-                         if not {'--use-index', '-i'} <= options)
-        if missing:
-            failures.append(f'data/completions/gpaste-client does not offer --use-index after: {", ".join(missing)}')
+        general_names = {name for letter in general for name in option_names[letter]}
+        for verb, offered in sorted(bash_options(sorted(wanted)).items()):
+            if verb:
+                offered -= general_names
+            if offered != wanted[verb]:
+                failures.append(f'data/completions/gpaste-client offers {" ".join(sorted(offered)) or "nothing"} '
+                                f'after "{verb}", where its row reads {" ".join(sorted(wanted[verb])) or "nothing"}')
 
     if shutil.which('zsh'):
+        failures += [f'data/completions/_gpaste-client: {f}' for f in zsh_behaviour(every)]
         with tempfile.TemporaryDirectory() as scratch:
             listed = zsh_descriptions(Path(scratch))
         if listed.count(b'1: a') != 2 or controls(listed, b'\n'):
             failures.append(f'data/completions/_gpaste-client lists an item as {listed!r}')
+        # A long item cut to what a description shows, before the shell holds it.
+        if max(len(line) for line in listed.splitlines()) > 256:
+            failures.append('data/completions/_gpaste-client hands _describe a whole long item')
         with tempfile.TemporaryDirectory() as scratch:
             listed = zsh_histories(Path(scratch))
         if listed != ['legacy']:
             failures.append(f'data/completions/_gpaste-client offers histories from {listed} beside a GPaste directory')
 
     if shutil.which('fish'):
+        failures += [f'data/completions/gpaste-client.fish: {f}' for f in fish_behaviour()]
         with tempfile.TemporaryDirectory() as scratch:
             listed = fish_descriptions(Path(scratch))
         if listed.count(b'1\ta') != 2 or controls(listed, b'\t\n'):
             failures.append(f'data/completions/gpaste-client.fish lists an item as {listed!r}')
+        if max(len(line) for line in listed.splitlines()) > 256:
+            failures.append('data/completions/gpaste-client.fish offers a whole long item')
         with tempfile.TemporaryDirectory() as scratch:
             listed = fish_histories(Path(scratch))
         if listed != ['legacy']:
@@ -321,7 +541,7 @@ def main():
     missing = sorted(v for v in canonical if v not in man)
     if missing:
         failures.append(f'man/1/gpaste-client.1 does not document: {", ".join(missing)}')
-    failures += undocumented_options()
+    failures += undocumented_options(option_names)
 
     for f in failures:
         print(f'FAIL: {f}', file=sys.stderr)

@@ -16,8 +16,24 @@ G_BEGIN_DECLS
 void g_paste_history_load (GPasteHistory *self,
                            const gchar   *name);
 
-/* Whether deleting or emptying @name reaches every store keeping it, through
- * the backend in use (g_paste_storage_backend_reaches_history ()). */
+/* g_paste_history_delete (), @deleted, when not %NULL, saying whether the
+ * history is gone: set once its store is, the delete failing over images it
+ * could not all sweep included, and left FALSE by every refusal before the
+ * unlink. */
+gboolean g_paste_history_delete_full (GPasteHistory *self,
+                                      const gchar   *name,
+                                      gboolean      *deleted,
+                                      GError       **error);
+
+/* Whether the history in use may change, its store not handed over
+ * (g_paste_history_sync ()), as every D-Bus method and shortcut changing it
+ * asks first: a history nobody has named yet has no store to have handed
+ * over. Exported for the tests compiling gpaste-daemon.c in. */
+gboolean g_paste_history_check_current_owned (GPasteHistory *self,
+                                              GError       **error);
+
+/* Whether deleting, emptying or backing up @name reaches every store keeping
+ * it, through the backend in use (g_paste_storage_backend_reaches_history ()). */
 gboolean g_paste_history_reaches_store (GPasteHistory *self,
                                         const gchar   *name);
 
@@ -29,5 +45,30 @@ gboolean g_paste_history_reaches_store (GPasteHistory *self,
 GPtrArray *g_paste_history_search_items (GPasteHistory *self,
                                          const gchar   *pattern,
                                          GError       **error);
+
+/* The same, matched on a worker thread rather than under the history's lock:
+ * a pattern can take its regular expression's match limit on every item, tens
+ * of milliseconds apiece whatever their length, which on the main loop --
+ * gnome-shell's compositor, for the in-shell daemon -- would stall it for as
+ * long. The items are taken as the history holds them when it is asked. */
+void       g_paste_history_search_items_async  (GPasteHistory      *self,
+                                                const gchar        *pattern,
+                                                GAsyncReadyCallback callback,
+                                                gpointer            user_data);
+GPtrArray *g_paste_history_search_items_finish (GAsyncResult       *result,
+                                                GError            **error);
+
+void      g_paste_history_list_sizes_async  (GPasteHistory      *self,
+                                             GStrv               names,
+                                             GAsyncReadyCallback callback,
+                                             gpointer            user_data);
+GVariant *g_paste_history_list_sizes_finish (GAsyncResult       *result,
+                                             GError            **error);
+
+/* The passwords the change being announced takes out of the history, which
+ * GPasteHistory::password-dropped announces after ::selected: a handler of the
+ * one can tell a head elected because a password went from any other. %NULL
+ * outside of an announcement. */
+const GSList *g_paste_history_get_dropping (GPasteHistory *self);
 
 G_END_DECLS

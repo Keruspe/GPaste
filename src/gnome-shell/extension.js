@@ -26,12 +26,17 @@ export default class GPasteExtension extends Extension {
         // declares the "unlock-dialog" session mode and stays enabled across the
         // lock. The panel indicator, on the other hand, must never be reachable
         // from the lock screen: it is created only in the normal "user" mode and
-        // torn down whenever we leave it. Locking and unlocking therefore never
-        // reach enable()/disable(); _sync() is what acts on the mode change.
+        // torn down whenever we leave it: _sync() is what acts on the mode
+        // change. A lock still reaches disable() and enable() when the shell
+        // rebases the extension, one enabled before it lacking "unlock-dialog":
+        // that disable() reports the extension gone, and nothing reports it back
+        // before the unlock's indicator does, so with "track-extension-state"
+        // the clipboard goes untracked through the locked session, the daemon's
+        // "extension-paused" restoring the tracking at the unlock.
         if (this._settings.get_experimental_meta_daemon())
             this._runner = new GPasteDaemonRunner(this._settings);
 
-        this._sessionUpdatedId = Main.sessionMode.connect('updated', this._sync.bind(this));
+        Main.sessionMode.connectObject('updated', this._sync.bind(this), this);
         this._sync();
     }
 
@@ -42,15 +47,13 @@ export default class GPasteExtension extends Extension {
     }
 
     disable() {
-        if (this._sessionUpdatedId) {
-            Main.sessionMode.disconnect(this._sessionUpdatedId);
-            this._sessionUpdatedId = 0;
-        }
+        Main.sessionMode.disconnectObject(this);
 
         // Hosting the daemon ourselves comes first: both routes below are D-Bus
         // calls dispatched a main loop turn later, by which time _runner's
         // shutdown() has released the name and dropped the daemon they were
-        // meant for. Report to it directly instead, while it is still there.
+        // meant for. Report to it directly instead, while it is still there --
+        // or to nobody, the name ours with no daemon built behind it yet.
         const reportedInProcess = !!this._runner?.reportExtensionGone();
 
         // Otherwise the indicator is what reports our state to the daemon, but
@@ -58,9 +61,9 @@ export default class GPasteExtension extends Extension {
         // disable reached from a locked session — an extension update, or
         // gnome-extensions disable), and one that never reached a daemon has no
         // client to report through. It tells us which happened, and we report it
-        // ourselves when it could not. Exactly one of the two reports, whichever
-        // way it went.
-        if (!this._destroyIndicator(true) && !reportedInProcess)
+        // ourselves when it could not. Exactly one report, whichever way it went:
+        // the indicator says nothing once the in-shell daemon was told.
+        if (!this._destroyIndicator(!reportedInProcess) && !reportedInProcess)
             this._reportExtensionGone();
 
         this._runner?.shutdown();
@@ -84,9 +87,9 @@ export default class GPasteExtension extends Extension {
     // nothing to report to, which is exactly what the failed call means.
     _reportExtensionGone() {
         Gio.DBus.session.call(
-            'org.gnome.GPaste',
-            '/org/gnome/GPaste',
-            'org.gnome.GPaste3',
+            GPaste.BUS_NAME,
+            GPaste.DAEMON_OBJECT_PATH,
+            GPaste.DAEMON_INTERFACE_NAME,
             'ReportExtensionState',
             new GLib.Variant('(b)', [false]),
             null,
@@ -97,7 +100,9 @@ export default class GPasteExtension extends Extension {
                 try {
                     bus.call_finish(res);
                 } catch (e) {
-                    if (!e.matches(Gio.DBusError, Gio.DBusError.SERVICE_UNKNOWN))
+                    // dbus-daemon answers NameHasNoOwner where dbus-broker
+                    // answers ServiceUnknown: libgpaste knows both.
+                    if (!GPaste.Client.is_daemon_gone_error(e))
                         console.error(`GPaste: ${e.message}`);
                 }
             });

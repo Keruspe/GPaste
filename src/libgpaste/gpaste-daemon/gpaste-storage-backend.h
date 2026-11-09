@@ -67,7 +67,9 @@ struct _GPasteStorageBackendClass
      * it holds encrypted data the backend cannot open. Everything else -- an
      * empty placeholder, a truncated or foreign file, an I/O error -- is
      * inconclusive and must answer %FALSE: condemning a passphrase over a
-     * corrupt file tells the user their correct one is wrong.
+     * corrupt file tells the user their correct one is wrong. A check that
+     * could not be made at all -- the key not derived -- answers %FALSE too,
+     * and says so (g_paste_storage_backend_set_unverifiable ()).
      *
      * Only ever asked of a backend built with the passphrase under test. */
     gboolean (*history_refutes_passphrase)  (GPasteStorageBackend *self,
@@ -110,10 +112,14 @@ struct _GPasteStorageBackendClass
                                       GPasteItem           *item);
     void     (*clear_history)        (GPasteStorageBackend *self,
                                       const gchar          *name);
-    /* Whether a write of @name failed since the last full one that landed,
-     * the store lagging the history until one does. Asked on the main thread
-     * after every write, so it must not wait on a read in flight. Unset, no
-     * store ever lags. */
+    /* Whether a write of @name failed since the last full one or emptying
+     * that landed, the store lagging the history until one does. Asked on
+     * the main thread after every write, so it must not wait on a read in
+     * flight. Unset, the base class answers it from the full writes it sees,
+     * which is all a backend without the incremental vfuncs makes, and, for
+     * the backends of this library, from what their incremental writes record
+     * of themselves. A backend from outside it implementing those has no way
+     * to record them, and answers this itself. */
     gboolean (*has_diverged)         (GPasteStorageBackend *self,
                                       const gchar          *name);
 };
@@ -146,10 +152,10 @@ gsize g_paste_storage_backend_count_history    (GPasteStorageBackend *self,
                                                 const gchar          *name);
 gboolean g_paste_storage_backend_delete_history_images (const gchar *name,
                                                         GError     **error);
-gboolean g_paste_storage_backend_rekey        (GPasteStorageBackend *self,
-                                               const gchar          *name,
-                                               const gchar          *new_passphrase,
-                                               gboolean             *split);
+gboolean g_paste_storage_backend_rekey         (GPasteStorageBackend *self,
+                                                const gchar          *name,
+                                                const gchar          *new_passphrase,
+                                                gboolean             *split);
 
 void     g_paste_storage_backend_add_item             (GPasteStorageBackend *self,
                                                        const gchar          *name,

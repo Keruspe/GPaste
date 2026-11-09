@@ -1,5 +1,5 @@
 project('GPaste', 'c',
-  version: '51.2',
+  version: '51.3',
   meson_version: '>=1.9',
   default_options: [ 'warning_level=2', 'c_std=gnu17' ],
 )

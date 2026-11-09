@@ -73,10 +73,7 @@ static gboolean
 g_paste_daemon_methods_check_owned (const GPasteDaemonMethods *self,
                                     GError                   **error)
 {
-    const gchar *current = g_paste_history_get_current (self->history);
-
-    /* A history nobody has named yet has no store to have handed over. */
-    return !current || g_paste_history_sync (self->history, current, error);
+    return g_paste_history_check_current_owned (self->history, error);
 }
 
 /* Whether a password called @name exists is asked of every password the
@@ -246,16 +243,14 @@ g_paste_daemon_methods_starts_as_text (const gchar *head,
     return length == G_PASTE_DAEMON_METHODS_HEAD_SIZE && !memchr (end, '\0', rest) && g_utf8_get_char_validated (end, (gssize) rest) == (gunichar) -2;
 }
 
-/* How many bytes of a file AddFile holds at most: "max-memory-usage", short of
- * what a gsize can count with the NUL after them and the one byte more that
- * tells a file at the cap from one past it -- on a 32-bit build, 4096 MiB or
- * more would wrap. */
+/* How many bytes of a file AddFile holds at most: the history's memory cap
+ * (g_paste_util_max_memory ()), short of what a gsize can count with the NUL
+ * after them and the one byte more that tells a file at the cap from one past
+ * it. */
 static gsize
 g_paste_daemon_methods_file_cap (const GPasteDaemonMethods *self)
 {
-    guint64 cap = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
-
-    return (gsize) MIN (cap, (guint64) G_MAXSIZE - 2);
+    return (gsize) MIN (g_paste_util_max_memory (self->settings), (guint64) G_MAXSIZE - 2);
 }
 
 /* Read whole and on the main loop, so only what is sure to end, at a size the
@@ -366,15 +361,16 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
                                                     G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_SIZE,
                                                     G_FILE_QUERY_INFO_NONE,
                                                     NULL /* cancellable */,
-                                                    error);
-
-    if (!info)
-        return NULL;
+                                                    NULL /* error */);
 
     /* GLib's local backend answers a path it could not stat -- one in a folder
      * the daemon cannot enter -- with an info holding none of what was asked,
-     * rather than failing: the stat says why (/history/add_file_unsearchable). */
-    if (!g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_TYPE) ||
+     * rather than failing: the stat says why (/history/add_file_unsearchable).
+     * So does a path it fails on, missing among them, in %G_FILE_ERROR as the
+     * open and the reads below are: one file, one domain
+     * (/history/add_file_missing). */
+    if (!info ||
+        !g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_TYPE) ||
         !g_file_info_has_attribute (info, G_FILE_ATTRIBUTE_STANDARD_SIZE))
     {
         GStatBuf unread;
@@ -451,9 +447,12 @@ g_paste_daemon_methods_add_file (const GPasteDaemonMethods *self,
     /* A history with images-support off keeps no image: both storage flavours
      * drop one on their next read, the file backend's next write sweeping its
      * file, so one added would be answered and listed only to be gone at the
-     * next start. */
+     * next start. Refused before the file is decoded, whether it is an image
+     * or nothing a loader reads: telling the two apart is a whole decode, on
+     * the main loop, for a refusal either way -- which is why the words say
+     * so, and the XML too. */
     G_PASTE_DBUS_ASSERT_FULL (g_paste_settings_get_images_support (self->settings),
-                              G_PASTE_ERROR_REJECTED, "images-support is off, so the history keeps no image", NULL);
+                              G_PASTE_ERROR_REJECTED, "the file is no text, and with images-support off no image is kept", NULL);
 
     g_autoptr (GBytes) bytes = g_bytes_new_take (g_steal_pointer (&content), length);
 
@@ -482,12 +481,20 @@ g_paste_daemon_methods_add_password (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no name for the password to add", NULL);
     G_PASTE_DBUS_ASSERT_FULL (password && *password, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to add", NULL);
 
+    /* The placeholder stands for no name at all, which a password read off a
+     * selection has, and two nameless passwords are told apart by their values
+     * alone: added under it, one would answer whether the value guessed is a
+     * password the history already holds, through the uuid it comes back
+     * under. */
+    G_PASTE_DBUS_ASSERT_FULL (!g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME),
+                              G_PASTE_ERROR_INVALID_ARGUMENT,
+                              "the nameless placeholder is not a name",
+                              NULL);
+
     if (!g_paste_daemon_methods_check_names_loaded (self, name, error))
         return NULL;
 
-    /* As in g_paste_daemon_methods_make_password(): the nameless placeholder
-     * is shared by passwords that have no user-chosen name. */
-    GPastePasswordItem *namesake = (g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME)) ? NULL : g_paste_history_get_password (self->history, name);
+    GPastePasswordItem *namesake = g_paste_history_get_password (self->history, name);
 
     G_PASTE_DBUS_ASSERT_FULL (!namesake,
                               G_PASTE_ERROR_ALREADY_EXISTS,
@@ -568,8 +575,12 @@ g_paste_daemon_methods_backup_allowed (const GPasteDaemonMethods *self,
                               G_PASTE_ERROR_INVALID_ARGUMENT, "too long a name for a history of this storage", FALSE);
 
     /* Nor is a history no store holds one to back up: reading it would create
-     * an empty one under that name, and the backup of it would answer OK. */
-    G_PASTE_DBUS_ASSERT_FULL (current || g_strv_contains ((const gchar * const *) histories, history),
+     * an empty one under that name, and the backup of it would answer OK. One a
+     * store out of the backend's reach keeps -- none in use, over what a
+     * migration kept or an encrypted store left locked -- which no listing
+     * shows, is there all the same, g_paste_history_copy_async ()'s to refuse
+     * as failed. */
+    G_PASTE_DBUS_ASSERT_FULL (current || g_strv_contains ((const gchar * const *) histories, history) || !g_paste_history_reaches_store (self->history, history),
                               G_PASTE_ERROR_NOT_FOUND, "no history goes by that name", FALSE);
 
     return TRUE;
@@ -590,6 +601,8 @@ backup_history_data_free (BackupHistoryData *self)
     g_clear_object (&self->history);
     g_free (self);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (BackupHistoryData, backup_history_data_free)
 
 static void
 g_paste_daemon_methods_on_backup_copied (GObject      *source_object G_GNUC_UNUSED,
@@ -635,12 +648,12 @@ g_paste_daemon_methods_backup_history_async (const GPasteDaemonMethods *self,
     g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
     GError *error = NULL;
 
-    BackupHistoryData *data = g_new0 (BackupHistoryData, 1);
+    g_autoptr (BackupHistoryData) data = g_new0 (BackupHistoryData, 1);
 
     data->skeleton = g_object_ref (self->skeleton);
     data->history = g_object_ref (self->history);
     g_task_set_source_tag (task, g_paste_daemon_methods_backup_history_async);
-    g_task_set_task_data (task, data, (GDestroyNotify) backup_history_data_free);
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) backup_history_data_free);
 
     if (!g_paste_daemon_methods_backup_allowed (self, history, backup, &error))
     {
@@ -713,10 +726,15 @@ g_paste_daemon_methods_delete_history (const GPasteDaemonMethods *self,
         G_PASTE_DBUS_ASSERT (unreachable || g_strv_contains ((const gchar * const *) histories, name), G_PASTE_ERROR_NOT_FOUND, "no history goes by that name");
     }
 
-    /* Nothing was deleted if this fails, the current history left only for
-     * the time it took (g_paste_history_delete ()), so the deletion is not
-     * announced; the caller turns @error into the method's reply. */
-    if (!g_paste_history_delete (history, name, error))
+    /* Nothing was deleted unless the store went, the current history left
+     * only for the time it took (g_paste_history_delete_full ()), so the
+     * deletion is not announced; a store that went, its images not all swept,
+     * is, the failure the reply all the same. The caller turns @error into the
+     * method's reply. */
+    gboolean deleted = FALSE;
+
+    g_paste_history_delete_full (history, name, &deleted, error);
+    if (!deleted)
         return;
 
     g_paste_daemon3_emit_raw_history_deleted (self->skeleton, name);
@@ -731,6 +749,10 @@ g_paste_daemon_methods_delete_password (const GPasteDaemonMethods *self,
                                         GError                   **error)
 {
     G_PASTE_DBUS_ASSERT (name && *name, G_PASTE_ERROR_INVALID_ARGUMENT, "no password to delete");
+    /* As AddPassword refuses it: names no password, standing for every
+     * nameless one, and deleting the first it matched would be deleting a
+     * secret nobody named. */
+    G_PASTE_DBUS_ASSERT (!g_paste_str_equal (name, G_PASTE_PASSWORD_ITEM_NO_NAME), G_PASTE_ERROR_INVALID_ARGUMENT, "the nameless placeholder is not a name");
 
     if (!g_paste_daemon_methods_check_owned (self, error) || !g_paste_daemon_methods_check_names_loaded (self, NULL, error))
         return;
@@ -927,12 +949,26 @@ g_paste_daemon_methods_get_items (const GPasteDaemonMethods *self,
 {
     GPasteHistory *history = self->history;
     g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_ITEMS_VARIANT_TYPE);
+    guint64 cap = g_paste_util_max_memory (self->settings);
+    g_autoptr (GHashTable) seen = g_hash_table_new (g_str_hash, g_str_equal);
+    guint64 repeated = 0;
 
     for (gsize i = 0; uuids && uuids[i]; ++i)
     {
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
 
         G_PASTE_DBUS_ASSERT_FULL (item, G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.", NULL);
+
+        /* What repeats, no more than the history may hold: a uuid asked for
+         * again would otherwise have one small call copy an item's whole value
+         * into the reply as many times as the caller cares to ask. Distinct
+         * items are the history's own and answered whatever they weigh, pinned
+         * ones -- which the memory cap never evicts -- past it included. */
+        if (!g_hash_table_add (seen, (gpointer) g_paste_item_get_uuid (item)))
+        {
+            repeated += strlen (g_paste_item_get_value (item));
+            G_PASTE_DBUS_ASSERT_FULL (repeated <= cap, G_PASTE_ERROR_INVALID_ARGUMENT, "more than the history may hold", NULL);
+        }
 
         g_variant_builder_add_value (&builder, g_paste_daemon_methods_item_variant (item));
     }
@@ -1040,38 +1076,113 @@ g_paste_daemon_methods_get_password_timeout (const GPasteDaemonMethods *self,
     return g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (item));
 }
 
-/* Every history with how many items it holds, in the order the store lists them,
- * which is the order such a listing is drawn in. The size rides along because
- * everything listing histories draws their sizes beside them, and asking one at
- * a time meant one full load of one history apiece. */
-G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_list_histories (const GPasteDaemonMethods *self,
-                                       GError                   **error)
+/* The names ListHistories answers for, in its order.
+ *
+ * The backends answer with the names on disk, which is what everything that
+ * opens those files needs, but this answer travels back over the bus, where a
+ * name that is not valid UTF-8 has no place. Such a history could not be
+ * switched to either, since that call names it the same way, so it is left
+ * out rather than handed back a name nothing can act on.
+ *
+ * The current history is one whether or not its store holds it yet: one just
+ * switched to has none until its load has read it, and a listing asked for on
+ * the HistoriesChanged that switch raised would otherwise leave out the very
+ * history it was raised for. */
+static GStrv
+g_paste_daemon_methods_listed_names (const GPasteDaemonMethods *self,
+                                     GError                   **error)
 {
-    g_auto (GStrv) names = g_paste_history_list (self->history, error);
+    /* The vector alone: each name is taken out of it below. */
+    g_autofree gchar **names = g_paste_history_list (self->history, error);
 
     if (!names)
         return NULL;
 
-    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_HISTORIES_VARIANT_TYPE);
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    const gchar *current = g_paste_history_get_current (self->history);
+    gboolean listed = current && g_strv_contains ((const gchar * const *) names, current);
 
     for (GStrv name = names; *name; ++name)
     {
-        /* The backends answer with the names on disk, which is what everything
-         * that opens those files needs, but this answer travels back over the
-         * bus, where a name that is not valid UTF-8 has no place. Such a history
-         * could not be switched to either, since that call names it the same
-         * way, so leave it out rather than hand back a name nothing can act
-         * on. */
-        if (!g_utf8_validate (*name, -1, NULL))
-            continue;
+        g_autofree gchar *owned = g_steal_pointer (name);
 
-        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING,
-                               *name,
-                               g_paste_history_get_size (self->history, *name));
+        if (g_utf8_validate (owned, -1, NULL))
+            g_strv_builder_take (builder, g_steal_pointer (&owned));
+    }
+    if (current && !listed)
+        g_strv_builder_add (builder, current);
+
+    return g_strv_builder_end (builder);
+}
+
+/* @task was made when the call landed, so GTask calls back from within its
+ * return here: the answer goes out with the size of the history in use that
+ * g_paste_history_list_sizes_finish () has just read, nothing having run in
+ * between (g_paste_history_list_sizes_async ()). */
+static void
+on_histories_sized (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    GVariant *histories = g_paste_history_list_sizes_finish (result, &error);
+
+    if (histories)
+        g_task_return_pointer (task, histories, (GDestroyNotify) g_variant_unref);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
+}
+
+/**
+ * g_paste_daemon_methods_list_histories_async:
+ * @self: the daemon's methods
+ * @callback: (scope async): called with the histories, or the failure
+ * @user_data: data passed to @callback
+ *
+ * Every history with how many items it holds, in the order the store lists
+ * them, which is the order such a listing is drawn in. The size rides along
+ * because everything listing histories draws their sizes beside them, and
+ * asking one at a time would mean one full load of one history apiece. The
+ * stores are counted on a worker thread (g_paste_history_list_sizes_async ()).
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_list_histories_async (const GPasteDaemonMethods *self,
+                                             GAsyncReadyCallback        callback,
+                                             gpointer                   user_data)
+{
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) names = g_paste_daemon_methods_listed_names (self, &error);
+
+    g_task_set_source_tag (task, g_paste_daemon_methods_list_histories_async);
+    if (!names)
+    {
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
     }
 
-    return g_variant_builder_end (&builder);
+    g_paste_history_list_sizes_async (self->history, g_steal_pointer (&names), on_histories_sized, g_steal_pointer (&task));
+}
+
+/**
+ * g_paste_daemon_methods_list_histories_finish:
+ * @result: the #GAsyncResult g_paste_daemon_methods_list_histories_async ()
+ *     handed its callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails when the store cannot list the histories.
+ *
+ * Returns: (transfer full): every history with its size, or %NULL
+ */
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_list_histories_finish (GAsyncResult *result,
+                                              GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_daemon_methods_list_histories_async, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 /* Daemon-side because it has to be: what gets joined is each item's whole
@@ -1091,8 +1202,19 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT_FULL (length, G_PASTE_ERROR_INVALID_ARGUMENT, "nothing to merge", NULL);
 
     GPasteHistory *history = self->history;
-    g_autoptr (GString) str = g_string_new (NULL);
+    /* Borrowed from the history, which nothing changes before they are
+     * joined. */
+    g_autoptr (GPtrArray) items = g_ptr_array_sized_new (length);
+    guint64 decoration_length = strlen (decoration);
+    guint64 separator_length = strlen (separator);
+    guint64 merged_length = 0;
+    guint64 first_length = 0;
+    guint64 last_length = 0;
 
+    /* Every item checked, and the merged text measured, before any of it is
+     * joined: what a caller repeats, decorates and separates is the caller's to
+     * choose, and joined first it could be gigabytes, allocated in the daemon
+     * -- gnome-shell, for the in-shell one -- only to be refused. */
     for (gsize i = 0; i < length; ++i)
     {
         GPasteItem *item = g_paste_history_get_by_uuid (history, uuids[i]);
@@ -1101,11 +1223,30 @@ g_paste_daemon_methods_merge (const GPasteDaemonMethods *self,
         G_PASTE_DBUS_ASSERT_FULL (!G_PASTE_IS_IMAGE_ITEM (item) && !G_PASTE_IS_PASSWORD_ITEM (item),
                                   G_PASTE_ERROR_WRONG_ITEM_KIND, "an image or a password has no text to merge", NULL);
 
-        g_string_append_printf (str, "%s%s%s%s",
-                                (i) ? separator : "",
-                                decoration,
-                                g_paste_item_get_value (item),
-                                decoration);
+        g_ptr_array_add (items, item);
+        last_length = strlen (g_paste_item_get_value (item));
+        if (!i)
+            first_length = last_length;
+        merged_length += ((i) ? separator_length : 0) + 2 * decoration_length + last_length;
+    }
+
+    /* What do_add () measures is the text trimmed, when trimming is on, which
+     * can take off no more than the first item and its decoration at one end
+     * and the last at the other: past that, the cap refuses it whatever. */
+    guint64 trimmable = (g_paste_settings_get_trim_items (self->settings)) ? 2 * decoration_length + first_length + last_length : 0;
+
+    G_PASTE_DBUS_ASSERT_FULL (merged_length <= g_paste_settings_get_max_text_item_size (self->settings) + trimmable,
+                              G_PASTE_ERROR_REJECTED, "the content is longer than max-text-item-size", NULL);
+
+    g_autoptr (GString) str = g_string_sized_new ((gsize) merged_length);
+
+    for (guint i = 0; i < items->len; ++i)
+    {
+        if (i)
+            g_string_append (str, separator);
+        g_string_append (str, decoration);
+        g_string_append (str, g_paste_item_get_value (g_ptr_array_index (items, i)));
+        g_string_append (str, decoration);
     }
 
     return g_paste_daemon_methods_do_add (self, str->str, str->len, error);
@@ -1164,25 +1305,74 @@ g_paste_daemon_methods_extension_state_changed (const GPasteDaemonMethods *self,
     }
 }
 
-/* The matches themselves, not their uuids: a caller wanting to show them would
- * only have to ask for every one of them straight back.
+static void
+on_search_matched (GObject      *source_object G_GNUC_UNUSED,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GPtrArray) items = g_paste_history_search_items_finish (result, &error);
+
+    if (items)
+        g_task_return_pointer (task, g_variant_ref_sink (g_paste_daemon_methods_items_variant (items)), (GDestroyNotify) g_variant_unref);
+    else
+        g_task_return_error (task, g_steal_pointer (&error));
+}
+
+/**
+ * g_paste_daemon_methods_search_async:
+ * @self: the daemon's methods
+ * @query: the regular expression to match
+ * @callback: (scope async): called with the matches, or the refusal
+ * @user_data: data passed to @callback
+ *
+ * Search, the matching done on a worker thread
+ * (g_paste_history_search_items_async ()). The matches themselves, not their
+ * uuids: a caller wanting to show them would only have to ask for every one of
+ * them straight back.
  *
  * A query too long, or no regular expression at all, is the caller's to hear
  * of rather than the daemon's journal, once per keystroke: refused, the
- * history's one compile of it saying which. */
-G_PASTE_VISIBLE GVariant *
-g_paste_daemon_methods_search (const GPasteDaemonMethods *self,
-                               const gchar               *query,
-                               GError                   **error)
+ * history's one compile of it saying which.
+ */
+G_PASTE_VISIBLE void
+g_paste_daemon_methods_search_async (const GPasteDaemonMethods *self,
+                                     const gchar               *query,
+                                     GAsyncReadyCallback        callback,
+                                     gpointer                   user_data)
 {
-    G_PASTE_DBUS_ASSERT_FULL (strlen (query) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long", NULL);
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
 
-    g_autoptr (GPtrArray) items = g_paste_history_search_items (self->history, query, error);
+    g_task_set_source_tag (task, g_paste_daemon_methods_search_async);
+    if (strlen (query) > G_PASTE_HISTORY_MAX_SEARCH_LENGTH)
+    {
+        g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is too long");
+        return;
+    }
 
-    if (!items)
-        return NULL;
+    g_paste_history_search_items_async (self->history, query, on_search_matched, g_steal_pointer (&task));
+}
 
-    return g_paste_daemon_methods_items_variant (items);
+/**
+ * g_paste_daemon_methods_search_finish:
+ * @result: the #GAsyncResult g_paste_daemon_methods_search_async () handed its
+ *     callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Fails with %G_PASTE_ERROR_INVALID_ARGUMENT for a query too long or no
+ * regular expression.
+ *
+ * Returns: (transfer full): the matching items, or %NULL
+ */
+G_PASTE_VISIBLE GVariant *
+g_paste_daemon_methods_search_finish (GAsyncResult *result,
+                                      GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_daemon_methods_search_async, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
 }
 
 G_PASTE_VISIBLE void
@@ -1206,6 +1396,11 @@ g_paste_daemon_methods_select (const GPasteDaemonMethods *self,
         return;
 
     G_PASTE_DBUS_ASSERT (g_paste_history_select (self->history, uuid), G_PASTE_ERROR_NOT_FOUND, "Provided uuid doesn't match any item.");
+
+    /* The selection is made on the way out of the select, and an item no
+     * selection takes is dropped from the history there (on_item_selected ()),
+     * as a copy of it would be: gone, it is what says the call did nothing. */
+    G_PASTE_DBUS_ASSERT (g_paste_history_get_by_uuid (self->history, uuid), G_PASTE_ERROR_FAILED, "the item could not be put on the clipboard");
 }
 
 G_PASTE_VISIBLE gchar *
@@ -1252,6 +1447,13 @@ g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
     G_PASTE_DBUS_ASSERT (G_PASTE_IS_TEXT_ITEM (item), G_PASTE_ERROR_WRONG_ITEM_KIND,
                          "attempted to strip the rich text of an item other than GPasteTextItem");
 
+    /* Held so that what the strip leaves can be told apart from it: an item
+     * with no rich text to drop stays the very object it was. Refreshing every
+     * selection holding its text would then only take them from whichever
+     * application owns them, for a call that changed nothing -- bar one still
+     * owed an earlier strip of it, which asking again is how a user retries. */
+    g_autoptr (GPasteItem) before = g_object_ref (item);
+
     /* Asked again rather than taken for granted: an item that had no rich text to
      * begin with is stripped successfully, but the lookup above is unlocked, so
      * the item can be evicted, deleted or replaced by one of another kind before
@@ -1269,7 +1471,9 @@ g_paste_daemon_methods_strip_rich_text (const GPasteDaemonMethods *self,
                          "attempted to strip the rich text of an item other than GPasteTextItem");
 
     item = g_paste_history_get_by_uuid (self->history, uuid);
-    if (item)
+    if (item == before)
+        g_paste_clipboards_manager_retry_refresh (self->clipboards_manager, item);
+    else if (item)
         g_paste_clipboards_manager_refresh_text (self->clipboards_manager, item);
 }
 

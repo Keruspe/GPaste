@@ -12,3 +12,11 @@ test_client_presence = executable(
   dependencies: [ gio_dep, libgpaste_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
 )
 test('client-presence', test_client_presence, depends: [gpaste_schemas, test_bus_supervisor])
+
+# The client compiled in, its two-minute give-up cut to two seconds.
+test_client_give_up = executable(
+  'test-client-give-up',
+  sources: 'test-give-up.c',
+  dependencies: [ gio_dep, libgpaste_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
+)
+test('client-give-up', test_client_give_up, depends: [gpaste_schemas, test_bus_supervisor])

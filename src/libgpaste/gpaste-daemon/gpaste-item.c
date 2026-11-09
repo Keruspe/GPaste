@@ -42,7 +42,9 @@ g_paste_item_get_uuid (GPasteItem *self)
  * g_paste_item_get_value:
  * @self: a #GPasteItem instance
  *
- * Get the value of the given item (text, uris or path to the image)
+ * Get the value of the given item, as everything outside the daemon sees it:
+ * a text, uris, a colour, an image's checksum, or for a password the
+ * placeholder standing for it (see g_paste_item_get_real_value ())
  *
  * Returns: read-only string containing the value
  */
@@ -58,8 +60,8 @@ g_paste_item_get_value (GPasteItem *self)
  * g_paste_item_get_real_value:
  * @self: a #GPasteItem instance
  *
- * Get the real value of the given item (text, uris or path to the image)
- * This is different from get_value only for #GPastePasswordItem
+ * Get the real value of the given item: the password itself for a
+ * #GPastePasswordItem, what g_paste_item_get_value () gives for any other
  *
  * Returns: read-only string containing the real value
  */
@@ -363,9 +365,9 @@ g_paste_item_set_uuid (GPasteItem  *self,
  * @value: the new value
  *
  * Replace the value of the item, keeping its size accounting right. Meant for
- * re-anchoring an image item's canonical path, not for editing contents:
- * consumers cache no copy of the value, but they do rely on it being stable
- * once the item is persisted.
+ * an image item's checksum, set once its bytes are known, not for editing
+ * contents: consumers cache no copy of the value, but they do rely on it being
+ * stable once the item is persisted.
  */
 G_PASTE_VISIBLE void
 g_paste_item_set_value (GPasteItem  *self,

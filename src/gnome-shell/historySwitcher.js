@@ -13,7 +13,7 @@ import St from 'gi://St';
 
 import {addActionButton} from './actionButton.js';
 import {GPasteDeleteButton} from './deleteButton.js';
-import {awaitReply, daemonGone, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, daemonGone, logFailure, replaceCancellable, widthWithoutRevealed} from './dependencies.js';
 
 /**
  * Makes an entry of the chooser act on the name typed into it on Enter, or on a
@@ -94,7 +94,8 @@ class GPasteHistoryConfirmationDialog extends ModalDialog.ModalDialog {
  * the row and hide it under the keyboard, which GPasteItem answers with a watch
  * on the stage's focus. Every row that wears it answers the Delete key with what
  * the button does, so there is nothing the button would add there to be worth
- * that.
+ * that. Every such row also leaves it out of the width it asks for
+ * (widthWithoutRevealed ()), so that it takes the name's room when it shows.
  *
  * @param {PopupBaseMenuItem} row - the row the button sits on
  * @param {Function} onClicked - what deleting from that row does
@@ -163,7 +164,8 @@ class GPasteHistoryRow extends PopupMenuItem {
         // Ahead of the count rather than after it: shown and hidden with the
         // hover, a button at the end of the row would push the count left and
         // back on every row the pointer crosses.
-        this.add_child(newHistoryDeleteButton(this, () => this.emit('delete', this._history)));
+        this._deleteButton = newHistoryDeleteButton(this, () => this.emit('delete', this._history));
+        this.add_child(this._deleteButton);
 
         // The count at the end of the row.
         this._size = new St.Label({
@@ -190,6 +192,10 @@ class GPasteHistoryRow extends PopupMenuItem {
 
     get history() {
         return this._history;
+    }
+
+    vfunc_get_preferred_width(forHeight) {
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), [this._deleteButton], forHeight);
     }
 
     setSize(size) {
@@ -411,7 +417,8 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         // of landing ahead of the name and moving it on every hover.
         const expander = this.get_children().find(child => child.has_style_class_name('popup-menu-item-expander'));
 
-        this.insert_child_above(newHistoryDeleteButton(this, () => this._deleteCurrent()), expander ?? null);
+        this._deleteButton = newHistoryDeleteButton(this, () => this._deleteCurrent());
+        this.insert_child_above(this._deleteButton, expander ?? null);
 
         // The listing filling the submenu, cancelled and replaced by every pass
         // that starts one -- the chooser opening, a history appearing or going
@@ -471,12 +478,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             // A backup or a delete changes the set of histories without changing
             // which one is current, which no notify::history can express. The
             // daemon follows every HistoryDeleted with it, so that one needs no
-            // listing of its own. An empty changes no set but does change a
-            // count, and says so only through history-emptied; emptying a history
-            // that did not exist yet sends both, the first listing then given up
-            // on for the second.
+            // listing of its own. An empty changes no set but one count, which
+            // history-emptied names (_onHistoryEmptied ()).
             'histories-changed', () => this._refreshIfOpen(),
-            'history-emptied', () => this._refreshIfOpen(),
+            'history-emptied', this._onHistoryEmptied.bind(this),
             'notify::history', this._onHistoryChanged.bind(this),
             'update', this._onUpdate.bind(this),
             this);
@@ -501,11 +506,19 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         this._current = this._client.get_history_name();
         this.label.text = this._current ?? '';
         this._markCurrent();
+
+        // A history in use with no row is one no listing has named yet -- a
+        // new one, or, from a GPaste 51.0 to 51.2 daemon, any under a storage
+        // keeping nothing: drawn by listing again (refresh ()).
+        if (this._current !== null && !this._rows.some(row => row.history === this._current))
+            this._refreshIfOpen();
     }
 
-    // ListHistories parses inactive file histories on the daemon's main thread.
-    // Pay for it only while the chooser is being used, including reopening to
-    // pick up changes made on disk outside this daemon.
+    // ListHistories counts every inactive history in its store, reading the
+    // whole of a file one and deriving a key for an encrypted one: on a worker
+    // thread of the daemon's, but a cost all the same. Pay for it only while
+    // the chooser is being used, including reopening to pick up changes made
+    // on disk outside this daemon.
     setSubmenuShown(open) {
         super.setSubmenuShown(open);
         if (open) {
@@ -532,6 +545,31 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this.refresh().catch(console.error);
     }
 
+    // An empty changes the one count the signal names: that row is set to
+    // nothing, rather than every history listed again, which would count each
+    // inactive history in its store for that number. A listing still out, and
+    // a size of the history in use, were asked before the empty: the listing
+    // is superseded and the size given up on, so that nothing counted before
+    // the empty lands after it. A history with no row is a new one, which
+    // histories-changed announces too, its listing drawing it
+    // (test-history-switcher.cjs).
+    _onHistoryEmptied(client, history) {
+        if (!this.menu.isOpen || !this._daemonReady())
+            return;
+
+        if (history === this._current) {
+            this._sizing?.cancel();
+            this._sizing = null;
+        }
+
+        if (this._listing) {
+            this.refresh().catch(console.error);
+            return;
+        }
+
+        this._rows.find(row => row.history === history)?.setSize(0);
+    }
+
     // The count of the history in use changes with every copy, which no listing
     // is asked for: re-enumerating every inactive history on each would cost
     // what GetHistorySize, the length of the history already loaded, does not.
@@ -544,9 +582,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             this._sizeCurrent().catch(console.error);
     }
 
-    // Only while there is a chooser to show it, and a daemon to ask. A size and
-    // a listing land in the order they were asked, the daemon answering both
-    // from its main loop, so whichever landed last is the newer count.
+    // Only while there is a chooser to show it, and a daemon to ask. A listing
+    // can land after a size asked after it, but the daemon counts the history
+    // in use as each answer goes out, so whichever landed last is the newer
+    // count.
     async _sizeCurrent() {
         if (!this.menu.isOpen || !this._daemonReady())
             return;
@@ -589,88 +628,100 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
             if (!daemonGone(e))
                 console.error(e);
             return;
+        } finally {
+            // Nothing out any more, but what replaced it if anything did: what
+            // _onHistoryEmptied () asks.
+            if (this._listing === cancellable)
+                this._listing = null;
         }
 
         if (!wanted)
             return;
 
-        // The actions actor owns the backup draft and focus independently of
-        // its row. Keep it while its source history still exists.
-        const actionsHistory = this._actions.visible ? this._actions.history : null;
-        const focus = global.stage.get_key_focus();
-        const actionsFocused = focus !== null && this._actions.contains(focus);
-
-        if (actionsHistory !== null && actionsHistory !== GPaste.DEFAULT_HISTORY &&
-            !histories.some(history => history.get_name() === actionsHistory))
-            this._hideActions();
-
-        this.menu.moveMenuItem(this._actions, this._rows.length);
-
-        // Every row is rebuilt, and a destroyed actor takes the key focus with
-        // it, stranding the keyboard on nothing: it goes back to the row for the
-        // same history, or to this one if that history is gone.
-        const focused = this._rows.find(row => focus !== null && row.contains(focus))?.history;
-
-        this._clearRows();
-
         // The default history is always drawn, listed or not: it is where a
         // switch away from a deleted history lands, and it exists whether or not
         // anything has been stored in it yet. Zero until the listing names it,
         // which is also what it holds when there is no store for it.
-        this._addRow(GPaste.DEFAULT_HISTORY, 0);
+        const listed = new Map(histories.map(history => [history.get_name(), history.get_size()]));
+        const drawn = new Map([[GPaste.DEFAULT_HISTORY, 0], ...listed]);
 
-        for (const history of histories)
-            this._addRow(history.get_name(), history.get_size());
+        // A listing names the history in use, stored or not, but one from a
+        // GPaste 51.0 to 51.2 daemon names only the histories there is a store
+        // for: nothing at all under the `none` storage. The one in use is drawn
+        // all the same, as the default one is and as the graphical tool's
+        // sidebar does, to be marked, deleted and given its actions, and its
+        // count asked for: its row, or the default one's, would otherwise say 0
+        // however much it holds.
+        if (this._current !== null && !drawn.has(this._current))
+            drawn.set(this._current, 0);
+
+        // The actions actor owns the backup draft and focus independently of
+        // its row. Keep it while its source history is still drawn.
+        const actionsHistory = this._actions.visible ? this._actions.history : null;
+
+        if (actionsHistory !== null && !drawn.has(actionsHistory))
+            this._hideActions();
+
+        // The rows of the histories still drawn are kept, put in the listing's
+        // order, and those of the histories gone destroyed: a destroyed actor
+        // takes the key focus with it, stranding the keyboard on nothing, so it
+        // goes to this row instead.
+        const focus = global.stage.get_key_focus();
+        const focusedRow = this._rows.find(row => focus !== null && row.contains(focus));
+        const actionsFocused = focus !== null && this._actions.contains(focus);
+        const kept = new Map();
+
+        this.menu.moveMenuItem(this._actions, this._rows.length);
+
+        for (const row of this._rows) {
+            if (drawn.has(row.history))
+                kept.set(row.history, row);
+            else
+                row.destroy();
+        }
+
+        this._rows = [...drawn].map(([history, size], index) => {
+            let row = kept.get(history);
+
+            if (row) {
+                row.setSize(size);
+                this.menu.moveMenuItem(row, index);
+            } else {
+                row = this._newRow(history, size);
+                // Ahead of the entry, which stays last
+                // however many rows there are.
+                this.menu.addMenuItem(row, index);
+            }
+
+            return row;
+        });
 
         this._markCurrent();
 
-        // A listing names the histories there is a store for, and the one in use
-        // may have none: the `none` storage lists nothing at all, and the
-        // default history is drawn whether or not it is listed. Its row would
-        // otherwise say 0 however much it holds.
-        if (this._current !== null && !histories.some(history => history.get_name() === this._current))
+        if (this._current !== null && !listed.has(this._current))
             this._sizeCurrent().catch(console.error);
 
         if (this._actions.visible) {
-            const index = this._rows.findIndex(row => row.history === actionsHistory);
-
-            this.menu.moveMenuItem(this._actions, index + 1);
-            // A name the rebuilt list takes, or gives back, changes what the
-            // mark offers while the name stays as it was typed.
+            this.menu.moveMenuItem(this._actions, this._rows.findIndex(row => row.history === actionsHistory) + 1);
+            // A name the new list takes, or gives back, changes what the mark
+            // offers while the name stays as it was typed.
             this._actions.revalidate();
         }
 
-        if (actionsFocused && this._actions.visible)
+        if (actionsFocused)
             focus.grab_key_focus();
-        else if (actionsFocused)
-            this.grab_key_focus();
-        else if (focused !== undefined)
-            (this._rows.find(row => row.history === focused) ?? this).grab_key_focus();
+        else if (focusedRow)
+            (kept.has(focusedRow.history) ? focusedRow : this).grab_key_focus();
     }
 
-    _addRow(history, size) {
-        const known = this._rows.find(row => row.history === history);
-
-        // The default history was drawn before the listing was walked, so the
-        // listing naming it is what says how much it holds.
-        if (known) {
-            known.setSize(size);
-            return;
-        }
-
+    _newRow(history, size) {
         const row = new GPasteHistoryRow(history, size);
 
         row.connect('switch', (item, name) => this._switch(name));
         row.connect('delete', (item, name) => this._confirmDelete(name));
         row.connect('actions', (item, name, fromKeyboard) => this._toggleActions(item, fromKeyboard));
-        // Ahead of the entry, which stays last however many rows there are.
-        this.menu.addMenuItem(row, this._rows.length);
-        this._rows.push(row);
-    }
 
-    _clearRows() {
-        this._rows.forEach(row => row.destroy());
-        this._rows = [];
+        return row;
     }
 
     // Switching to a name no history goes by creates it: that is how a new
@@ -790,6 +841,10 @@ export class GPasteHistorySwitcher extends PopupSubMenuMenuItem {
         }, this);
 
         dialog.open();
+    }
+
+    vfunc_get_preferred_width(forHeight) {
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), [this._deleteButton], forHeight);
     }
 
     // No name, no history to delete: the property is cached off the daemon, and

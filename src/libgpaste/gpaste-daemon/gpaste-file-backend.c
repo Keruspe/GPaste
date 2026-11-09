@@ -6,7 +6,7 @@
 #include <gpaste-daemon/gpaste-color-item.h>
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-file-backend.h>
-#include <gpaste-daemon/gpaste-image-item.h>
+#include <gpaste-daemon/gpaste-image-item-private.h>
 #include <gpaste-daemon/gpaste-item.h>
 #include <gpaste-daemon/gpaste-passphrase.h>
 #include <gpaste-daemon/gpaste-password-item.h>
@@ -37,9 +37,13 @@ typedef struct
      * path, for the ones this backend wrote, or read and found to be the image
      * their history names: what a document names a side file by (see
      * _g_paste_file_backend_write_image_metadata ()). The saver's worker and the
-     * main thread both read and write histories. */
-    GMutex            png_checksums_lock;
+     * main thread both read and write histories, which the lock is for, and
+     * for the side files a read found at an image's name and could not use,
+     * which a write of that image puts anew rather than taking for complete
+     * (_g_paste_file_backend_ensure_image_file ()). */
+    GMutex            side_files_lock;
     GHashTable       *png_checksums;
+    GHashTable       *refused_side_files;
 #endif
 } GPasteFileBackendPrivate;
 
@@ -63,9 +67,32 @@ _g_paste_file_backend_remember_png (GPasteStorageBackend *self,
                                     const gchar          *png_checksum)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
 
     g_hash_table_replace (priv->png_checksums, g_strdup (side_file), g_strdup (png_checksum));
+    g_hash_table_remove (priv->refused_side_files, side_file);
+}
+
+/* That @side_file is at an image's name and holds nothing a read could use. */
+static void
+_g_paste_file_backend_refuse_side_file (GPasteStorageBackend *self,
+                                        const gchar          *side_file)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+
+    g_hash_table_remove (priv->png_checksums, side_file);
+    g_hash_table_add (priv->refused_side_files, g_strdup (side_file));
+}
+
+static gboolean
+_g_paste_file_backend_side_file_refused (GPasteStorageBackend *self,
+                                         const gchar          *side_file)
+{
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+
+    return g_hash_table_contains (priv->refused_side_files, side_file);
 }
 
 /* The SHA-256 of the PNG @side_file holds, when this backend knows it. */
@@ -74,7 +101,7 @@ _g_paste_file_backend_png_checksum (GPasteStorageBackend *self,
                                     const gchar          *side_file)
 {
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
-    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->png_checksums_lock);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
 
     return g_strdup (g_hash_table_lookup (priv->png_checksums, side_file));
 }
@@ -123,6 +150,22 @@ _g_paste_file_backend_write_password_name (GOutputStream      *stream,
            (!timeout_attr || g_output_stream_write_all (stream, timeout_attr, strlen (timeout_attr), NULL, NULL /* cancellable */, error));
 }
 
+/* <history-dir>/images, where every history's images directory is, and where
+ * GPaste 50 kept the images all its histories shared, each named as the plain
+ * flavour names its own (%G_PASTE_FILE_BACKEND_IMAGE_SUFFIX): built here
+ * alone, so that the sweep of those (g_paste_file_backend_sweep_legacy_images
+ * ()) and the read still finding them (_g_paste_file_backend_image_location
+ * ()) cannot come to look in two places. What GPaste 50's documents name it
+ * by is theirs, and spelt as they spell it where the sweep reads them
+ * (_g_paste_file_backend_collect_legacy_references ()). */
+static gchar *
+_g_paste_file_backend_images_root (void)
+{
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+
+    return g_build_filename (history_dir, "images", NULL);
+}
+
 /**
  * g_paste_file_backend_images_dir:
  * @history_name: the name of a history
@@ -142,9 +185,9 @@ g_paste_file_backend_images_dir (const gchar *history_name)
      * contents of whichever directory it landed in. */
     g_return_val_if_fail (g_paste_util_history_name_is_valid (history_name), NULL);
 
-    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autofree gchar *images_root = _g_paste_file_backend_images_root ();
 
-    return g_build_filename (history_dir, "images", history_name, NULL);
+    return g_build_filename (images_root, history_name, NULL);
 }
 
 /**
@@ -167,7 +210,7 @@ g_paste_file_backend_image_path (const gchar *history_name,
     g_return_val_if_fail (checksum, NULL);
 
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (history_name);
-    g_autofree gchar *filename = g_strconcat (checksum, ".png", NULL);
+    g_autofree gchar *filename = g_strconcat (checksum, G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
 
     return g_build_filename (images_dir, filename, NULL);
 }
@@ -177,8 +220,8 @@ g_paste_file_backend_image_path (const gchar *history_name,
  * @path: the canonical (plain) cache path of an image
  *
  * Get the path of the encrypted side file the encrypted flavour materializes
- * for @path (".pngs", mirroring ".xml"/".xmls"). This is the one owner of that
- * naming scheme.
+ * for @path (%G_PASTE_FILE_BACKEND_SIDE_SUFFIX in place of
+ * %G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, mirroring ".xml"/".xmls").
  *
  * Returns: the encrypted side file path
  */
@@ -187,7 +230,7 @@ g_paste_file_backend_encrypted_path (const gchar *path)
 {
     g_return_val_if_fail (path, NULL);
 
-    return g_strconcat (path, "s", NULL);
+    return g_strconcat (path, G_PASTE_FILE_BACKEND_SIDE_MARK, NULL);
 }
 
 /* Have what was written to @file reach the disk before it is renamed into
@@ -246,6 +289,48 @@ _g_paste_file_backend_sync_directory (const gchar *path)
 }
 #endif
 
+/* A file a reader takes for complete is written beside @target, at this
+ * temporary, and put in place by _g_paste_file_backend_install () once whole:
+ * one cut short at its final name -- a full disk, a key derivation that
+ * failed, a crash -- would be read as all there is. */
+static GFile *
+_g_paste_file_backend_beside (const gchar *target)
+{
+    g_autofree gchar *tmp = g_strconcat (target, G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
+
+    return g_file_new_for_path (tmp);
+}
+
+/* Put what @stream wrote to @tmp_file in @target_file's place: closed, synced
+ * and renamed over it. On any failure -- a write of the caller's included --
+ * the caller drops the temporary (_g_paste_file_backend_drop_beside ()),
+ * @target_file left as it was. */
+static gboolean
+_g_paste_file_backend_install (GOutputStream *stream,
+                               GFile         *tmp_file,
+                               GFile         *target_file,
+                               GError       **error)
+{
+    return g_output_stream_close (stream, NULL /* cancellable */, error) &&
+           _g_paste_file_backend_sync (tmp_file, error) &&
+           g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, error);
+}
+
+/* Closed first, @stream: over a temporary already there, g_file_replace ()
+ * writes beside it, and its close -- at dispose, else -- renames that partial
+ * write back over the name just dropped. */
+static void
+_g_paste_file_backend_drop_beside (GOutputStream *stream,
+                                   GFile         *tmp_file)
+{
+    g_autoptr (GError) error = NULL;
+
+    g_output_stream_close (stream, NULL /* cancellable */, NULL);
+
+    if (!g_file_delete (tmp_file, NULL /* cancellable */, &error) && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Failed to delete a temporary file: %s", error->message);
+}
+
 /* The XML history references images by their canonical <checksum>.png path
  * (@reference, derived from the item's checksum under the history being
  * written, which is the backup's own when writing under another name); writing
@@ -263,8 +348,17 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
 {
     gboolean encrypted = g_paste_storage_backend_is_encrypted (G_PASTE_STORAGE_BACKEND (self));
     g_autofree gchar *target = (encrypted) ? g_paste_file_backend_encrypted_path (reference) : g_strdup (reference);
+    gboolean refused = FALSE;
 
-    if (g_file_test (target, G_FILE_TEST_EXISTS))
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+    /* A side file a read could not use is no image of ours, though it has
+     * the name of one: taken for complete, an image copied again -- after
+     * noticing it gone -- would be dropped again at the next read. The plain
+     * flavour reads an image by its path, keeping it whatever the file holds. */
+    refused = encrypted && _g_paste_file_backend_side_file_refused (G_PASTE_STORAGE_BACKEND (self), target);
+#endif
+
+    if (!refused && g_file_test (target, G_FILE_TEST_EXISTS))
         return TRUE;
 
     GBytes *png = g_paste_image_item_get_png_bytes (item);
@@ -299,14 +393,12 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     /* get_output_stream wraps the file with the encryption converter exactly
      * when this backend has a passphrase, matching the target chosen above.
      *
-     * Written beside the target and renamed over it, as the history is: the
-     * check above takes any file there for a complete one, so a write cut
-     * short at its final name -- a full disk, a key derivation that failed, a
-     * crash -- would have every later save skip the image and the next read
-     * drop it. */
+     * Written beside the target and installed, as the history is: the check
+     * above takes any file there no read refused for a complete one, so a
+     * write cut short at its final name would have every later save skip the
+     * image and the next read drop it. */
     g_autoptr (GFile) target_file = g_file_new_for_path (target);
-    g_autofree gchar *tmp = g_strconcat (target, ".tmp", NULL);
-    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GFile) tmp_file = _g_paste_file_backend_beside (target);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (self)->get_output_stream (self, tmp_file);
 
     if (!stream)
@@ -316,23 +408,21 @@ _g_paste_file_backend_ensure_image_file (GPasteFileBackend *self,
     gconstpointer data = g_bytes_get_data (png, &length);
 
     if (g_output_stream_write_all (stream, data, length, NULL, NULL /* cancellable */, &error) &&
-        g_output_stream_close (stream, NULL /* cancellable */, &error) &&
-        _g_paste_file_backend_sync (tmp_file, &error) &&
-        g_file_move (tmp_file, target_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+        _g_paste_file_backend_install (stream, tmp_file, target_file, &error))
     {
 #ifdef G_PASTE_ENABLE_ENCRYPTION
         if (encrypted)
         {
             g_autofree gchar *png_checksum = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, png);
 
-            _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND ((gpointer) self), target, png_checksum);
+            _g_paste_file_backend_remember_png (G_PASTE_STORAGE_BACKEND (self), target, png_checksum);
         }
 #endif
         return TRUE;
     }
 
     g_warning ("Failed to materialize image to %s: %s", target, error->message);
-    g_file_delete (tmp_file, NULL, NULL);
+    _g_paste_file_backend_drop_beside (stream, tmp_file);
 
     return FALSE;
 }
@@ -455,7 +545,7 @@ _g_paste_file_backend_image_file_name (GPasteImageItem *image,
     if (!checksum)
         return NULL;
 
-    return g_strconcat (checksum, (encrypted) ? ".pngs" : ".png", NULL);
+    return g_strconcat (checksum, (encrypted) ? G_PASTE_FILE_BACKEND_SIDE_SUFFIX : G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
 }
 
 /* Whether @file_name is one _g_paste_file_backend_image_file_name() could have
@@ -464,7 +554,7 @@ static gboolean
 _g_paste_file_backend_is_image_file_name (const gchar *file_name,
                                           gboolean     encrypted)
 {
-    const gchar *suffix = (encrypted) ? ".pngs" : ".png";
+    const gchar *suffix = (encrypted) ? G_PASTE_FILE_BACKEND_SIDE_SUFFIX : G_PASTE_FILE_BACKEND_IMAGE_SUFFIX;
 
     if (!g_str_has_suffix (file_name, suffix))
         return FALSE;
@@ -476,22 +566,24 @@ _g_paste_file_backend_is_image_file_name (const gchar *file_name,
 
 /* Whether @file_name is what writing an image of either flavour leaves when it
  * is cut short between the write and the move into place: an image's name with
- * ".tmp" after it (_g_paste_file_backend_ensure_image_file ()). */
+ * the temporary's suffix after it
+ * (_g_paste_file_backend_ensure_image_file ()). */
 static gboolean
 _g_paste_file_backend_is_image_temp_name (const gchar *file_name)
 {
-    if (!g_str_has_suffix (file_name, ".tmp"))
+    if (!g_str_has_suffix (file_name, G_PASTE_FILE_BACKEND_TEMP_SUFFIX))
         return FALSE;
 
-    g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (".tmp"));
+    g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (G_PASTE_FILE_BACKEND_TEMP_SUFFIX));
 
     return _g_paste_file_backend_is_image_file_name (image, TRUE) || _g_paste_file_backend_is_image_file_name (image, FALSE);
 }
 
-/* Whether @file_name is what a re-key leaves beside an encrypted image: its
- * replacement or its original kept aside, named from the image's own name. */
-static gboolean
-_g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
+/* The name of the encrypted image @file_name is what a re-key leaves beside:
+ * its replacement or its original kept aside, named from the image's own
+ * name. %NULL when @file_name is no such thing. */
+static gchar *
+_g_paste_file_backend_rekeyed_image (const gchar *file_name)
 {
     static const gchar *suffixes[] = { G_PASTE_FILE_BACKEND_REKEY_NEW, G_PASTE_FILE_BACKEND_REKEY_OLD };
 
@@ -503,10 +595,10 @@ _g_paste_file_backend_is_image_rekey_name (const gchar *file_name)
         g_autofree gchar *image = g_strndup (file_name, strlen (file_name) - strlen (suffixes[i]));
 
         if (_g_paste_file_backend_is_image_file_name (image, TRUE))
-            return TRUE;
+            return g_steal_pointer (&image);
     }
 
-    return FALSE;
+    return NULL;
 }
 
 /* Delete the image files under images/@history_name/ that no history of that
@@ -567,12 +659,14 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
             continue;
         }
 
+        g_autofree gchar *rekeyed_image = _g_paste_file_backend_rekeyed_image (*file);
+
         /* What a re-key left beside an encrypted image goes with the encrypted
          * history being deleted: the settle that would otherwise take it finds
          * a history by its document alone, gone now, and the directory itself
          * stays while a plain history of that name stores it. A write leaves
          * it to that settle. */
-        if (_g_paste_file_backend_is_image_rekey_name (*file))
+        if (rekeyed_image)
         {
             if (encrypted && !referenced && g_unlink (path) && errno != ENOENT)
                 g_warning ("Could not remove %s, which a change of passphrase left: %s", path, g_strerror (errno));
@@ -604,6 +698,169 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
     }
 }
 
+/* The file names the @length bytes of @text reference under the shared images
+ * directory, into @referenced: what follows each "/images/" up to the first
+ * character no image's name holds. The path's tail alone: GPaste 50 spelt the
+ * data directory as it was reached then, which a symlinked home or another
+ * XDG_DATA_HOME may no longer match. A match a per-history path or a text item
+ * happens to contain only keeps a file. Past a NUL too, each run up to one read
+ * as a string of its own, @text ending with one at @length as
+ * g_file_get_contents () leaves it: no GPaste writes one, but a damaged
+ * document may hold one, which GMarkup can read on past and which a repair by
+ * hand would leave the images after it named
+ * (/history/file_legacy_images_past_nul). */
+static void
+_g_paste_file_backend_collect_legacy_references (const gchar *text,
+                                                 gsize        length,
+                                                 GHashTable  *referenced)
+{
+    static const gchar marker[] = G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S;
+
+    for (const gchar *run = text; run < text + length; run += strlen (run) + 1)
+    {
+        for (const gchar *at = strstr (run, marker); at; at = strstr (at, marker))
+        {
+            const gchar *name = at + strlen (marker);
+            const gchar *end = name;
+
+            while (g_ascii_isalnum (*end) || *end == '.' || *end == '-' || *end == '_')
+                ++end;
+
+            if (end > name)
+                g_hash_table_add (referenced, g_strndup (name, (gsize) (end - name)));
+            at = end;
+        }
+    }
+}
+
+/* The shared images every plain history document under @history_dir
+ * references, into @referenced: %FALSE, having said why, when one of them
+ * cannot be read. */
+static gboolean
+_g_paste_file_backend_collect_legacy_documents (const gchar *history_dir,
+                                                GHashTable  *referenced)
+{
+    g_autoptr (GFile) dir = g_file_new_for_path (history_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) histories = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!histories)
+    {
+        g_warning ("Could not list the histories to know which images GPaste 50 left they reference: %s", error->message);
+        return FALSE;
+    }
+
+    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_FILE), NULL);
+
+    for (GStrv history = histories; *history; ++history)
+    {
+        if (!g_str_has_suffix (*history, suffix))
+            continue;
+
+        g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
+        g_autofree gchar *text = NULL;
+        gsize length = 0;
+
+        if (g_paste_storage_is_special_file (path))
+        {
+            g_warning ("%s is no history document, so the images GPaste 50 left are kept", path);
+            return FALSE;
+        }
+
+        if (!g_file_get_contents (path, &text, &length, &error))
+        {
+            g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
+            return FALSE;
+        }
+        _g_paste_file_backend_collect_legacy_references (text, length, referenced);
+    }
+
+    return TRUE;
+}
+
+/**
+ * g_paste_file_backend_sweep_unstored:
+ *
+ * Delete what a write or a delete cut short left under a name no file flavour
+ * stores a history of: the images a first write of the history put in before
+ * its document, or a delete left once it had taken the document, and the
+ * temporary a save writes the document to. No listing shows such a name, so
+ * nothing else ever reaches those files -- the clipboard's screenshots, and
+ * the history itself, in clear on the plain flavour.
+ *
+ * A write in progress leaves the same files until it is done, so this runs
+ * only where none can be: before this process writes anything, with the
+ * storage lock held.
+ */
+G_PASTE_VISIBLE void
+g_paste_file_backend_sweep_unstored (void)
+{
+    if (g_paste_storage_is_busy () || !g_paste_storage_backend_try_lock ())
+        return;
+
+    static const GPasteStorage flavours[] = { G_PASTE_STORAGE_FILE, G_PASTE_STORAGE_ENCRYPTED_FILE };
+    g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
+    g_autoptr (GFile) dir = g_file_new_for_path (history_dir);
+    g_autoptr (GError) error = NULL;
+    g_auto (GStrv) files = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!files)
+    {
+        g_warning ("Could not list the histories to remove what a cut-short write left: %s", error->message);
+        return;
+    }
+
+    for (gsize i = 0; i < G_N_ELEMENTS (flavours); ++i)
+    {
+        g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (flavours[i]), G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
+
+        for (GStrv file = files; *file; ++file)
+        {
+            if (!g_str_has_suffix (*file, suffix))
+                continue;
+
+            g_autofree gchar *name = g_strndup (*file, strlen (*file) - strlen (suffix));
+
+            if (!g_paste_util_history_name_is_valid (name) || g_paste_util_history_is_stored (name, flavours[i]))
+                continue;
+
+            g_autofree gchar *path = g_build_filename (history_dir, *file, NULL);
+
+            if (g_unlink (path) && errno != ENOENT)
+                g_warning ("Could not remove %s, which a cut-short save left: %s", path, g_strerror (errno));
+        }
+    }
+
+    g_autofree gchar *images_path = _g_paste_file_backend_images_root ();
+    g_autoptr (GFile) images = g_file_new_for_path (images_path);
+    /* A store that never held an image has no directory, and lists nothing.
+     * Listed here rather than with g_paste_file_backend_sweep_legacy_images ():
+     * that sweep goes over this directory with the lock held or not, this one
+     * only with it. */
+    g_auto (GStrv) names = g_paste_util_list_directory (images, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
+
+    if (!names)
+    {
+        g_warning ("Could not list the images to remove what a cut-short write left: %s", error->message);
+        return;
+    }
+
+    for (GStrv name = names; *name; ++name)
+    {
+        g_autofree gchar *path = g_build_filename (images_path, *name, NULL);
+        g_autoptr (GError) images_error = NULL;
+
+        /* A history's directory, the files beside them being GPaste 50's
+         * (g_paste_file_backend_sweep_legacy_images ()), and never one reached
+         * through a link: its listing would be somewhere else's. */
+        if (!g_paste_util_history_name_is_valid (*name) || g_file_test (path, G_FILE_TEST_IS_SYMLINK) || !g_file_test (path, G_FILE_TEST_IS_DIR))
+            continue;
+
+        if (!g_paste_storage_backend_delete_history_images (*name, &images_error))
+            g_warning ("Could not remove the images of \"%s\", which no history holds: %s", *name, images_error->message);
+    }
+}
+
 /**
  * g_paste_file_backend_sweep_legacy_images:
  *
@@ -618,13 +875,14 @@ _g_paste_file_backend_sweep_images (const gchar *history_name,
  * its pixels from it for as long as it is in memory.
  *
  * Nothing goes when a history file cannot be read: what it references is then
- * unknown.
+ * unknown. Each document is read once, its references collected, rather than
+ * searched again for every image.
  */
 G_PASTE_VISIBLE void
 g_paste_file_backend_sweep_legacy_images (void)
 {
     g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-    g_autofree gchar *images_dir = g_build_filename (history_dir, "images", NULL);
+    g_autofree gchar *images_dir = _g_paste_file_backend_images_root ();
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
     g_auto (GStrv) images = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &error);
@@ -635,9 +893,8 @@ g_paste_file_backend_sweep_legacy_images (void)
         return;
     }
 
-    g_auto (GStrv) histories = NULL;
-    g_autoptr (GPtrArray) contents = g_ptr_array_new_with_free_func (g_free);
-    g_autofree gchar *suffix = g_strconcat (".", g_paste_storage_get_extension (G_PASTE_STORAGE_FILE), NULL);
+    g_autoptr (GHashTable) referenced = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    gboolean collected = FALSE;
 
     for (GStrv image = images; *image; ++image)
     {
@@ -647,52 +904,16 @@ g_paste_file_backend_sweep_legacy_images (void)
         /* Read the first time there is an image to look for, and only then:
          * once nothing is left in the shared
          * directory, a start costs a listing. */
-        if (!histories)
+        if (!collected)
         {
-            g_autoptr (GFile) history_dir_file = g_file_new_for_path (history_dir);
-
-            if (!(histories = g_paste_util_list_directory (history_dir_file, G_FILE_ATTRIBUTE_STANDARD_NAME, &error)))
-            {
-                g_warning ("Could not list the histories to know which images GPaste 50 left they reference: %s", error->message);
+            if (!_g_paste_file_backend_collect_legacy_documents (history_dir, referenced))
                 return;
-            }
-
-            for (GStrv history = histories; *history; ++history)
-            {
-                if (!g_str_has_suffix (*history, suffix))
-                    continue;
-
-                g_autofree gchar *path = g_build_filename (history_dir, *history, NULL);
-                gchar *text = NULL;
-
-                if (g_paste_storage_is_special_file (path))
-                {
-                    g_warning ("%s is no history document, so the images GPaste 50 left are kept", path);
-                    return;
-                }
-
-                if (!g_file_get_contents (path, &text, NULL, &error))
-                {
-                    g_warning ("Could not read %s to know which images GPaste 50 left it references: %s", path, error->message);
-                    return;
-                }
-                g_ptr_array_add (contents, text);
-            }
+            collected = TRUE;
         }
 
         g_autofree gchar *path = g_build_filename (images_dir, *image, NULL);
-        /* The path's tail alone: GPaste 50 spelt the data directory as it was
-         * reached then, which a symlinked home or another XDG_DATA_HOME may no
-         * longer match. A checksum name needs no encoding, and a match a
-         * per-history path or a text item happens
-         * to contain only keeps a file. */
-        g_autofree gchar *reference = g_strconcat (G_DIR_SEPARATOR_S "images" G_DIR_SEPARATOR_S, *image, NULL);
-        gboolean referenced = FALSE;
 
-        for (guint i = 0; !referenced && i < contents->len; ++i)
-            referenced = strstr (g_ptr_array_index (contents, i), reference) != NULL;
-
-        if (!referenced && g_unlink (path) && errno != ENOENT)
+        if (!g_hash_table_contains (referenced, *image) && g_unlink (path) && errno != ENOENT)
             g_warning ("Could not remove the image %s, which no history references any more: %s", path, g_strerror (errno));
     }
 }
@@ -735,8 +956,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
     /* Where the images go, and which of them the sweep compares against. */
     gboolean encrypted = g_paste_storage_backend_is_encrypted (self);
 
-    g_autofree gchar *tmp_path = g_strconcat (history_file_path, ".tmp", NULL);
-    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp_path);
+    g_autoptr (GFile) tmp_file = _g_paste_file_backend_beside (history_file_path);
     g_autoptr (GOutputStream) stream = G_PASTE_FILE_BACKEND_GET_CLASS (real_self)->get_output_stream (real_self, tmp_file);
 
     if (!stream)
@@ -801,7 +1021,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
                     g_set_str (&image_reference, read_from);
             }
 
-            gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
+            g_autofree gchar *file_name = _g_paste_file_backend_image_file_name (image, encrypted);
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
             if (encrypted)
@@ -813,7 +1033,7 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
 #endif
 
             if (file_name)
-                g_hash_table_add (referenced, file_name);
+                g_hash_table_add (referenced, g_steal_pointer (&file_name));
 
             /* A document holds UTF-8 alone, and the data directory and a
              * history name read off the disk need not be: a home directory in
@@ -864,26 +1084,23 @@ g_paste_file_backend_write_history_file (GPasteStorageBackend *self,
         success = FALSE;
     }
 
-    if (success && (!g_output_stream_close (stream, NULL /* cancellable */, &error) ||
-                    !_g_paste_file_backend_sync (tmp_file, &error)))
-    {
-        g_warning ("Failed to close history temp file: %s", error->message);
-        g_clear_error (&error);
-        success = FALSE;
-    }
-
-    if (success && !g_file_move (tmp_file, history_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+    if (success && !_g_paste_file_backend_install (stream, tmp_file, history_file, &error))
     {
         g_warning ("Failed to install history file: %s", error->message);
         g_clear_error (&error);
         success = FALSE;
     }
 
+    /* After every write that went in, whether or not its snapshot dropped an
+     * image: a listing of one directory, beside the document rewritten and
+     * synced before it. Skipping it when the last write referenced no more
+     * would take a record of what that write referenced, which a crash, a
+     * migration or another process's write leaves stale -- and a stale one
+     * leaves a screenshot on the disk past the item it was. */
     if (success)
         _g_paste_file_backend_sweep_images (history_name, encrypted, referenced);
-    else if (!g_file_delete (tmp_file, NULL, &error) &&
-             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        g_warning ("Failed to delete history temp file: %s", error->message);
+    else
+        _g_paste_file_backend_drop_beside (stream, tmp_file);
 
     if (success && images_written)
         return TRUE;
@@ -1312,6 +1529,17 @@ start_tag (GMarkupParseContext *context,
  * its side file holds, by @png_checksum, when it was written knowing it; else
  * the image is checked by its pixels, against its @checksum.
  *
+ * A document naming no PNG is one GPaste 51.0 wrote, or a save that never read
+ * the side file wrote, its @checksum taken off the copied texture: a high-depth
+ * one -- 16-bit premultiplied, float -- does not come back the same through PNG,
+ * and its pixels never match. Its encrypted side file, which only this
+ * passphrase writes, is trusted then, under @checksum, though another of the
+ * user's own could stand in its place: the price of not dropping such an image
+ * at the first read after 51.0, paid until the next save names its PNG for
+ * every read after (/history/file_encrypted_image_round_trip). The
+ * plaintext fallback, which anyone writing the images directory could have put
+ * there, is not.
+ *
  * @side_file is where @png was decrypted from, which this backend then knows
  * the PNG of, or %NULL for the plaintext fallback. */
 static GPasteItem *
@@ -1335,8 +1563,15 @@ _g_paste_file_backend_named_image (GPasteStorageBackend *self,
     {
         item = g_paste_image_item_new_from_bytes_at_path (path, png, date, NULL /* computed */);
 
+        /* Stamped with @checksum where trusted, rather than decoded again
+         * under it. */
         if (item && !g_paste_str_equal (g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)), checksum))
-            g_clear_object (&item);
+        {
+            if (side_file && checksum)
+                g_paste_image_item_set_stored_checksum (G_PASTE_IMAGE_ITEM (item), checksum);
+            else
+                g_clear_object (&item);
+        }
     }
 
     if (!item)
@@ -1404,9 +1639,9 @@ _g_paste_file_backend_image_location (const Data *data)
     }
     else
     {
-        g_autofree gchar *history_dir = g_paste_util_get_history_dir_path ();
-        g_autofree gchar *file_name = g_strconcat (data->checksum, ".png", NULL);
-        g_autofree gchar *shared = g_build_filename (history_dir, "images", file_name, NULL);
+        g_autofree gchar *images_root = _g_paste_file_backend_images_root ();
+        g_autofree gchar *file_name = g_strconcat (data->checksum, G_PASTE_FILE_BACKEND_IMAGE_SUFFIX, NULL);
+        g_autofree gchar *shared = g_build_filename (images_root, file_name, NULL);
 
         if (g_file_test (shared, G_FILE_TEST_EXISTS))
             return g_steal_pointer (&shared);
@@ -1506,6 +1741,17 @@ add_item (Data *data)
                     item = g_paste_image_item_new_from_bytes_at_path (path, bytes, date_time, data->checksum);
                 }
             }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+            /* Left for the next full write's sweep, a read deleting nothing --
+             * unless that write holds the image again. */
+            if (!item && g_paste_storage_backend_is_encrypted (data->backend))
+            {
+                g_autofree gchar *side_file = g_paste_file_backend_encrypted_path (path);
+
+                _g_paste_file_backend_refuse_side_file (data->backend, side_file);
+            }
+#endif
         }
         /* An image read with images turned off, or without the date to restore
          * it with, is skipped and its file left where it is: this may be no read
@@ -1658,6 +1904,12 @@ on_text (GMarkupParseContext *context,
         if (!_g_paste_file_backend_is_blank (txt))
         {
             WARN_AT ("Unexpected text (%" G_GSIZE_FORMAT " bytes)", text_len);
+            /* A value's second run -- text beside a CDATA section, or a second
+             * section -- is no value GPaste wrote, which writes one section.
+             * Read as its first run alone, it would be cut short for good by
+             * the next save. */
+            if (data->state == IN_VALUE_WITH_TEXT)
+                data->malformed = TRUE;
             return;
         }
         break;
@@ -2121,6 +2373,15 @@ _g_paste_file_backend_read_or_count (GPasteStorageBackend *self,
     }
     else if (!count_only)
     {
+        /* A load given up on creates nothing: the one superseded by a delete
+         * of its history would bring that history back, empty. Asked once the
+         * file was found missing, which a delete cancelling the load before
+         * its unlink can only make it find after the cancel. A history that
+         * had no file to unlink can still come back, should the delete fall
+         * between this check and the create below: two calls' worth. */
+        if (g_cancellable_is_cancelled (cancellable))
+            return FALSE;
+
         /* Create the empty file to be listed as an available history */
         if (g_paste_util_ensure_history_dir_exists ())
         {
@@ -2206,7 +2467,7 @@ g_paste_file_backend_delete_files (const gchar *name,
      * replacement says a re-key did not finish, which a history still there
      * needs said. */
     g_autofree gchar *path = g_file_get_path (history_file);
-    g_autofree gchar *tmp = g_strconcat (path, ".tmp", NULL);
+    g_autofree gchar *tmp = g_strconcat (path, G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL);
 
     if (g_unlink (tmp) && errno != ENOENT)
         g_warning ("Could not remove %s, which a cut-short save left: %s", tmp, g_strerror (errno));
@@ -2226,29 +2487,193 @@ g_paste_file_backend_delete_history (GPasteStorageBackend *self,
 }
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
+/* Whether @error, a read's, is the file's own doing -- what it holds damaged
+ * or cut short -- rather than the read failing. */
+static gboolean
+_g_paste_file_backend_is_damage (const GError *error)
+{
+    return g_error_matches (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA) || g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PARTIAL_INPUT);
+}
+
+/* Whether @backend's key reads what @path holds. */
+static gboolean
+_g_paste_file_backend_reads (GPasteStorageBackend *backend,
+                             const gchar          *path)
+{
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autofree gchar *text = NULL;
+    gsize length = 0;
+    g_autoptr (GError) error = NULL;
+    gboolean read = g_paste_file_backend_load_contents (backend, path, file, g_str_has_suffix (path, G_PASTE_FILE_BACKEND_SIDE_SUFFIX),
+                                                        &text, &length, NULL, &error);
+
+    g_paste_util_wipe (text, length);
+
+    return read;
+}
+
+/**
+ * g_paste_file_backend_refused_images:
+ * @self: an encrypted #GPasteFileBackend
+ * @history_name: a history @self has read
+ *
+ * The side files of @history_name's images there on the disk that a read by
+ * @self found and could not use -- damaged, or under another key, as a change
+ * of passphrase cut short leaves a history split between two: what that read
+ * dropped, and the next full write of the history sweeps.
+ *
+ * Returns: (transfer full) (nullable): their paths, %NULL for none
+ */
+G_PASTE_VISIBLE GStrv
+g_paste_file_backend_refused_images (GPasteStorageBackend *self,
+                                     const gchar          *history_name)
+{
+    g_return_val_if_fail (G_PASTE_IS_FILE_BACKEND (self), NULL);
+    g_return_val_if_fail (history_name, NULL);
+
+    GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (self));
+    g_autofree gchar *dir = g_paste_file_backend_images_dir (history_name);
+    g_autofree gchar *prefix = g_strconcat (dir, G_DIR_SEPARATOR_S, NULL);
+    g_autoptr (GStrvBuilder) refused = g_strv_builder_new ();
+    gboolean any = FALSE;
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->side_files_lock);
+    GHashTableIter iter;
+    gpointer side_file;
+
+    g_hash_table_iter_init (&iter, priv->refused_side_files);
+    while (g_hash_table_iter_next (&iter, &side_file, NULL))
+    {
+        if (g_str_has_prefix (side_file, prefix) && g_file_test (side_file, G_FILE_TEST_EXISTS))
+        {
+            g_strv_builder_add (refused, side_file);
+            any = TRUE;
+        }
+    }
+
+    return (any) ? g_strv_builder_end (refused) : NULL;
+}
+
+/**
+ * g_paste_file_backend_reads_any:
+ * @self: an encrypted #GPasteFileBackend
+ * @paths: (array zero-terminated=1): encrypted files
+ *
+ * Whether the key @self holds reads one of @paths at least.
+ *
+ * Each file has a salt of its own, so a key that opens none of them is
+ * derived once per file, which no cap on the files tried saves without taking
+ * an image the key would open, behind damaged ones, for damaged too: the
+ * doctor asks this once a check (doctor_rekey_run ()), on a worker.
+ *
+ * Returns: whether one of @paths opens with @self's key
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_file_backend_reads_any (GPasteStorageBackend *self,
+                                const gchar * const  *paths)
+{
+    g_return_val_if_fail (G_PASTE_IS_FILE_BACKEND (self), FALSE);
+
+    for (const gchar * const *path = paths; path && *path; ++path)
+    {
+        if (_g_paste_file_backend_reads (self, *path))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* Whether @copy holds what @original does, byte for byte: a chunk of each at a
+ * time, a document or a side file of any size costing two buffers. */
+static gboolean
+_g_paste_file_backend_same_bytes (GFile   *original,
+                                  GFile   *copy,
+                                  GError **error)
+{
+    g_autoptr (GFileInputStream) expected = g_file_read (original, NULL /* cancellable */, error);
+    g_autoptr (GFileInputStream) found = (expected) ? g_file_read (copy, NULL /* cancellable */, error) : NULL;
+
+    if (!found)
+        return FALSE;
+
+    g_autofree guchar *expected_chunk = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+    g_autofree guchar *found_chunk = g_malloc (G_PASTE_FILE_BACKEND_READ_SIZE);
+
+    for (;;)
+    {
+        gsize expected_length = 0;
+        gsize found_length = 0;
+
+        if (!g_input_stream_read_all (G_INPUT_STREAM (expected), expected_chunk, G_PASTE_FILE_BACKEND_READ_SIZE, &expected_length, NULL /* cancellable */, error) ||
+            !g_input_stream_read_all (G_INPUT_STREAM (found), found_chunk, G_PASTE_FILE_BACKEND_READ_SIZE, &found_length, NULL /* cancellable */, error))
+            return FALSE;
+        if (found_length != expected_length || memcmp (found_chunk, expected_chunk, expected_length))
+            return FALSE;
+        if (!expected_length)
+            return TRUE;
+    }
+}
+
+/* @path's bytes, as they are, as its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling,
+ * when the key @rekeyed holds, the one a re-key goes to, reads them: the
+ * replacement of a file under that key already. That key is asked of @path
+ * itself, so that nothing is written for a file it refuses too -- a history on
+ * a third passphrase, or damaged, which every change of passphrase meets --
+ * and the copy is checked against it byte for byte rather than read through
+ * that key again: one derivation in all. */
+static gboolean
+_g_paste_file_backend_copy_as_rekeyed (GPasteStorageBackend *rekeyed,
+                                       const gchar          *path)
+{
+    if (!_g_paste_file_backend_reads (rekeyed, path))
+        return FALSE;
+
+    g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+    g_autoptr (GFile) file = g_file_new_for_path (path);
+    g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
+    g_autoptr (GError) error = NULL;
+
+    if (!g_file_copy (file, tmp_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error) || !_g_paste_file_backend_sync (tmp_file, &error))
+        g_warning ("Could not copy %s for the change of passphrase: %s", path, error->message);
+    else if (_g_paste_file_backend_same_bytes (file, tmp_file, &error))
+        return TRUE;
+    else
+        g_warning ("Could not keep %s, already under the new passphrase, for the change: %s", path, (error) ? error->message : "it does not read back");
+
+    _g_paste_file_backend_remove_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
+
+    return FALSE;
+}
+
 /* Re-encrypt one file's bytes from the key @self holds to the one @rekeyed does,
  * into its %G_PASTE_FILE_BACKEND_REKEY_NEW sibling. The bytes are copied
  * verbatim — this is a key change, not a rewrite — and read back through the
  * new key before the caller is told it worked, so a bad write is caught while
- * the original is still the only thing in place. */
+ * the original is still the only thing in place.
+ *
+ * @unreadable says whether a failure was the current key refusing what the
+ * file holds -- damaged, cut short, under another key -- rather than the
+ * filesystem failing. */
 static gboolean
 _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
                                       GPasteStorageBackend *rekeyed,
-                                      const gchar          *path)
+                                      const gchar          *path,
+                                      gboolean             *unreadable)
 {
     g_autoptr (GFile) file = g_file_new_for_path (path);
-    /* An image's, named by g_paste_file_backend_encrypted_path (). */
-    gboolean side_file = g_str_has_suffix (path, ".pngs");
+    gboolean side_file = g_str_has_suffix (path, G_PASTE_FILE_BACKEND_SIDE_SUFFIX);
     /* The file's plaintext -- an image's pixels as readily as a history's
      * passwords -- so it is wiped by length rather than as a string, as is the
      * @check read back below: neither is text. */
     g_autofree gchar *text = NULL;
     gsize length = 0;
+    gboolean opened = FALSE;
     g_autoptr (GError) error = NULL;
 
-    if (!g_paste_file_backend_load_contents (self, path, file, side_file, &text, &length, NULL, &error))
+    *unreadable = FALSE;
+    if (!g_paste_file_backend_load_contents (self, path, file, side_file, &text, &length, &opened, &error))
     {
         g_warning ("Failed to read %s with the current passphrase: %s", path, error->message);
+        *unreadable = opened && (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED) || _g_paste_file_backend_is_damage (error));
         return FALSE;
     }
 
@@ -2284,9 +2709,7 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     if (!ok)
     {
         g_warning ("Failed to re-encrypt %s: %s", path, (error) ? error->message : "it did not read back identical");
-        /* Best effort: the failure is already reported, and a leftover temporary
-         * beside the untouched original is the harmless outcome. */
-        g_file_delete (tmp_file, NULL, NULL);
+        _g_paste_file_backend_drop_beside (stream, tmp_file);
 
         return FALSE;
     }
@@ -2294,9 +2717,34 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
     return TRUE;
 }
 
-/* Every file of @name that is encrypted: the history itself, first, and the
- * image side files it references, which live in the history's own images
- * directory.
+/* Every file of @name that is encrypted, off @images, the listing of its
+ * images directory @images_dir: the history itself, first, and every image
+ * side file in that directory, whether the history still references it or
+ * not -- one a sweep has yet to take is re-keyed and settled with the rest,
+ * rather than left on the passphrase being retired. */
+static GStrv
+_g_paste_file_backend_encrypted_files_in (const gchar  *name,
+                                          const gchar  *images_dir,
+                                          const gchar **images)
+{
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+
+    g_strv_builder_take (builder, g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE)));
+
+    for (const gchar **image = images; *image; ++image)
+    {
+        /* The encrypted side files only, named as this backend names them: a
+         * leftover plain ".png" holds nothing secret, and a ".pngs" under any
+         * other name is no entry's, the sweep leaving it alone too. */
+        if (_g_paste_file_backend_is_image_file_name (*image, TRUE))
+            g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
+    }
+
+    return g_strv_builder_end (builder);
+}
+
+/* Every file of @name that is encrypted, as
+ * _g_paste_file_backend_encrypted_files_in () says, off a listing of its own.
  *
  * %NULL (never an incomplete list) if the directory is there but cannot be
  * listed: the caller re-keys exactly what this returns, so a short list would
@@ -2305,10 +2753,6 @@ _g_paste_file_backend_reencrypt_file (GPasteStorageBackend *self,
 static GStrv
 _g_paste_file_backend_encrypted_files (const gchar *name)
 {
-    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
-
-    g_strv_builder_take (builder, g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (G_PASTE_STORAGE_ENCRYPTED_FILE)));
-
     g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
     g_autoptr (GError) error = NULL;
@@ -2322,16 +2766,7 @@ _g_paste_file_backend_encrypted_files (const gchar *name)
         return NULL;
     }
 
-    for (GStrv image = images; *image; ++image)
-    {
-        /* The encrypted side files only, named as this backend names them: a
-         * leftover plain ".png" holds nothing secret, and a ".pngs" under any
-         * other name is no entry's, the sweep leaving it alone too. */
-        if (_g_paste_file_backend_is_image_file_name (*image, TRUE))
-            g_strv_builder_take (builder, g_build_filename (images_dir, *image, NULL));
-    }
-
-    return g_strv_builder_end (builder);
+    return _g_paste_file_backend_encrypted_files_in (name, images_dir, (const gchar **) images);
 }
 
 /* Whether @a and @b are two names of one file. */
@@ -2368,33 +2803,89 @@ _g_paste_file_backend_same_file (const gchar *a,
 static gboolean
 _g_paste_file_backend_settle_rekey (const gchar *name)
 {
-    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
+    /* The images, and what is beside them, read off one listing of their
+     * directory rather than asked of the filesystem image by image: most
+     * starts find nothing there, and a history can hold hundreds of them. */
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
+    g_autoptr (GFile) dir = g_file_new_for_path (images_dir);
+    g_autoptr (GError) list_error = NULL;
+    g_auto (GStrv) listed = g_paste_util_list_directory (dir, G_FILE_ATTRIBUTE_STANDARD_NAME, &list_error);
 
-    if (!paths)
+    /* Read as an empty one, a listing that failed would skip every image, and
+     * have the history settled with the originals of those already renamed
+     * over left aside -- for the next settle, finding nothing pending, to
+     * delete. */
+    if (!listed)
+    {
+        g_warning ("Could not list the images of \"%s\" to settle a change of passphrase: %s", name, list_error->message);
+
         return FALSE;
+    }
 
-    g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (paths[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
-    gboolean pending = g_file_test (marker, G_FILE_TEST_EXISTS) && g_file_test (paths[0], G_FILE_TEST_EXISTS);
+    g_auto (GStrv) files = _g_paste_file_backend_encrypted_files_in (name, images_dir, (const gchar **) listed);
+    g_autofree gchar *marker = _g_paste_file_backend_rekey_sibling (files[0], G_PASTE_FILE_BACKEND_REKEY_NEW);
+    gboolean pending = g_file_test (marker, G_FILE_TEST_EXISTS) && g_file_test (files[0], G_FILE_TEST_EXISTS);
     gboolean settled = TRUE;
+    g_autoptr (GHashTable) present = g_hash_table_new (g_str_hash, g_str_equal);
+
+    for (GStrv entry = listed; *entry; ++entry)
+        g_hash_table_add (present, *entry);
+
+    /* An image is visited by its name whether or not it is still there: a
+     * write's sweep takes an image the history no longer holds and leaves what
+     * a re-key put beside it to this settle, which would otherwise find nothing
+     * to go by -- and keep an original under the passphrase being retired
+     * until the history is deleted. */
+    g_autoptr (GStrvBuilder) builder = g_strv_builder_new ();
+    g_autoptr (GHashTable) gone = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+    g_strv_builder_addv (builder, (const gchar **) files);
+    for (GStrv entry = listed; *entry; ++entry)
+    {
+        g_autofree gchar *image = _g_paste_file_backend_rekeyed_image (*entry);
+
+        if (!image || g_hash_table_contains (present, image) || g_hash_table_contains (gone, image))
+            continue;
+
+        g_strv_builder_take (builder, g_build_filename (images_dir, image, NULL));
+        g_hash_table_add (gone, g_steal_pointer (&image));
+    }
+
+    g_auto (GStrv) paths = g_strv_builder_end (builder);
 
     for (GStrv path = paths; *path; ++path)
     {
         g_autofree gchar *aside_path = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
-        g_autofree gchar *replacement = _g_paste_file_backend_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
-        gboolean moved = pending && path != paths && !g_file_test (replacement, G_FILE_TEST_EXISTS);
+        gboolean has_replacement = pending;
+        gboolean has_original;
+
+        if (path != paths)
+        {
+            g_autofree gchar *base = g_path_get_basename (*path);
+            g_autofree gchar *replacement = _g_paste_file_backend_rekey_sibling (base, G_PASTE_FILE_BACKEND_REKEY_NEW);
+            g_autofree gchar *original = _g_paste_file_backend_rekey_sibling (base, G_PASTE_FILE_BACKEND_REKEY_OLD);
+
+            has_replacement = g_hash_table_contains (present, replacement);
+            has_original = g_hash_table_contains (present, original);
+        }
+        else
+            has_original = g_file_test (aside_path, G_FILE_TEST_EXISTS);
+
+        gboolean moved = pending && path != paths && !has_replacement;
 
         /* An original that never moved is still at its path: its second name
          * goes before its replacement does, a settle cut short in between
          * leaving the replacement to say so to the next one. */
         if (!moved || _g_paste_file_backend_same_file (*path, aside_path))
         {
-            _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
-            if (path != paths)
+            if (has_original)
+                _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_OLD);
+            if (path != paths && has_replacement)
                 _g_paste_file_backend_remove_rekey_sibling (*path, G_PASTE_FILE_BACKEND_REKEY_NEW);
             continue;
         }
 
-        if (!g_file_test (aside_path, G_FILE_TEST_EXISTS))
+        if (!has_original)
             continue;
 
         g_autoptr (GFile) aside = g_file_new_for_path (aside_path);
@@ -2537,26 +3028,59 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
     GPasteSettings *settings = g_paste_storage_backend_get_settings (self);
     g_autoptr (GPasteStorageBackend) rekeyed = g_paste_file_backend_new_encrypted (settings,
                                                                                   new_passphrase);
-    g_auto (GStrv) paths = _g_paste_file_backend_encrypted_files (name);
+    g_auto (GStrv) files = _g_paste_file_backend_encrypted_files (name);
 
     /* Re-keying part of a history is worse than not re-keying it at all. */
-    if (!paths)
+    if (!files)
         return FALSE;
 
-    guint n_paths = g_strv_length (paths);
+    g_autoptr (GStrvBuilder) rekeying = g_strv_builder_new ();
+    g_autoptr (GStrvBuilder) unreadable_images = g_strv_builder_new ();
 
-    for (guint i = 0; i < n_paths; ++i)
+    for (GStrv path = files; *path; ++path)
     {
-        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, paths[i]))
+        gboolean unreadable;
+
+        /* Re-encrypted, or the history itself under the key the change goes to
+         * already, its images left on the other one -- what a change cut short
+         * leaves, which the doctor re-keys from that one: it goes through as it
+         * is, its replacement being what says a re-key is under way
+         * (_g_paste_file_backend_settle_rekey ()). */
+        if (_g_paste_file_backend_reencrypt_file (self, rekeyed, *path, &unreadable) ||
+            (unreadable && path == files && _g_paste_file_backend_copy_as_rekeyed (rekeyed, *path)))
+        {
+            g_strv_builder_add (rekeying, *path);
             continue;
+        }
+
+        /* An image the current key cannot read is lost to the history already,
+         * a read dropping it: the rest is re-keyed, and the file goes with the
+         * passphrase it may be under once the change is through. Failing over
+         * it would fail every change of passphrase for good, over a file no
+         * window shows. Unless the new key reads it: it is on the passphrase
+         * the change goes to already -- what a change cut short leaves of a
+         * history split between two, which the doctor re-keys from the other
+         * one -- and stays as it is. The history itself is no such file: a
+         * document the current key cannot read is the caller's to tell apart
+         * (g_paste_storage_backend_refutes_passphrase ()). */
+        if (unreadable && path != files)
+        {
+            if (!_g_paste_file_backend_reads (rekeyed, *path))
+                g_strv_builder_add (unreadable_images, *path);
+            continue;
+        }
 
         /* Nothing has moved yet, so dropping the copies puts us back exactly
          * where we started. */
-        for (guint j = 0; j < i; ++j)
-            _g_paste_file_backend_remove_rekey_sibling (paths[j], G_PASTE_FILE_BACKEND_REKEY_NEW);
+        for (GStrv done = files; done != path; ++done)
+            _g_paste_file_backend_remove_rekey_sibling (*done, G_PASTE_FILE_BACKEND_REKEY_NEW);
 
         return FALSE;
     }
+
+    g_auto (GStrv) paths = g_strv_builder_end (rekeying);
+    g_auto (GStrv) unreadable = g_strv_builder_end (unreadable_images);
+    guint n_paths = g_strv_length (paths);
 
     /* A hard link, which is what keeps every original at its path while the
      * renames below happen, and copies nothing. A filesystem without them --
@@ -2591,11 +3115,21 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
         return FALSE;
     }
 
+    g_autofree gchar *history_dir = g_path_get_dirname (paths[0]);
+    g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
     guint installed = 0;
 
     for (; installed < n_paths; ++installed)
     {
         const gchar *path = paths[_g_paste_file_backend_install_index (installed, n_paths)];
+
+        /* The history's rename, the last, is what says the re-key happened:
+         * the images' renames are on the disk before it, or a power loss in
+         * between could keep it and lose one of theirs, whose replacement the
+         * next settle -- finding none beside the history -- would drop. No test
+         * cuts the power between two directory syncs. */
+        if (installed == n_paths - 1 && n_paths > 1)
+            _g_paste_file_backend_sync_directory (images_dir);
         g_autofree gchar *tmp = _g_paste_file_backend_rekey_sibling (path, G_PASTE_FILE_BACKEND_REKEY_NEW);
         g_autoptr (GFile) tmp_file = g_file_new_for_path (tmp);
         g_autoptr (GFile) file = g_file_new_for_path (path);
@@ -2617,15 +3151,15 @@ g_paste_file_backend_rekey (GPasteStorageBackend *self,
          * disk once its directory is: synced before the change is answered as
          * done -- the new passphrase then adopted, and remembered -- or a power
          * loss would bring the histories back under the one just retired. */
-        g_autofree gchar *history_dir = g_path_get_dirname (paths[0]);
-        g_autofree gchar *images_dir = g_paste_file_backend_images_dir (name);
-
         _g_paste_file_backend_sync_directory (history_dir);
-        if (n_paths > 1)
-            _g_paste_file_backend_sync_directory (images_dir);
 
         for (guint i = 0; i < n_paths; ++i)
             _g_paste_file_backend_remove_rekey_sibling (paths[i], G_PASTE_FILE_BACKEND_REKEY_OLD);
+        for (GStrv image = unreadable; *image; ++image)
+        {
+            if (g_unlink (*image) && errno != ENOENT)
+                g_warning ("Could not remove %s, which the passphrase in use could not read: %s", *image, g_strerror (errno));
+        }
 
         return TRUE;
     }
@@ -2717,6 +3251,7 @@ g_paste_file_backend_dispose (GObject *object)
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
     g_clear_pointer (&priv->png_checksums, g_hash_table_unref);
+    g_clear_pointer (&priv->refused_side_files, g_hash_table_unref);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->dispose (object);
 }
@@ -2727,7 +3262,7 @@ g_paste_file_backend_finalize (GObject *object)
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (G_PASTE_FILE_BACKEND (object));
 
     g_paste_passphrase_free (priv->passphrase);
-    g_mutex_clear (&priv->png_checksums_lock);
+    g_mutex_clear (&priv->side_files_lock);
 
     G_OBJECT_CLASS (g_paste_file_backend_parent_class)->finalize (object);
 }
@@ -2738,7 +3273,10 @@ g_paste_file_backend_finalize (GObject *object)
  * that proves the passphrase wrong, the converter answering it with
  * %G_IO_ERROR_PERMISSION_DENIED. Anything else -- a file that will not open, a
  * foreign file, damage past the first chunk, an empty placeholder -- leaves the
- * passphrase as likely right as before. */
+ * passphrase as likely right as before. A failure that is the file's says
+ * nothing of the passphrase; one that is not -- a key derivation refused its
+ * memory, a read failing once open -- is a check not made
+ * (g_paste_storage_backend_set_unverifiable ()). */
 static gboolean
 g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
                                                  const gchar          *name)
@@ -2752,8 +3290,18 @@ g_paste_file_backend_history_refutes_passphrase (GPasteStorageBackend *self,
 
     if (g_paste_file_backend_load_contents (self, path, file, FALSE, &text, &text_length, &opened, &error))
         return FALSE;
+    if (!opened)
+        return FALSE;
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED))
+        return TRUE;
 
-    return opened && g_error_matches (error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED);
+    if (!_g_paste_file_backend_is_damage (error))
+    {
+        g_warning ("Could not check the passphrase against %s: %s", path, error->message);
+        g_paste_storage_backend_set_unverifiable (self);
+    }
+
+    return FALSE;
 }
 
 /* A history whose document the key decrypts whole holds what it encrypted,
@@ -2809,8 +3357,9 @@ g_paste_file_backend_init (GPasteFileBackend *self G_GNUC_UNUSED)
 #ifdef G_PASTE_ENABLE_ENCRYPTION
     GPasteFileBackendPrivate *priv = g_paste_file_backend_get_instance_private (self);
 
-    g_mutex_init (&priv->png_checksums_lock);
+    g_mutex_init (&priv->side_files_lock);
     priv->png_checksums = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    priv->refused_side_files = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 #endif
 }
 

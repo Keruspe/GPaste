@@ -28,7 +28,7 @@ G_PASTE_DEFINE_TYPE (Keybinding, keybinding, G_TYPE_OBJECT)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_dconf_key (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     return self->dconf_key;
 }
@@ -44,7 +44,7 @@ g_paste_keybinding_get_dconf_key (GPasteKeybinding *self)
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_description (GPasteKeybinding *self)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
 
     return self->description;
 }
@@ -52,17 +52,19 @@ g_paste_keybinding_get_description (GPasteKeybinding *self)
 /**
  * g_paste_keybinding_get_accelerator:
  * @self: a #GPasteKeybinding instance
+ * @settings: the #GPasteSettings to read it from
  *
- * Get the accelerator for this keybinding
+ * Get the accelerator for this keybinding, read from @settings when asked:
+ * whatever its setting holds then, so it moves between calls.
  *
- * Returns: the accelerator
+ * Returns: (nullable): the accelerator, borrowed from @settings
  */
 G_PASTE_VISIBLE const gchar *
 g_paste_keybinding_get_accelerator (GPasteKeybinding *self,
                                     GPasteSettings   *settings)
 {
-    g_return_val_if_fail (G_PASTE_IS_KEYBINDING ((gpointer) self), NULL);
-    g_return_val_if_fail (G_PASTE_IS_SETTINGS ((gpointer) settings), NULL);
+    g_return_val_if_fail (G_PASTE_IS_KEYBINDING (self), NULL);
+    g_return_val_if_fail (G_PASTE_IS_SETTINGS (settings), NULL);
 
     return self->getter (settings);
 }
@@ -134,15 +136,18 @@ g_paste_keybinding_is_active (GPasteKeybinding *self)
 /**
  * g_paste_keybinding_perform:
  * @self: a #GPasteKeybinding instance
+ * @activation_token: (nullable): the token the shortcut's activation came with,
+ *     for a window it opens to be raised with
  *
  * Runs the callback associated to the keybinding
  */
 G_PASTE_VISIBLE void
-g_paste_keybinding_perform (GPasteKeybinding *self)
+g_paste_keybinding_perform (GPasteKeybinding *self,
+                            const gchar      *activation_token)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDING (self));
 
-    self->callback (self, self->user_data);
+    self->callback (self, activation_token, self->user_data);
 }
 
 static void
@@ -186,8 +191,8 @@ g_paste_keybinding_init (GPasteKeybinding *self)
  * g_paste_keybinding_new:
  * @dconf_key: the dconf key to watch
  * @description: a human-readable, translated description of the action
- * @getter: (scope notified): the getter to use to get the binding
- * @callback: (closure user_data) (scope notified): the callback to call when activated
+ * @getter: (scope forever): the getter to use to get the binding
+ * @callback: (closure user_data) (scope forever): the callback to call when activated
  * @user_data: the data to pass to @callback
  *
  * Create a new instance of #GPasteKeybinding

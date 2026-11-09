@@ -18,6 +18,7 @@
 
 #include "gpaste-test-clipboard-provider.h"
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -257,7 +258,7 @@ pump (Owner *owner,
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         owner_dispatch (owner);
         g_usleep (1000);
     } while (g_get_monotonic_time () < end);
@@ -278,14 +279,14 @@ wait_for_claim_seen (Owner *owner)
 }
 
 /* Pump until the silent owner has deferred a request from another window than
- * @gdk_window, the workaround's, and answer its index, failing after a deadline
- * rather than guessing how long the server takes. GDK converts TARGETS once per
- * ownership change it has yet to process, the previous case's included, so how
- * many of its requests come first is no number to count on; the window they
- * come from is. */
-static guint
-wait_for_workaround_request (Owner *owner,
-                             Window gdk_window)
+ * @gdk_window, the workaround's, and answer that window, failing after a
+ * deadline rather than guessing how long the server takes. GDK converts TARGETS
+ * once per ownership change it has yet to process, the previous case's
+ * included, so how many of its requests come first is no number to count on;
+ * the window they come from is. */
+static Window
+wait_for_workaround_requestor (Owner *owner,
+                               Window gdk_window)
 {
     gint64 end = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
 
@@ -293,8 +294,10 @@ wait_for_workaround_request (Owner *owner,
     {
         for (guint i = 0; i < owner->deferred->len; ++i)
         {
-            if (g_array_index (owner->deferred, XSelectionRequestEvent, i).requestor != gdk_window)
-                return i;
+            Window requestor = g_array_index (owner->deferred, XSelectionRequestEvent, i).requestor;
+
+            if (requestor != gdk_window)
+                return requestor;
         }
 
         g_assert_cmpint (g_get_monotonic_time (), <, end);
@@ -337,6 +340,17 @@ test_display (void)
     return display;
 }
 
+/* GDK's own Xlib connection to it. */
+static Display *
+test_xdisplay (void)
+{
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    Display *xdisplay = gdk_x11_display_get_xdisplay (test_display ());
+    G_GNUC_END_IGNORE_DEPRECATIONS
+
+    return xdisplay;
+}
+
 static gboolean
 skipped_without_display (void)
 {
@@ -357,13 +371,12 @@ make_hints (void)
 /* One text update, read the way the GDK backend reads one: the text reports, the
  * workaround is asked what the selection offers, and the update concludes on
  * whichever comes last. */
-static void
-read_text (GPasteClipboardX11Hints *hints,
-           Owner                   *owner,
-           ReadResult              *result)
+static GPasteClipboardUpdate *
+start_hinted_read (GPasteClipboardX11Hints *hints,
+                   TestClipboard           *clipboard,
+                   ReadResult              *result)
 {
     g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
-    g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
 
     g_paste_settings_set_min_text_item_size (settings, 1);
     g_paste_settings_set_max_text_item_size (settings, 1000);
@@ -379,11 +392,24 @@ read_text (GPasteClipboardX11Hints *hints,
      * once every read it is going to fire has been. */
     g_paste_clipboard_update_maybe_done (pending);
 
+    return pending;
+}
+
+/* That read, waited for. */
+static void
+read_text (GPasteClipboardX11Hints *hints,
+           Owner                   *owner,
+           ReadResult              *result)
+{
+    g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
+
+    start_hinted_read (hints, clipboard, result);
+
     for (guint i = 0; i < 50 && !result->answered; ++i)
         pump (owner, 20);
 
-    /* Before the provider and the settings this update was created against go:
-     * one that never concluded still holds both. */
+    /* Before the provider this update was created against goes: one that never
+     * concluded still holds it. */
     g_assert_true (result->answered);
 }
 
@@ -477,7 +503,10 @@ hint_read (gconstpointer user_data)
  * the workaround existed leaves it with no notification to name, which is the
  * daemon's bootstrap read and the whole reason the server's clock is asked for;
  * one that claimed after is named by the notification itself. Both are accepted,
- * where CurrentTime -- what GDK's own reads pass -- would not be. */
+ * where CurrentTime -- what GDK's own reads pass -- would not be. Asked of the
+ * workaround directly, past GDK's formats: through the GDK backend, such an
+ * owner refuses GDK's own TARGETS too, and the bootstrap read never reaches
+ * the hints (see @selection_timestamp in gpaste-clipboard-x11-hints.c). */
 static void
 timestamped_conversion (gconstpointer user_data)
 {
@@ -505,8 +534,13 @@ timestamped_conversion (gconstpointer user_data)
 
     GPasteClipboardX11Hints *hints = g_paste_clipboard_x11_hints_new (gdk_display_get_clipboard (display), TRUE);
 
+    /* Claimed a few server milliseconds after the clock above was read: in the
+     * same one, the startup clock would be no older than the claim, and a
+     * conversion stamped with it -- the notification's timestamp never taken
+     * -- would be accepted as well. */
     if (!bootstrap)
     {
+        g_usleep (20 * G_TIME_SPAN_MILLISECOND);
         owner_claim (owner);
         pump (owner, 100);
     }
@@ -526,6 +560,122 @@ timestamped_conversion (gconstpointer user_data)
     gdk_display_close (display);
 }
 
+static gboolean
+window_exists (Display *dpy,
+               Window   window)
+{
+    Window root;
+    Window parent;
+    Window *children = NULL;
+    guint n_children = 0;
+    gboolean found = FALSE;
+
+    XQueryTree (dpy, DefaultRootWindow (dpy), &root, &parent, &children, &n_children);
+    for (guint i = 0; i < n_children && !found; ++i)
+        found = (children[i] == window);
+    if (children)
+        XFree (children);
+
+    return found;
+}
+
+/* Until @requestor is gone, five seconds at most, running @step a turn at a time
+ * and asserting @unanswered still is on each one, when given: what destroys the
+ * window is on_xevent () dispatching the reply, which an XSync of GDK's
+ * connection flushes the destroy of but does not dispatch. */
+static void
+wait_for_requestor_gone (Owner            *owner,
+                         Window            requestor,
+                         void            (*step) (Owner *owner),
+                         const ReadResult *unanswered)
+{
+    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
+    gboolean standing = TRUE;
+
+    while (standing && g_get_monotonic_time () < deadline)
+    {
+        step (owner);
+        XSync (test_xdisplay (), False);
+        standing = window_exists (owner->dpy, requestor);
+        if (standing && unanswered)
+            g_assert_false (unanswered->answered);
+    }
+    g_assert_false (standing);
+}
+
+/* One turn of the main loop, which is all an update needs to conclude. */
+static void
+iterate_once (Owner *owner G_GNUC_UNUSED)
+{
+    if (!g_main_context_iteration (NULL, FALSE))
+        g_usleep (1000);
+}
+
+static void
+pump_briefly (Owner *owner)
+{
+    pump (owner, 10);
+}
+
+/* A TARGETS reply landing after its update was overtaken -- before the idle
+ * that concludes it -- fires no hint conversion into it: an X round trip and a
+ * requestor window for an answer stored nowhere. GDK's events run at the
+ * default priority, ahead of that idle, which is the order the server's queued
+ * reply gives here.
+ *
+ * Waited for rather than given a while: the requestor window goes as the reply
+ * is dispatched, which has to come before the update concludes -- a conclusion
+ * first would cancel the conversion, and its reply would then land on a window
+ * nothing fires a hint from, whatever the check under test does. */
+static void
+superseded_targets (void)
+{
+    if (skipped_without_display ())
+        return;
+
+    g_autoptr (Owner) owner = owner_new (TRUE);
+    g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
+    ReadResult result = { 0 };
+
+    owner->behaviour = OWNER_SILENT;
+
+    g_autoptr (GPasteClipboardX11Hints) hints = make_hints ();
+
+    owner_claim (owner);
+
+    Window gdk_window = wait_for_claim_seen (owner);
+
+    start_hinted_read (hints, clipboard, &result);
+
+    Window requestor = wait_for_workaround_requestor (owner, gdk_window);
+    guint before = owner->hint_requests;
+
+    g_paste_clipboard_update_supersede (&clipboard->pending);
+    owner->behaviour = OWNER_SERVES_HINT;
+    owner_answer_deferred (owner);
+    /* The answers are the server's before GDK's connection asks for its own
+     * round trip, so they are queued there once it is over. */
+    XSync (owner->dpy, False);
+    XSync (test_xdisplay (), False);
+
+    /* A turn at a time, so that the update concluding first fails the case. */
+    wait_for_requestor_gone (owner, requestor, iterate_once, &result);
+
+    /* A hint conversion fired from that reply is the server's once GDK's
+     * connection has synced, and the owner's once its own has. */
+    XSync (owner->dpy, False);
+    owner_dispatch (owner);
+    g_assert_cmpuint (owner->hint_requests, ==, before);
+
+    for (gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC; !result.answered && g_get_monotonic_time () < deadline;)
+        pump (owner, 10);
+
+    g_autoptr (GPasteItem) item = result.item;
+
+    g_assert_true (result.answered);
+    g_assert_cmpuint (owner->hint_requests, ==, before);
+}
+
 /* A conversion given up on leaves its requestor window standing: the owner it
  * was asked of may still answer, and an answer to a window that is gone is a
  * BadWindow the owner dies of, this process being where both of them live.
@@ -540,34 +690,28 @@ late_reply (void)
         return;
 
     g_autoptr (Owner) owner = owner_new (TRUE);
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
     ReadResult result = { 0 };
 
     owner->behaviour = OWNER_SILENT;
-    g_paste_settings_set_min_text_item_size (settings, 1);
-    g_paste_settings_set_max_text_item_size (settings, 1000);
 
     g_autoptr (GPasteClipboardX11Hints) hints = make_hints ();
 
     owner_claim (owner);
 
     Window gdk_window = wait_for_claim_seen (owner);
+    GPasteClipboardUpdate *pending = start_hinted_read (hints, clipboard, &result);
+    Window requestor = wait_for_workaround_requestor (owner, gdk_window);
 
-    GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
-                                                                   CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
-                                                                   &clipboard->content, capture_read, &result);
-
-    g_paste_clipboard_update_add_read (pending);
-    g_paste_clipboard_x11_hints_read (hints, pending);
-    test_clipboard_text_ready (pending, HINT_VALUE);
-    g_paste_clipboard_update_maybe_done (pending);
-
-    wait_for_workaround_request (owner, gdk_window);
     g_assert_false (result.answered);
 
-    /* What the update's own deadline would do to it, without waiting the
-     * deadline out. */
+    /* What the update's own deadline ends in, without waiting its minute out:
+     * the deadline concludes the update first and cancels after, where this
+     * cancel concludes it through the conversion's report. Both answer unknown
+     * and leave the window standing, which is what is checked here; a report
+     * reaching an update already concluded is the read guard's to order
+     * (/read-guard/silence), and reports nothing either way, a cancelled
+     * conversion having no answer to report. */
     g_cancellable_cancel (pending->guard.cancellable);
     pump (owner, 50);
 
@@ -575,12 +719,16 @@ late_reply (void)
 
     g_assert_true (result.answered);
     g_assert_cmpint (result.secret, ==, G_PASTE_CLIPBOARD_SECRET_UNKNOWN);
+    g_assert_true (window_exists (owner->dpy, requestor));
 
     /* And now the owner answers the conversion nobody is waiting for: the window
-     * it names has to be standing for that answer to reach anything at all. */
+     * it names has to be standing for that answer to reach anything at all, and
+     * goes with it. */
     owner->behaviour = OWNER_SERVES_HINT;
     owner_answer_deferred (owner);
-    pump (owner, 100);
+
+    /* Waited for, however slow the reply is to reach GDK's connection. */
+    wait_for_requestor_gone (owner, requestor, pump_briefly, NULL);
 }
 
 /* How many of the polls the workaround makes are interrupted, as a signal
@@ -663,25 +811,6 @@ server_time_interrupted (void)
     gdk_display_close (display);
 }
 
-static gboolean
-window_exists (Display *dpy,
-               Window   window)
-{
-    Window root;
-    Window parent;
-    Window *children = NULL;
-    guint n_children = 0;
-    gboolean found = FALSE;
-
-    XQueryTree (dpy, DefaultRootWindow (dpy), &root, &parent, &children, &n_children);
-    for (guint i = 0; i < n_children && !found; ++i)
-        found = (children[i] == window);
-    if (children)
-        XFree (children);
-
-    return found;
-}
-
 /* A requestor window retired from a conversion given up on is still destroyed
  * when the hints object goes with its last reference. dispose () runs after GLib
  * has cleared the object's weak references then, so a teardown reaching the
@@ -694,32 +823,20 @@ dispose_retired (void)
         return;
 
     g_autoptr (Owner) owner = owner_new (TRUE);
-    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
     g_autoptr (TestClipboard) clipboard = test_clipboard_new ();
     ReadResult result = { 0 };
 
     owner->behaviour = OWNER_SILENT;
-    g_paste_settings_set_min_text_item_size (settings, 1);
-    g_paste_settings_set_max_text_item_size (settings, 1000);
 
     GPasteClipboardX11Hints *hints = make_hints ();
 
     owner_claim (owner);
 
     Window gdk_window = wait_for_claim_seen (owner);
+    GPasteClipboardUpdate *pending = start_hinted_read (hints, clipboard, &result);
+    Window requestor = wait_for_workaround_requestor (owner, gdk_window);
 
-    GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (clipboard), settings,
-                                                                   CLIPBOARD_CONTENT_TEXT, &clipboard->pending,
-                                                                   &clipboard->content, capture_read, &result);
-
-    g_paste_clipboard_update_add_read (pending);
-    g_paste_clipboard_x11_hints_read (hints, pending);
-    test_clipboard_text_ready (pending, HINT_VALUE);
-    g_paste_clipboard_update_maybe_done (pending);
-
-    guint ours = wait_for_workaround_request (owner, gdk_window);
-    Window requestor = g_array_index (owner->deferred, XSelectionRequestEvent, ours).requestor;
-
+    /* The deadline's end, as in late_reply (). */
     g_cancellable_cancel (pending->guard.cancellable);
     pump (owner, 50);
 
@@ -731,9 +848,7 @@ dispose_retired (void)
     /* The conversion given up on released its reference, so this one is the
      * last. */
     g_object_unref (hints);
-    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-    XSync (gdk_x11_display_get_xdisplay (test_display ()), False);
-    G_GNUC_END_IGNORE_DEPRECATIONS
+    XSync (test_xdisplay (), False);
 
     g_assert_false (window_exists (owner->dpy, requestor));
 }
@@ -757,6 +872,7 @@ main (int   argc,
     g_test_add_data_func ("/x11-hints/timestamp/notified", GINT_TO_POINTER (FALSE), timestamped_conversion);
     g_test_add_func ("/x11-hints/timestamp/interrupted", server_time_interrupted);
     g_test_add_func ("/x11-hints/late-reply", late_reply);
+    g_test_add_func ("/x11-hints/superseded-targets", superseded_targets);
     g_test_add_func ("/x11-hints/dispose-retired", dispose_retired);
 
     return g_paste_test_env_run ();

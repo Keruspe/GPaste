@@ -3,6 +3,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 /* The question the group is waiting on, kept on the group so that the group
  * going is what takes it back. */
@@ -76,7 +77,7 @@ g_paste_gtk_preferences_behaviour_page_new (GPasteSettings *settings)
     /* "extension-enabled" is derived from the shell schema, not a plain key, so
      * it has no default to reset to: bind it without a reset suffix. */
     AdwSwitchRow *extension_enabled_switch = ADW_SWITCH_ROW (adw_switch_row_new ());
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (extension_enabled_switch), _("Enable the GNOME Shell Extension"));
+    g_paste_gtk_util_set_row_title (ADW_PREFERENCES_ROW (extension_enabled_switch), _("Enable the GNOME Shell Extension"));
     g_object_bind_property (settings, G_PASTE_EXTENSION_ENABLED_SETTING, extension_enabled_switch, "active",
                             G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), GTK_WIDGET (extension_enabled_switch));

@@ -6,51 +6,45 @@
 #include <unistd.h>
 #include <gpaste-3/gpaste-util.h>
 
-static GAsyncReadyCallback proxy_callback;
-static gpointer proxy_data;
-static gboolean refuse_proxy;
+static GAsyncReadyCallback bus_callback;
+static gpointer bus_data;
+static gboolean refuse_bus;
 static gboolean argument_destroyed;
 static guint calls;
+/* The activation token the platform data has to carry, or NULL for none. */
+static const gchar *expected_token;
 
 static void
-fake_proxy_new (GBusType            bus_type G_GNUC_UNUSED,
-                GDBusProxyFlags     flags G_GNUC_UNUSED,
-                GDBusInterfaceInfo *info G_GNUC_UNUSED,
-                const gchar        *name G_GNUC_UNUSED,
-                const gchar        *path G_GNUC_UNUSED,
-                const gchar        *interface G_GNUC_UNUSED,
-                GCancellable       *cancellable G_GNUC_UNUSED,
-                GAsyncReadyCallback callback,
-                gpointer            data)
+fake_bus_get (GBusType            bus_type G_GNUC_UNUSED,
+              GCancellable       *cancellable G_GNUC_UNUSED,
+              GAsyncReadyCallback callback,
+              gpointer            data)
 {
-    proxy_callback = callback;
-    proxy_data = data;
+    bus_callback = callback;
+    bus_data = data;
 }
 
-static GDBusProxy *
-fake_proxy_new_finish (GAsyncResult *result G_GNUC_UNUSED,
-                       GError      **error)
+/* Never a connection the code under test does anything with but hand to the
+ * fake calls below and drop. */
+static GDBusConnection *
+fake_bus_get_finish (GAsyncResult *result G_GNUC_UNUSED,
+                     GError      **error)
 {
-    if (refuse_proxy)
+    if (refuse_bus)
     {
         g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED, "refused");
         return NULL;
     }
 
-    return g_object_new (G_TYPE_DBUS_PROXY, NULL);
+    return (GDBusConnection *) g_object_new (G_TYPE_OBJECT, NULL);
 }
 
-static GDBusProxy *
-fake_proxy_new_sync (GBusType            bus_type G_GNUC_UNUSED,
-                     GDBusProxyFlags     flags G_GNUC_UNUSED,
-                     GDBusInterfaceInfo *info G_GNUC_UNUSED,
-                     const gchar        *name G_GNUC_UNUSED,
-                     const gchar        *path G_GNUC_UNUSED,
-                     const gchar        *interface G_GNUC_UNUSED,
-                     GCancellable       *cancellable G_GNUC_UNUSED,
-                     GError            **error)
+static GDBusConnection *
+fake_bus_get_sync (GBusType      bus_type G_GNUC_UNUSED,
+                   GCancellable *cancellable G_GNUC_UNUSED,
+                   GError      **error)
 {
-    return fake_proxy_new_finish (NULL, error);
+    return fake_bus_get_finish (NULL, error);
 }
 
 /* What either call is handed, consumed as GDBus consumes it. */
@@ -65,34 +59,64 @@ check_parameters (const gchar *method,
 
     g_assert_cmpstr (method, ==, "ActivateAction");
     g_assert_cmpstr (g_variant_get_string (arg, NULL), ==, "payload");
+
+    g_autoptr (GVariant) platform_data = g_variant_get_child_value (params, 2);
+    g_autoptr (GVariantDict) dict = g_variant_dict_new (platform_data);
+    const gchar *token = NULL;
+
+    g_variant_dict_lookup (dict, "activation-token", "&s", &token);
+    g_assert_cmpstr (token, ==, expected_token);
     ++calls;
 }
 
 static void
-fake_proxy_call (GDBusProxy         *proxy G_GNUC_UNUSED,
-                 const gchar        *method,
-                 GVariant           *parameters,
-                 GDBusCallFlags      flags G_GNUC_UNUSED,
-                 gint                timeout G_GNUC_UNUSED,
-                 GCancellable       *cancellable G_GNUC_UNUSED,
-                 GAsyncReadyCallback callback G_GNUC_UNUSED,
-                 gpointer            data G_GNUC_UNUSED)
+fake_connection_call (GDBusConnection    *connection G_GNUC_UNUSED,
+                      const gchar        *name G_GNUC_UNUSED,
+                      const gchar        *path G_GNUC_UNUSED,
+                      const gchar        *interface G_GNUC_UNUSED,
+                      const gchar        *method,
+                      GVariant           *parameters,
+                      const GVariantType *reply_type G_GNUC_UNUSED,
+                      GDBusCallFlags      flags G_GNUC_UNUSED,
+                      gint                timeout G_GNUC_UNUSED,
+                      GCancellable       *cancellable G_GNUC_UNUSED,
+                      GAsyncReadyCallback callback G_GNUC_UNUSED,
+                      gpointer            data)
 {
     check_parameters (method, parameters);
+    /* The name the reply's warning would give, never answered here. */
+    g_free (data);
 }
 
 static GVariant *
-fake_proxy_call_sync (GDBusProxy    *proxy G_GNUC_UNUSED,
-                      const gchar   *method,
-                      GVariant      *parameters,
-                      GDBusCallFlags flags G_GNUC_UNUSED,
-                      gint           timeout G_GNUC_UNUSED,
-                      GCancellable  *cancellable G_GNUC_UNUSED,
-                      GError       **error G_GNUC_UNUSED)
+fake_connection_call_sync (GDBusConnection    *connection G_GNUC_UNUSED,
+                           const gchar        *name G_GNUC_UNUSED,
+                           const gchar        *path G_GNUC_UNUSED,
+                           const gchar        *interface G_GNUC_UNUSED,
+                           const gchar        *method,
+                           GVariant           *parameters,
+                           const GVariantType *reply_type G_GNUC_UNUSED,
+                           GDBusCallFlags      flags G_GNUC_UNUSED,
+                           gint                timeout G_GNUC_UNUSED,
+                           GCancellable       *cancellable G_GNUC_UNUSED,
+                           GError            **error G_GNUC_UNUSED)
 {
     check_parameters (method, parameters);
 
     return g_variant_ref_sink (g_variant_new ("()"));
+}
+
+/* How many uris a display string decoded. */
+static guint uris_decoded;
+
+static gchar *
+counted_filename_from_uri (const gchar *uri,
+                           gchar      **hostname,
+                           GError     **error)
+{
+    ++uris_decoded;
+
+    return g_filename_from_uri (uri, hostname, error);
 }
 
 /* A reset GSettings refuses, as it does a key an administrator locked. */
@@ -107,17 +131,19 @@ fake_settings_reset (GPasteSettings *settings,
 }
 
 #define g_paste_settings_reset fake_settings_reset
-#define g_dbus_proxy_new_for_bus fake_proxy_new
-#define g_dbus_proxy_new_for_bus_finish fake_proxy_new_finish
-#define g_dbus_proxy_new_for_bus_sync fake_proxy_new_sync
-#define g_dbus_proxy_call fake_proxy_call
-#define g_dbus_proxy_call_sync fake_proxy_call_sync
+#define g_filename_from_uri counted_filename_from_uri
+#define g_bus_get fake_bus_get
+#define g_bus_get_finish fake_bus_get_finish
+#define g_bus_get_sync fake_bus_get_sync
+#define g_dbus_connection_call fake_connection_call
+#define g_dbus_connection_call_sync fake_connection_call_sync
 #include "../../src/libgpaste/gpaste-3/gpaste-util.c"
-#undef g_dbus_proxy_call_sync
-#undef g_dbus_proxy_call
-#undef g_dbus_proxy_new_for_bus_sync
-#undef g_dbus_proxy_new_for_bus_finish
-#undef g_dbus_proxy_new_for_bus
+#undef g_dbus_connection_call_sync
+#undef g_dbus_connection_call
+#undef g_bus_get_sync
+#undef g_bus_get_finish
+#undef g_bus_get
+#undef g_filename_from_uri
 #undef g_paste_settings_reset
 
 typedef struct
@@ -160,19 +186,20 @@ test_activation_argument (gconstpointer data)
 {
     const ActivationCase *c = data;
 
-    /* The asynchronous flavour warns about a refused proxy, which g_test makes
-     * fatal: run it where the warning can be expected rather than abort. */
+    /* The asynchronous flavour warns about a bus it could not reach, which
+     * g_test makes fatal: run it where the warning can be expected rather than
+     * abort. */
     if (!c->sync && c->refused && !g_test_subprocess ())
     {
         g_test_trap_subprocess (NULL, 10 * G_USEC_PER_SEC, G_TEST_SUBPROCESS_DEFAULT);
         g_test_trap_assert_passed ();
-        g_test_trap_assert_stderr ("*Failed to get D-Bus proxy: refused*");
+        g_test_trap_assert_stderr ("*Failed to reach the session bus: refused*");
         return;
     }
     if (g_test_subprocess ())
         g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
 
-    refuse_proxy = c->refused;
+    refuse_bus = c->refused;
     argument_destroyed = FALSE;
     calls = 0;
 
@@ -192,13 +219,13 @@ test_activation_argument (gconstpointer data)
     else
     {
         g_paste_util_activate_ui ("show-item", arg);
-        /* The caller lets go before the proxy is up: the argument has to be
+        /* The caller lets go before the bus is reached: the argument has to be
          * held for the call still to come. */
         if (!c->floating)
             g_clear_pointer (&arg, g_variant_unref);
         g_assert_false (argument_destroyed);
 
-        proxy_callback (NULL, NULL, proxy_data);
+        bus_callback (NULL, NULL, bus_data);
     }
 
     if (arg && !c->floating)
@@ -243,6 +270,87 @@ test_one_line (void)
     g_autofree gchar *line = g_paste_util_one_line ("a\nb\rc\td\u2028e\u2029f\xc2\x85g");
 
     g_assert_cmpstr (line, ==, "a b c d e f g");
+}
+
+/* A line is shown up to as many characters as asked, an ellipsis after what is
+ * cut, a shorter one whole and every one for 0 -- GNOME Shell's element-size
+ * reading 0 as no limit; folded either way. Characters, not bytes: a
+ * multi-byte one is kept whole or not at all. */
+static void
+test_shown_line (void)
+{
+    g_autofree gchar *head = g_strnfill (G_PASTE_UTIL_SHOWN_CHARS - 1, 'a');
+    g_autofree gchar *text = g_strconcat (head, "\u2028", "tail", NULL);
+    g_autofree gchar *line = g_paste_util_shown_line (text, G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *expected = g_strconcat (head, " …", NULL);
+    g_autofree gchar *whole = g_paste_util_shown_line ("a\nb", G_PASTE_UTIL_SHOWN_CHARS);
+    g_autofree gchar *exact = g_paste_util_shown_line ("a\nb", 3);
+    g_autofree gchar *unbounded = g_paste_util_shown_line (text, 0);
+    g_autofree gchar *wide = g_paste_util_shown_line ("😀😀😀", 2);
+
+    g_assert_cmpstr (line, ==, expected);
+    g_assert_cmpuint (g_utf8_strlen (line, -1), ==, G_PASTE_UTIL_SHOWN_CHARS + 1);
+    g_assert_cmpstr (whole, ==, "a b");
+    g_assert_cmpstr (exact, ==, "a b");
+    g_assert_cmpuint (g_utf8_strlen (unbounded, -1), ==, G_PASTE_UTIL_SHOWN_CHARS + 4);
+    g_assert_true (g_str_has_suffix (unbounded, " tail"));
+    g_assert_cmpstr (wide, ==, "😀😀…");
+
+    /* A sequence cut short, more bytes past the NUL after it: a text that is
+     * not UTF-8 is walked no further than its end. */
+    static const gchar cut_short[] = "ab\xE2\0XYZ";
+    g_autofree gchar *walked = g_paste_util_shown_line (cut_short, 3);
+
+    g_assert_cmpstr (walked, ==, "ab\xE2");
+}
+
+/* An item's line is its display string as the cut shows it, whatever its kind,
+ * and a files item has only as many of its uris decoded as the line shows: a
+ * directory's worth of them, each decoded and converted, would be the most of
+ * what drawing its row costs. */
+static void
+test_display_line (void)
+{
+    static const struct
+    {
+        const gchar   *value;
+        GPasteItemKind kind;
+    } cases[] = {
+        { "a\nlong text that goes on", G_PASTE_ITEM_KIND_TEXT     },
+        { "1x1",                       G_PASTE_ITEM_KIND_IMAGE    },
+        { "#ffffff",                   G_PASTE_ITEM_KIND_COLOR    },
+        { "a name",                    G_PASTE_ITEM_KIND_PASSWORD },
+        { "file:///a\nfile:///b c",    G_PASTE_ITEM_KIND_URIS     },
+    };
+    static const guint sizes[] = { 0, 1, 5, 12, G_PASTE_UTIL_SHOWN_CHARS };
+
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_autofree gchar *whole = g_paste_util_display_string (cases[i].value, cases[i].kind);
+
+        for (gsize s = 0; s < G_N_ELEMENTS (sizes); ++s)
+        {
+            g_autofree gchar *expected = g_paste_util_shown_line (whole, sizes[s]);
+            g_autofree gchar *line = g_paste_util_display_line (cases[i].value, cases[i].kind, sizes[s]);
+
+            g_assert_cmpstr (line, ==, expected);
+        }
+    }
+
+    g_autoptr (GString) many = g_string_new (NULL);
+
+    for (guint i = 0; i < 10000; ++i)
+        g_string_append_printf (many, "file:///tmp/file-%u\n", i);
+
+    g_autofree gchar *whole = g_paste_util_display_string (many->str, G_PASTE_ITEM_KIND_URIS);
+    g_autofree gchar *expected = g_paste_util_shown_line (whole, 80);
+
+    uris_decoded = 0;
+
+    g_autofree gchar *line = g_paste_util_display_line (many->str, G_PASTE_ITEM_KIND_URIS, 80);
+
+    g_assert_cmpstr (line, ==, expected);
+    g_assert_cmpuint (uris_decoded, <, 10);
 }
 
 static void
@@ -342,6 +450,24 @@ test_migration_gate_refused (void)
     g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
 }
 
+/* A launcher's Wayland activation token reaches the graphical tool, as GLib's
+ * own gapplication tool hands it on. */
+static void
+test_activation_token (void)
+{
+    g_autoptr (GError) error = NULL;
+
+    g_setenv ("XDG_ACTIVATION_TOKEN", "token", TRUE);
+    expected_token = "token";
+    calls = 0;
+    refuse_bus = FALSE;
+    g_assert_true (g_paste_util_activate_ui_sync ("action", argument_new (), &error));
+    g_assert_no_error (error);
+    g_assert_cmpuint (calls, ==, 1);
+    expected_token = NULL;
+    g_unsetenv ("XDG_ACTIVATION_TOKEN");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -349,6 +475,9 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/util/pid-file", test_pid_file);
     g_test_add_func ("/util/one-line", test_one_line);
+    g_test_add_func ("/util/shown-line", test_shown_line);
+    g_test_add_func ("/util/display-line", test_display_line);
+    g_test_add_func ("/util/activation-token", test_activation_token);
     g_test_add_func ("/util/migration-gate/refused", test_migration_gate_refused);
     g_test_add_func ("/util/display-string/files", test_files_shown);
     g_test_add_func ("/util/display-string/kinds", test_display_string);

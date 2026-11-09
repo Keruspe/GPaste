@@ -23,10 +23,10 @@ static guint   signals_sent;
 static GError *reexec_error;
 static guint   reexecs;
 
-/* How often isatty () was asked, and fwrite () called while @writes_counted is
- * set: what printing to a terminal costs. */
+/* How often isatty () was asked, and how many writes reached a stream holding
+ * no buffer of its own -- one per stdio call, whichever it is: what printing
+ * to a terminal costs. */
 static guint terminal_asks;
-static gboolean writes_counted;
 static guint writes;
 
 int
@@ -40,20 +40,20 @@ isatty (int fd)
     return original (fd);
 }
 
-size_t
-fwrite (const void *data,
-        size_t      size,
-        size_t      count,
-        FILE       *stream)
+static ssize_t
+count_write (void       *cookie G_GNUC_UNUSED,
+             const char *data   G_GNUC_UNUSED,
+             size_t      size)
 {
-    typedef size_t (*Write) (const void *, size_t, size_t, FILE *);
-    Write original = (Write) dlsym (RTLD_NEXT, "fwrite");
+    ++writes;
 
-    if (writes_counted)
-        ++writes;
-
-    return original (data, size, count, stream);
+    return (ssize_t) size;
 }
+
+/* Whether nobody owns the name by the time the re-exec goes out, which fails
+ * it as the bus does a call starting no daemon, worded as libgpaste hands it
+ * out (/client/calls/reexecute-starts-nothing). */
+static gboolean owner_gone;
 
 /* The re-exec the CLI asks for, refused with whatever @reexec_error says: the
  * method is what the migration gate has to outlive, and reaching a daemon to
@@ -63,6 +63,12 @@ fake_reexecute_daemon (GPasteClient *client G_GNUC_UNUSED,
                        GError      **error)
 {
     ++reexecs;
+    if (owner_gone)
+    {
+        g_set_error_literal (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER, "No GPaste daemon is serving a history.");
+        return FALSE;
+    }
+
     if (!reexec_error)
         return TRUE;
 
@@ -91,9 +97,26 @@ fake_reexecute_legacy_daemon (GPasteClient *client G_GNUC_UNUSED,
     return TRUE;
 }
 
+/* The presence the faked client reports, READY unless a case says otherwise,
+ * and what a wait for the daemon turns it into: a daemon coming up, or none
+ * coming -- or, with waited_on_legacy, a GPaste 45 or 50 told apart. What the
+ * wait itself does is libgpaste's (/client/presence/wait-for-daemon). */
+static GPasteDaemonPresence fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+static GPasteDaemonPresence presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+static gboolean             waited_on_legacy;
+static guint                follows;
+
+/* What the question about its owner below leaves it at: still starting, unless
+ * the owner left (absent) or another came to serve (ready) before the answer
+ * came. */
+static GPasteDaemonPresence presence_after_question = G_PASTE_DAEMON_PRESENCE_STARTING;
+
 /* Whether the daemon's path serves a GPaste 45 or 50's interface, which
- * libgpaste is asked when its presence reads as starting. */
+ * libgpaste is asked when its presence reads as starting, or whether the
+ * question fails, as on a bus error -- worded as libgpaste hands it out,
+ * GDBus' prefix off (/client/presence/legacy-errors). */
 static gboolean introspected_legacy;
+static gboolean introspection_fails;
 
 static void
 fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
@@ -103,7 +126,11 @@ fake_daemon_is_legacy (GPasteClient       *client G_GNUC_UNUSED,
 {
     g_autoptr (GTask) task = g_task_new (NULL, cancellable, callback, user_data);
 
-    g_task_return_boolean (task, introspected_legacy);
+    fake_presence = presence_after_question;
+    if (introspection_fails)
+        g_task_return_new_error_literal (task, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY, "unanswered");
+    else
+        g_task_return_boolean (task, introspected_legacy);
 }
 
 static gboolean
@@ -125,6 +152,7 @@ fake_get_version (GPasteClient *client G_GNUC_UNUSED)
 }
 
 static gchar *uploaded_and_copied;
+static const gchar *uploaded_url = "https://paste.rs/x";
 
 /* What `upload-and-copy` has the daemon do, recorded rather than sent: the
  * verb is a thin call, and what matters is that it is UploadAndCopy it makes,
@@ -136,7 +164,47 @@ fake_upload_and_copy_sync (GPasteClient *client G_GNUC_UNUSED,
 {
     g_set_str (&uploaded_and_copied, uuid);
 
-    return g_strdup ("https://paste.rs/x");
+    return g_strdup (uploaded_url);
+}
+
+/* Whether the daemon's name and GNOME Shell's are owned by one connection,
+ * which is what the CLI asks the bus: answered here, the fake client being on
+ * no bus. */
+static gboolean daemon_in_shell_owner;
+
+static GDBusConnection *
+fake_proxy_get_connection (GDBusProxy *proxy G_GNUC_UNUSED)
+{
+    return (daemon_in_shell_owner) ? (GDBusConnection *) &daemon_in_shell_owner : NULL;
+}
+
+static gchar *
+fake_proxy_get_name_owner (GDBusProxy *proxy G_GNUC_UNUSED)
+{
+    return (daemon_in_shell_owner) ? g_strdup (":1.42") : NULL;
+}
+
+static GVariant *
+fake_connection_call_sync (GDBusConnection    *connection G_GNUC_UNUSED,
+                           const gchar        *bus_name G_GNUC_UNUSED,
+                           const gchar        *object_path G_GNUC_UNUSED,
+                           const gchar        *interface_name G_GNUC_UNUSED,
+                           const gchar        *method_name,
+                           GVariant           *parameters,
+                           const GVariantType *reply_type G_GNUC_UNUSED,
+                           GDBusCallFlags      flags G_GNUC_UNUSED,
+                           gint                timeout G_GNUC_UNUSED,
+                           GCancellable       *cancellable G_GNUC_UNUSED,
+                           GError            **error G_GNUC_UNUSED)
+{
+    g_autoptr (GVariant) owned = g_variant_ref_sink (parameters);
+    const gchar *name = NULL;
+
+    g_assert_cmpstr (method_name, ==, "GetNameOwner");
+    g_variant_get (owned, "(&s)", &name);
+    g_assert_cmpstr (name, ==, "org.gnome.Shell");
+
+    return g_variant_ref_sink (g_variant_new ("(s)", ":1.42"));
 }
 
 /* The uuid of the faked daemon's item @n, a hex digit. */
@@ -150,6 +218,7 @@ static GPtrArray *fake_history;
 static const gchar *copied_after_answer;
 static guint clients_created;
 static guint index_lookups;
+static guint item_reads;
 static guint history_reads;
 static gchar *deleted_uuid;
 static GStrv merged_uuids;
@@ -230,6 +299,7 @@ fake_get_item_sync (GPasteClient *client G_GNUC_UNUSED,
                     const gchar  *uuid,
                     GError      **error G_GNUC_UNUSED)
 {
+    ++item_reads;
     return g_paste_client_item_new (uuid, fake_value, G_PASTE_ITEM_KIND_TEXT, FALSE, NULL);
 }
 
@@ -310,15 +380,6 @@ fake_list_histories_sync (GPasteClient *client G_GNUC_UNUSED,
     return histories;
 }
 
-/* The presence the faked client reports, READY unless a case says otherwise,
- * and what a wait for the daemon turns it into: a daemon coming up, or none
- * coming -- or, with waited_on_legacy, a GPaste 45 or 50 told apart. What the
- * wait itself does is libgpaste's (/client/presence/wait-for-daemon). */
-static GPasteDaemonPresence fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
-static GPasteDaemonPresence presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
-static gboolean             waited_on_legacy;
-static guint                follows;
-
 static GPasteDaemonPresence
 fake_get_daemon_presence (GPasteClient *client G_GNUC_UNUSED)
 {
@@ -398,7 +459,13 @@ fake_doctor_sync (GPasteClient *client G_GNUC_UNUSED,
 #define g_paste_util_wait_for_daemon_finish fake_wait_for_daemon_finish
 #define g_paste_util_daemon_is_legacy fake_daemon_is_legacy
 #define g_paste_util_daemon_is_legacy_finish fake_daemon_is_legacy_finish
+#define g_dbus_proxy_get_connection fake_proxy_get_connection
+#define g_dbus_proxy_get_name_owner fake_proxy_get_name_owner
+#define g_dbus_connection_call_sync fake_connection_call_sync
 #include "../../src/client/gpaste-client.c"
+#undef g_dbus_connection_call_sync
+#undef g_dbus_proxy_get_name_owner
+#undef g_dbus_proxy_get_connection
 #undef g_paste_util_wait_for_daemon_finish
 #undef g_paste_util_wait_for_daemon
 #undef g_paste_client_doctor_sync
@@ -447,6 +514,30 @@ test_item_index (void)
     g_assert_cmpuint (index_lookups, ==, 1);
     g_assert_cmpuint (history_reads, ==, 0);
     g_clear_pointer (&deleted_uuid, g_free);
+
+    /* The item looked up is the one get prints, not read a second time. */
+    g_assert_cmpint (run_client ((const gchar *[]) { "--use-index", "get", "1", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (index_lookups, ==, 2);
+    g_assert_cmpuint (item_reads, ==, 0);
+}
+
+/* A re-exec of a daemon GNOME Shell runs restarts nothing, the Shell keeping
+ * the code it loaded, and says so rather than claim the updated daemon runs. */
+static void
+test_reexec_in_shell (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stdout ("*GNOME Shell runs the daemon*log out and back in*");
+        g_test_trap_assert_stdout_unmatched ("*Successfully*");
+        return;
+    }
+
+    daemon_in_shell_owner = TRUE;
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_SUCCESS);
+    daemon_in_shell_owner = FALSE;
 }
 
 /* Anything but a complete unsigned decimal number names no item, and is
@@ -717,9 +808,11 @@ test_unsupported_not_legacy (void)
     legacy_owner = TRUE;
 }
 
-/* `gpaste-client migrate` against a daemon of this version still starting
- * opens no gate it would close again under it, and asks no re-exec; against a
- * GPaste 45 or 50, which reads as starting too, the signal goes out. */
+/* migrate's handler, against a daemon of this version still starting -- one
+ * starting again since the wait for it, a re-exec of its own say -- opens no
+ * gate it would close again under it, and asks no re-exec, nor against an
+ * owner that could not be told apart from one; against a GPaste 45 or 50,
+ * which reads as starting too, the signal goes out. */
 static void
 test_migrate_starting (void)
 {
@@ -736,6 +829,22 @@ test_migrate_starting (void)
     g_assert_cmpuint (reexecs, ==, 0);
     g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
     g_clear_error (&error);
+
+    /* An owner the question could not reach, answering a re-exec as one still
+     * starting would: refused before the gate opens, with the question's own
+     * failure. */
+    introspection_fails = TRUE;
+    legacy_owner = FALSE;
+    reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY);
+    g_assert_nonnull (strstr (error->message, "no migration was asked for: unanswered"));
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    g_clear_error (&reexec_error);
+    legacy_owner = TRUE;
+    introspection_fails = FALSE;
 
     introspected_legacy = TRUE;
     signals_sent = 0;
@@ -838,30 +947,25 @@ test_reads_stdin (void)
     ctx.version = TRUE;
     g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
 
-    /* Each flag only the listing reads -- listing_flags_given ()'s list --
-     * makes a verb-less line the listing, and leaves a verb's own pipe alone,
-     * --use-index with replace <index> above all. */
-    gboolean *listing_flags[] = { &ctx.favourites, &ctx.oneline, &ctx.raw, &ctx.reverse, &ctx.use_index, &ctx.zero };
-
+    /* Each option only the listing reads -- --favourites, --use-index,
+     * --oneline, --raw, --reverse and --zero -- makes a verb-less line the
+     * listing, and leaves a verb's own pipe alone, --use-index with replace
+     * <index> above all. */
     ctx.version = FALSE;
-    for (guint i = 0; i < G_N_ELEMENTS (listing_flags); ++i)
+    for (const gchar *letter = "fiorez"; *letter; ++letter)
     {
-        *listing_flags[i] = TRUE;
+        ctx.given = option_bit (*letter);
         g_assert_false (dispatch_reads_stdin (0, NULL, &ctx));
         g_assert_true (dispatch_reads_stdin (1, "add", &ctx));
         g_assert_true (dispatch_reads_stdin (2, "replace", &ctx));
-        *listing_flags[i] = FALSE;
     }
 
-    /* A flag the listing does not own leaves a verb-less line the pipe's. */
-    ctx.timeout_given = TRUE;
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
-    ctx.timeout_given = FALSE;
-    ctx.decoration = "-";
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
-    ctx.decoration = NULL;
-    ctx.separator = ",";
-    g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    /* One the listing does not own leaves a verb-less line the pipe's. */
+    for (const gchar *letter = "tds"; *letter; ++letter)
+    {
+        ctx.given = option_bit (*letter);
+        g_assert_true (dispatch_reads_stdin (0, NULL, &ctx));
+    }
 }
 
 /* @length bytes of @contents as the client's stdin, from a file of their own. */
@@ -1039,7 +1143,7 @@ test_timeout_parsing (void)
         optind = 0;
         g_assert_false (parse_cmdline (&argc, &args, &ctx, &error));
         g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT);
-        g_assert_false (ctx.timeout_given);
+        g_assert_false (options_given (&ctx, "t"));
     }
 
     g_autofree gchar *program = g_strdup ("gpaste-client");
@@ -1053,7 +1157,7 @@ test_timeout_parsing (void)
     optind = 0;
     g_assert_true (parse_cmdline (&argc, &args, &ctx, &error));
     g_assert_no_error (error);
-    g_assert_true (ctx.timeout_given);
+    g_assert_true (options_given (&ctx, "t"));
     g_assert_cmpuint (ctx.timeout, ==, 30);
 }
 
@@ -1255,6 +1359,36 @@ test_output_failure (void)
     clearerr (stdout);
 }
 
+/* A write that failed earlier, which ferror () remembers, is said without a
+ * reason: errno has been written over since, and a flush with nothing left to
+ * write leaves it as it was. */
+static void
+test_output_failure_reason (void)
+{
+    if (!g_file_test ("/dev/full", G_FILE_TEST_EXISTS))
+    {
+        g_test_skip ("No /dev/full to write to");
+        return;
+    }
+
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("Could not write the output\n");
+        return;
+    }
+
+    FILE *full = fopen ("/dev/full", "we");
+
+    g_assert_nonnull (full);
+    g_assert_cmpint (setvbuf (full, NULL, _IONBF, 0), ==, 0);
+    g_assert_cmpint (fputs ("lost", full), ==, EOF);
+    errno = EINVAL;
+    g_assert_false (output_written (full));
+    fclose (full);
+}
+
 /* A command taking its last argument from a pipe that brought nothing is not
  * the command line's: the help answers it, and no client is built to start a
  * daemon for it. */
@@ -1341,7 +1475,7 @@ test_password_timeout (void)
     g_assert_cmpuint (added_timeout, ==, 30);
     g_clear_object (&ctx.client);
 
-    ctx.timeout_given = TRUE;
+    ctx.given = option_bit ('t');
     ctx.timeout = 5;
     g_assert_cmpint (g_paste_dispatch (3, "add-password", &ctx, &error), ==, EXIT_SUCCESS);
     g_assert_no_error (error);
@@ -1414,17 +1548,49 @@ test_terminal_controls (void)
     read_terminal_until (terminal, buffer, sizeof (buffer), "z\n");
     g_assert_cmpstr (buffer, ==, "a\xef\xbf\xbd]52;c;eA==\xef\xbf\xbd" "b\xef\xbf\xbd" "x\r\ny\xef\xbf\xbdz\n");
 
+    /* A text that is not UTF-8 -- a refusal echoing an option's value as typed
+     * -- is not read past its end by a sequence cut short there, the bytes
+     * beyond it holding a control character that would be found and written
+     * out with them, nor has an escape character a lead byte comes before
+     * stepped over. Written to memory, which keeps every byte, the terminal
+     * having been found once already for stdout's. */
+    static const gchar cut_short[] = { '5', '\xe2', '\0', 'X', '\x1b', '\0' };
+    g_autofree gchar *shown = NULL;
+    gsize shown_size = 0;
+    FILE *memory = open_memstream (&shown, &shown_size);
+
+    print_text_to (memory, cut_short);
+    g_assert_cmpint (fclose (memory), ==, 0);
+    g_assert_cmpmem (shown, shown_size, "5\xef\xbf\xbd", 4);
+    g_clear_pointer (&shown, g_free);
+
+    memory = open_memstream (&shown, &shown_size);
+    print_text_to (memory, "\xe2\x1b]0;title\x07");
+    g_assert_cmpint (fclose (memory), ==, 0);
+    g_assert_cmpstr (shown, ==, "\xef\xbf\xbd\xef\xbf\xbd]0;title\xef\xbf\xbd");
+
     g_autofree gchar *clean = g_strnfill (1024, 'c');
     g_autofree gchar *echoed = g_malloc (2048);
     guint asked = terminal_asks;
 
-    writes_counted = TRUE;
     print_text (clean);
     print_text (clean);
-    writes_counted = FALSE;
     fflush (stdout);
     g_assert_cmpuint (terminal_asks, ==, asked);
-    g_assert_cmpuint (writes, ==, 0);
+
+    /* What lies between two control characters goes out in one write, a
+     * character at a time costing one each. */
+    FILE *counted = fopencookie (NULL, "w", (cookie_io_functions_t) { .write = count_write });
+
+    g_assert_nonnull (counted);
+    g_assert_cmpint (setvbuf (counted, NULL, _IONBF, 0), ==, 0);
+    writes = 0;
+    print_text_to (counted, clean);
+    g_assert_cmpuint (writes, ==, 1);
+    writes = 0;
+    print_text_to (counted, "ab\x1b" "cd");
+    g_assert_cmpuint (writes, ==, 3);
+    g_assert_cmpint (fclose (counted), ==, 0);
     for (gssize got = 0; got < 2048;)
     {
         gssize read_now = read (terminal, echoed, 2048);
@@ -1464,6 +1630,33 @@ test_terminal_controls (void)
     g_assert_nonnull (strstr (named, "e\xef\xbf\xbd]0;history\xef\xbf\xbd" "f"));
     g_assert_nonnull (strstr (named, "g\xef\xbf\xbd]0;doctor\xef\xbf\xbd" "h"));
     g_assert_null (strchr (named, '\x1b'));
+
+    /* Nor what a daemon answers -- an older one checking none of it -- or
+     * refuses with, on stderr: a version, an upload's url, an error quoting a
+     * history's name. */
+    g_autofree gchar *version = g_steal_pointer (&daemon_version);
+
+    daemon_version = g_strdup ("v\x1b]0;version\x07" "w");
+    uploaded_url = "u\x1b]0;url\x07" "x";
+    reexec_error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "y\x1b]0;error\x07" "z refused");
+    fflush (stderr);
+    g_assert_cmpint (dup2 (client_side, STDERR_FILENO), ==, STDERR_FILENO);
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-version", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "upload-and-copy", FAKE_UUID (a), NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_FAILURE);
+    fflush (stdout);
+    fflush (stderr);
+    g_clear_error (&reexec_error);
+    g_set_str_take (&daemon_version, g_steal_pointer (&version));
+    uploaded_url = "https://paste.rs/x";
+
+    gchar answered[512];
+
+    read_terminal_until (terminal, answered, sizeof (answered), "z refused");
+    g_assert_nonnull (strstr (answered, "v\xef\xbf\xbd]0;version\xef\xbf\xbd" "w"));
+    g_assert_nonnull (strstr (answered, "u\xef\xbf\xbd]0;url\xef\xbf\xbd" "x"));
+    g_assert_nonnull (strstr (answered, "y\xef\xbf\xbd]0;error\xef\xbf\xbd" "z"));
+    g_assert_null (strchr (answered, '\x1b'));
     g_assert_true (g_close (client_side, NULL));
     g_assert_true (g_close (terminal, NULL));
 }
@@ -1492,8 +1685,8 @@ test_merge_takes_two (void)
 /* A command talking to the daemon waits for one to serve: a daemon just
  * started, or re-executing, owns the name before it has anything to answer
  * with. One that never comes fails the command rather than have it call into
- * nothing -- bar daemon-reexec and migrate, which have to reach a daemon older
- * than this interface, which never serves it. */
+ * nothing -- bar daemon-reexec and migrate on a GPaste 45 or 50, which they
+ * have to reach though it never serves this interface. */
 static void
 test_waits_for_daemon (void)
 {
@@ -1534,17 +1727,184 @@ test_waits_for_daemon (void)
     g_clear_error (&error);
     g_clear_object (&ctx.client);
 
-    /* Not followed for a re-exec, which the fallback answers. */
+    /* Nor waited for by a re-exec, which reaches it by signal. */
     follows = 0;
     signals_sent = 0;
+    introspected_legacy = TRUE;
     reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
     g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_SUCCESS);
     g_assert_cmpuint (follows, ==, 0);
     g_assert_cmpuint (signals_sent, ==, 1);
     g_clear_error (&reexec_error);
+    introspected_legacy = FALSE;
 
     fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
     presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+}
+
+/* An owner the question could not reach is not waited for either: the
+ * re-exec's own route asks again, and signals a GPaste 45 or 50 there, where
+ * the wait would fail on it, telling the user to run the very command that
+ * failed. */
+static void
+test_unknown_owner_unwaited (void)
+{
+    follows = 0;
+    signals_sent = 0;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_STARTING;
+    introspection_fails = TRUE;
+    waited_on_legacy = TRUE;
+    reexec_error = g_error_new_literal (G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method");
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 1);
+
+    /* migrate, whose gate opens before either route is taken, refuses it
+     * instead, unwaited for: what it reports is the question's failure, not
+     * the wait's. */
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    reexecs = 0;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY);
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 1);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_object (&ctx.client);
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+
+    g_clear_error (&reexec_error);
+    waited_on_legacy = FALSE;
+    introspection_fails = FALSE;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+}
+
+/* An owner leaving as the dispatch asks about it fails the question, and no
+ * wait follows: migrate, finding nobody owning the name, refuses before it
+ * opens the gate, as the wait refuses a daemon gone -- and so it does when a
+ * GPaste 45 or 50 leaves as it answers migrate's own question. One leaving
+ * once nothing is asked any more leaves the presence reading as it did,
+ * ready: the re-exec then finds nobody owning the name, starting no daemon
+ * for it, and migrate closes the gate it opened again, passing on the
+ * re-exec's words, as daemon-reexec does. Another daemon come to serve
+ * meanwhile is a daemon serving, which migrate re-executes as any. */
+static void
+test_unknown_owner_left (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    follows = 0;
+    reexecs = 0;
+    signals_sent = 0;
+    owner_gone = TRUE;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    introspection_fails = TRUE;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+    introspection_fails = FALSE;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    introspected_legacy = TRUE;
+    g_assert_cmpint (g_paste_migrate (&ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_cmpuint (reexecs, ==, 0);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    introspected_legacy = FALSE;
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_STARTING;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 1);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+
+    g_assert_cmpint (g_paste_dispatch (1, "daemon-reexec", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+    g_assert_cmpstr (error->message, ==, "No GPaste daemon is serving a history.");
+    g_assert_cmpuint (reexecs, ==, 2);
+    g_assert_cmpuint (signals_sent, ==, 0);
+    g_clear_error (&error);
+    g_clear_object (&ctx.client);
+    owner_gone = FALSE;
+
+    reexecs = 0;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_READY;
+    introspection_fails = TRUE;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_SUCCESS);
+    g_assert_no_error (error);
+    g_assert_cmpuint (follows, ==, 0);
+    g_assert_cmpuint (reexecs, ==, 1);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 0);
+    g_clear_object (&ctx.client);
+
+    introspection_fails = FALSE;
+    presence_after_question = G_PASTE_DAEMON_PRESENCE_STARTING;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
+}
+
+/* daemon-reexec and migrate wait for a daemon of this version still starting,
+ * as every verb talking to the daemon does -- the one building the client
+ * started, above all, which has nothing exported to re-exec yet -- and one
+ * that never comes to serve has migrate open no gate. */
+static void
+test_starting_waited (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    Context ctx = { 0 };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    follows = 0;
+    reexecs = 0;
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+    g_assert_cmpint (run_client ((const gchar *[]) { "daemon-reexec", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (follows, ==, 1);
+    g_assert_cmpuint (reexecs, ==, 1);
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    g_assert_cmpint (run_client ((const gchar *[]) { "migrate", NULL }), ==, EXIT_SUCCESS);
+    g_assert_cmpuint (follows, ==, 2);
+    g_assert_cmpuint (reexecs, ==, 2);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 0);
+
+    g_paste_settings_set_storage_backend_revision (settings, 37);
+    fake_presence = G_PASTE_DAEMON_PRESENCE_STARTING;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_ABSENT;
+    g_assert_cmpint (g_paste_dispatch (1, "migrate", &ctx, &error), ==, EXIT_FAILURE);
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED);
+    g_assert_cmpuint (reexecs, ==, 2);
+    g_assert_cmpuint (g_paste_settings_get_storage_backend_revision (settings), ==, 37);
+    g_clear_object (&ctx.client);
+
+    fake_presence = G_PASTE_DAEMON_PRESENCE_READY;
+    presence_after_follow = G_PASTE_DAEMON_PRESENCE_READY;
+    g_paste_settings_reset (settings, G_PASTE_STORAGE_BACKEND_REVISION_SETTING);
 }
 
 int
@@ -1553,6 +1913,7 @@ main (int argc, char **argv)
     g_paste_test_env_setup (G_PASTE_TEST_ENV_DEFAULT);
     g_test_init (&argc, &argv, NULL);
     g_test_add_func ("/client/reexec/refusal", test_refusal);
+    g_test_add_func ("/client/reexec/in-shell", test_reexec_in_shell);
     g_test_add_func ("/client/upload-and-copy", test_upload_and_copy);
     g_test_add_func ("/client/dispatch/reads_stdin", test_reads_stdin);
     g_test_add_func ("/client/pipe/refusals", test_pipe_refusals);
@@ -1570,12 +1931,16 @@ main (int argc, char **argv)
     g_test_add_data_func ("/client/search/reverse", GINT_TO_POINTER (TRUE), test_search_output);
     g_test_add_func ("/client/list-histories/zero", test_list_histories_zero);
     g_test_add_func ("/client/output-failure", test_output_failure);
+    g_test_add_func ("/client/output-failure/reason", test_output_failure_reason);
     g_test_add_func ("/client/terminal-controls", test_terminal_controls);
     g_test_add_func ("/client/merge-takes-two", test_merge_takes_two);
     g_test_add_func ("/client/doctor/report", test_doctor_report);
     g_test_add_func ("/client/doctor/nothing", test_doctor_nothing);
     g_test_add_func ("/client/doctor/old-daemon", test_doctor_old_daemon);
     g_test_add_func ("/client/waits-for-daemon", test_waits_for_daemon);
+    g_test_add_func ("/client/reexec/starting-waited", test_starting_waited);
+    g_test_add_func ("/client/reexec/unknown-owner", test_unknown_owner_unwaited);
+    g_test_add_func ("/client/reexec/unknown-owner-left", test_unknown_owner_left);
     g_test_add_func ("/client/dispatch/daemonless", test_daemonless_commands);
     g_test_add_func ("/client/utf8/refused", test_utf8_refused);
     g_test_add_func ("/client/utf8/accepted", test_utf8_accepted);

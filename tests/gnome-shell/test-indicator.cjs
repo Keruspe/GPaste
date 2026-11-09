@@ -5,13 +5,15 @@
 // This checks its teardown, what the placeholder row says of the daemon and
 // where an item row's actions stay, not Shell rendering or the menu's grab.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {Signals, loadShipped, runSuite} = require('./suite.cjs');
 
 let focus = null;
 const notified = [];
 const copied = [];
 const errors = [];
+// What GJS hands a failed call, unlike a JS Error a programming error throws.
+class GLibError extends Error {}
 const weakRefs = [];
 const timers = [];
 const removedSources = [];
@@ -28,21 +30,15 @@ class WeakRefDouble {
 // Its constructor connects that teardown to 'destroy', as the real one does, so
 // an indicator built through its own constructor is torn down the way the
 // shell tears it down.
-class Button {
+class Button extends Signals {
     constructor() {
+        super();
         this.menu = {addMenuItem() {}};
-        this._handlers = [];
         this.connect('destroy', () => this._onDestroy());
     }
 
-    connect(signal, handler) { this._handlers.push({signal, handler}); }
     add_child() {}
-    destroy() {
-        for (const {signal, handler} of this._handlers) {
-            if (signal === 'destroy')
-                handler();
-        }
-    }
+    destroy() { this.emit('destroy'); }
 
     _onDestroy() { this.buttonDestroyed = (this.buttonDestroyed ?? 0) + 1; }
     _onOpenStateChanged() {}
@@ -72,7 +68,6 @@ const context = vm.createContext({
     GObject: {registerClass: (...args) => args.at(-1)},
     GLib: {
         Source: {remove: id => removedSources.push(id), set_name_by_id() {}},
-        Regex: {escape_string: text => `escaped(${text})`},
         PRIORITY_DEFAULT: 0,
         timeout_add_once: (priority, delay, callback) => timers.push({delay, callback}),
     },
@@ -88,8 +83,6 @@ const context = vm.createContext({
     GPasteDummyHistoryItem: Actor,
     GPasteSearchItem: Actor,
     GPaste: {
-        Error: {INVALID_ARGUMENT: 9},
-        Client: {is_daemon_gone_error: e => !!e.gone},
         DaemonPresence: {ABSENT: 0, STARTING: 1, READY: 2},
         UpdateAction: {REPLACE: 1, REMOVE: 2},
         UpdateTarget: {ALL: 1, ITEM: 2},
@@ -107,15 +100,14 @@ const context = vm.createContext({
         return [!cancellable.is_cancelled(), reply];
     },
     debugFailure() {},
-    daemonGone: e => !!e.gone,
+    // As the real one: only a GLib.Error tells of a daemon gone.
+    daemonGone: e => e instanceof GLibError && !!e.gone,
     replaceCancellable: previous => {
         previous?.cancel();
         return {cancel() { this.cancelled = true; }, is_cancelled() { return !!this.cancelled; }};
     },
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-vm.runInContext(`${source}\nthis.Indicator = GPasteIndicator;`, context);
+loadShipped(context, {Indicator: 'GPasteIndicator'});
 
 const {DaemonPresence} = context.GPaste;
 
@@ -181,7 +173,7 @@ function withActions(uuids) {
     return item;
 }
 
-(async () => {
+runSuite('Indicator', async () => {
     // Teardown chains up to the panel button's, once, and before _setup () has
     // built the rows and the item actions it reaches for.
     const early = indicator();
@@ -313,6 +305,24 @@ function withActions(uuids) {
     assert.equal(actions._itemActions.visible, false);
     // Folded with the focus in them, which goes back to the row.
     assert.equal(focus, third);
+
+    // Opened, they are brought into the history's view; one of them taken --
+    // an upload, the rich text removed -- or the menu closing folds them.
+    shownActors.length = 0;
+    actions._toggleItemActions(third, 'c', false);
+    assert.deepEqual(shownActors, [actions._itemActions]);
+    actions._client.upload_and_copy = () => {};
+    actions._upload('c');
+    assert.equal(actions._itemActions.visible, false);
+    actions._toggleItemActions(third, 'c', false);
+    actions._client.strip_rich_text = () => {};
+    actions._stripRichText('c');
+    assert.equal(actions._itemActions.visible, false);
+    actions._toggleItemActions(third, 'c', false);
+    actions._updateIndexVisibility = () => {};
+    actions._historySwitcher.collapse = () => {};
+    actions._onOpenStateChanged(actions.menu, false);
+    assert.equal(actions._itemActions.visible, false);
 
     // A refresh rebinding only the rows after theirs leaves them be...
     actions._toggleItemActions(second, 'b', false);
@@ -452,13 +462,33 @@ function withActions(uuids) {
     assert.equal(overtypedRebuilt, 0);
     assert.equal(overtyped._history.length, 2);
 
+    // A reload whose size read is out when the daemon goes is given up with it:
+    // the answer of the daemon gone does not rebuild the rows the next one is
+    // to fill.
+    const departed = withActions(['a', 'b']);
+    let departedRebuilt = 0;
+    let answerDeparted = null;
+
+    departed._searchItem = {text: '', favourites: false};
+    departed._hasSearch = () => false;
+    departed._daemonReady = () => true;
+    delete departed._fetchAvailable;
+    departed._client.get_history_size = () => new Promise(resolve => { answerDeparted = resolve; });
+    departed._rebuild = () => ++departedRebuilt;
+    departed._passFailed = () => {};
+    const departing = departed._reload();
+    departed._onDaemonGone();
+    answerDeparted(2);
+    await departing;
+    assert.equal(departedRebuilt, 0);
+
     // A call failing because its daemon left logs nothing, the presence saying
     // so next; any other failure is logged.
     const leaving = withActions([]);
-    let failure = Object.assign(new Error('gone'), {gone: true});
+    let failure = Object.assign(new GLibError('gone'), {gone: true});
 
     leaving._client.get_history_size = () => Promise.reject(failure);
-    leaving._client.search = () => Promise.reject(failure);
+    leaving._client.search_text = () => Promise.reject(failure);
     leaving._searchItem = {text: 'x', favourites: false};
     leaving._hasSearch = () => true;
     leaving._reconcileConnection = () => {};
@@ -514,7 +544,7 @@ function withActions(uuids) {
 
         placed._searchItem = {text: 'x', favourites: false};
         placed._hasSearch = () => true;
-        placed._client.search = () => new Promise(resolve => searches.push(resolve));
+        placed._client.search_text = () => new Promise(resolve => searches.push(resolve));
         placed._rebuild = (empty, keepPlace) => kept.push(keepPlace);
         for (const [first, second, keepsPlace] of [[false, true, false], [true, true, true]]) {
             const superseded = placed._runFilter(first);
@@ -677,13 +707,18 @@ function withActions(uuids) {
     // still finishes the D-Bus reply without reaching for that indicator.
     notified.length = 0;
     let lateUpload;
+    let lateFinished = 0;
     const collected = withActions(['a']);
     collected._client.upload_and_copy = (uuid, cancellable, callback) => { lateUpload = callback; };
-    collected._client.upload_and_copy_finish = () => 'https://paste.rs/late';
+    collected._client.upload_and_copy_finish = () => {
+        lateFinished++;
+        return 'https://paste.rs/late';
+    };
     collected._upload('a');
     assert.equal(weakRefs.length > 0, true);
     weakRefs.at(-1).target = undefined;
     lateUpload(collected._client, null);
+    assert.equal(lateFinished, 1);
     assert.equal(notified.length, 0);
 
     // A done one is said too, without the address, which the daemon has kept
@@ -695,8 +730,7 @@ function withActions(uuids) {
     uploaded._client.upload_and_copy_finish = () => 'https://paste.rs/x';
     uploaded._upload('a');
     assert.deepEqual(copied, []);
-    assert.equal(notified.length, 1);
-    assert.equal(notified[0].body, undefined);
+    assert.deepEqual(notified, [{title: 'The item was uploaded, and its address copied', body: undefined}]);
 
     // Nothing reaches the screen from an indicator torn down meanwhile, but a
     // failure still reaches the log.
@@ -708,19 +742,17 @@ function withActions(uuids) {
     assert.equal(notified.length, 0);
     assert.equal(errors.pop().message, 'no network');
 
-    // The search goes out as typed and as text: escaped, never lowercased. One
-    // the daemon refuses as too long lists nothing, and is no failure.
+    // The search goes out as typed, never lowercased, for search_text () to
+    // search for as text: an answer of nothing lists nothing.
     const filtered = indicator();
     const queries = [];
     let rebuilt = null;
     let reconciled = 0;
 
     filtered._client = {
-        search: query => {
-            queries.push(query);
-            return Promise.reject(Object.assign(new Error('too long'), {
-                matches: (domain, code) => domain === context.GPaste.Error && code === context.GPaste.Error.INVALID_ARGUMENT,
-            }));
+        search_text: text => {
+            queries.push(text);
+            return Promise.resolve([]);
         },
     };
     filtered._searchItem = {text: 'MyBank (x', favourites: false};
@@ -728,7 +760,7 @@ function withActions(uuids) {
     filtered._rebuild = empty => { rebuilt = empty; };
     filtered._reconcileConnection = () => ++reconciled;
     await filtered._runFilter();
-    assert.deepEqual(queries, ['escaped(MyBank (x)']);
+    assert.deepEqual(queries, ['MyBank (x']);
     assert.equal(rebuilt, true);
     assert.equal(reconciled, 0);
 
@@ -777,4 +809,4 @@ function withActions(uuids) {
 
     assert.deepEqual(errors, []);
     console.log('Indicator: teardown, daemon presence and item actions passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+});

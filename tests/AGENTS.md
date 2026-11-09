@@ -1,14 +1,28 @@
 # `tests/`
 
-Every C test binary calls `g_paste_test_env_setup()` (`tests/gpaste-test-env.c`, linked through `gpaste_test_env_dep`) first in `main()`, before `gtk_init_check()`, `g_test_init()` or any `GSettings`, and ends with `return g_paste_test_env_run ();`. It detaches the process from the desktop session whether meson or a shell launched it: memory `GSettings` on the schemas compiled into the build tree (hence `depends: [gpaste_schemas, test_bus_supervisor]` on each C test), a private `XDG_RUNTIME_DIR` with `XDG_DATA_HOME`, `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` beneath it (set before any library caches them, and inherited by a daemon the test spawns -- but a suite whose `g_test_init()` takes `G_TEST_OPTION_ISOLATE_DIRS` has them, `HOME` and `XDG_RUNTIME_DIR` pointed at `/dev/null` in its environment, GLib keeping per-case ones in process under its own `/tmp/test_*`, which a crashed suite leaves behind), no `DISPLAY`/`WAYLAND_DISPLAY`, and a private `dbus-daemon` serving as both session and system bus. `G_PASTE_TEST_ENV_OWN_BUS` is for a test that brings up its own `GTestDBus` per fixture: both bus addresses then point at a socket that does not exist. `G_PASTE_TEST_ENV_DISPLAY` starts a private `Xvfb` with `GDK_BACKEND=x11`; `g_paste_test_env_has_display()` is FALSE when `Xvfb` is not installed, and such a test skips rather than use the session's display. `g_paste_test_env_keep_result()` and `g_paste_test_env_wait_result()` wait on an asynchronous call, five seconds at most. The server is never killed, since GDK exits the process when its display goes away: `-terminate` ends it when the process disconnects, `PR_SET_PDEATHSIG` when it never connected. `GTK_A11Y=test` selects GTK's in-process accessibility backend: no accessibility bus to reach, and what `gtk_test_accessible_assert_property()` reads, once the widget is rooted. Settings and GTK environment therefore do not belong in a test's meson `env`. The default bus has no activation directories and runs under `gpaste-test-bus-supervisor`, an infrastructure helper rather than a test binary, which an `OWN_BUS` test starts too, without a bus. The test holds a pipe to the supervisor: a byte written on it at normal exit, or EOF after a crash, kills and reaps the bus and removes the test's directories, which a crashed test never reaches; it ignores the `SIGTERM` a test runner's timeout sends the whole group, for the same reason. A byte rather than EOF ends a normal run because a process forked without exec, such as `GTestDBus`'s watcher, keeps a copy of the pipe until the test exits. This does not rely on `PR_SET_PDEATHSIG`, which a security-domain transition at dbus-daemon exec can clear. dbus-daemon refuses a socket path past 99 characters, so a temporary directory too long to hold the runtime directory and a socket -- a package build tree's `TMPDIR`, or the `G_TEST_TMPDIR` a trap child of a `G_TEST_OPTION_ISOLATE_DIRS` suite gets inside its parent's, which GLib prefers -- is replaced by a short one under `/tmp` before GLib caches it. `GTestDBus` finalization waits for GIO's session singleton even after `stop()`, so it is reserved for suites that own their fixture connections. `test-env` holds a real `g_bus_get()` connection across teardown, traps an aborting child to verify that it got a bus, that the bus releases inherited output pipes and that its directories are gone (its `TMPDIR` points into the parent's runtime directory, where that can be checked), runs a child under a `TMPDIR`, then a `G_TEST_TMPDIR`, deeper than a socket path can be and checks that the short directory it got instead goes with it, has a supervisor whose `dbus-daemon` cannot start remove its directories all the same, and checks that the three data directories sit inside the runtime directory; it must finish within ten seconds.
+Every C test binary calls `g_paste_test_env_setup()` (`tests/gpaste-test-env.c`, linked through `gpaste_test_env_dep`) first in `main()`, before `gtk_init_check()`, `g_test_init()` or any `GSettings`, and ends with `return g_paste_test_env_run ();` -- bar three that touch no settings, bus or display, and link no `gpaste_test_env_dep`: `tests/build/`'s header tests, which build as an outside consumer of the installed headers would, and `test-keybindings-xml`, which reads a file the build generated. It detaches the process from the desktop session whether meson or a shell launched it: memory `GSettings` on the schemas compiled into the build tree (hence `depends: [gpaste_schemas, test_bus_supervisor]` on each C test), a private `XDG_RUNTIME_DIR` with `XDG_DATA_HOME`, `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` beneath it (set before any library caches them, and inherited by a daemon the test spawns -- but a suite whose `g_test_init()` takes `G_TEST_OPTION_ISOLATE_DIRS` has them, `HOME` and `XDG_RUNTIME_DIR` pointed at `/dev/null` in its environment, GLib keeping per-case ones in process under its own `/tmp/test_*`, which a crashed suite leaves behind), no `DISPLAY`/`WAYLAND_DISPLAY`, nor the activation token a launcher leaves (`XDG_ACTIVATION_TOKEN`, `DESKTOP_STARTUP_ID`; `test-util-launched` runs an activation case under a stale one), and a private `dbus-daemon` serving as both session and system bus. `G_PASTE_TEST_ENV_OWN_BUS` is for a test that brings up its own `GTestDBus` per fixture: both bus addresses then point at a socket that does not exist. `G_PASTE_TEST_ENV_DISPLAY` starts a private `Xvfb` with `GDK_BACKEND=x11`; `g_paste_test_env_has_display()` is FALSE when `Xvfb` is not installed, and such a test skips rather than use the session's display. `g_paste_test_env_keep_result()` and `g_paste_test_env_wait_result()` wait on an asynchronous call, five seconds at most, `g_paste_test_env_wait_result_within()` as long as its caller says, both through `g_paste_test_env_wait_until()`, which iterates the main context until a condition holds or a deadline passes, and which `g_paste_test_bus_wait_until()` runs too. `g_paste_test_env_reset_settings()` puts every key of a schema back to its default, for a case to start from them: the memory backend is shared by the whole binary, so a key one case sets would otherwise reach every case after it. The server is never killed, since GDK exits the process when its display goes away: `-terminate` ends it when the process disconnects, `PR_SET_PDEATHSIG` when it never connected. `GTK_A11Y=test` selects GTK's in-process accessibility backend: no accessibility bus to reach, and what `gtk_test_accessible_assert_property()` reads, once the widget is rooted. Settings and GTK environment therefore do not belong in a test's meson `env`. The default bus has no activation directories and runs under `gpaste-test-bus-supervisor`, an infrastructure helper rather than a test binary, which an `OWN_BUS` test starts too, without a bus. The test holds a pipe to the supervisor: a byte written on it at normal exit, or EOF after a crash, kills and reaps the bus and removes the test's directories, which a crashed test never reaches; it ignores the `SIGTERM` a test runner's timeout sends the whole group, for the same reason. A byte rather than EOF ends a normal run because a process forked without exec, such as `GTestDBus`'s watcher, keeps a copy of the pipe until the test exits. This does not rely on `PR_SET_PDEATHSIG`, which a security-domain transition at dbus-daemon exec can clear. dbus-daemon refuses a socket path past 99 characters, so a temporary directory too long to hold the runtime directory and a socket -- a package build tree's `TMPDIR`, or the `G_TEST_TMPDIR` a trap child of a `G_TEST_OPTION_ISOLATE_DIRS` suite gets inside its parent's, which GLib prefers -- is replaced by a short one under `/tmp` before GLib caches it. `GTestDBus` finalization waits for GIO's session singleton even after `stop()`, so it is reserved for suites that own their fixture connections. `test-env` holds a real `g_bus_get()` connection across teardown, traps an aborting child to verify that it got a bus, that the bus releases inherited output pipes and that its directories are gone (its `TMPDIR` a directory the parent makes under `/tmp`, short enough for the child to keep where a long `TMPDIR` of the parent's would be replaced, and where that can be checked), runs a child under a `TMPDIR`, then a `G_TEST_TMPDIR`, deeper than a socket path can be and checks that the short directory it got instead goes with it, has a supervisor whose `dbus-daemon` cannot start remove its directories all the same, and checks that the three data directories sit inside the runtime directory; it must finish within ten seconds.
 
 Tests live under `tests/`. `tests/history/` unit-tests the `GPasteHistory` model
 (add/dedup/size-enforcement/remove/select, and which of those announce a password
 leaving it) against an in-memory `GSettings` and a
 throwaway `XDG_DATA_HOME`; its `add_file_swapped` has AddFile refuse a path
 swapped, once looked at, for a FIFO it would wait on, a directory or a file past
-the memory cap (`g_file_query_info()` interposed). Every case ends with each
-history it built flushed and gone (`drain_case_histories()` says why). The
+the memory cap (`g_file_query_info()` interposed), and `add_file_refusals`
+counts what AddFile reads of a file through an interposed `read()`, which tells
+the file by its inode: nothing of one past the memory cap, its head and no more
+of a text past the text cap, and the whole of one it adds. Its
+`search_queries` finds a password by its name, and a nameless one, its name the
+placeholder, by its uuid alone; its `migration_invalid_history_name` has
+detection find the default history's flavour for a history name that names
+none, not what that name would reach outside the history directory. Every case ends with each
+history it built flushed and gone (`drain_case_histories()` says why), and
+every key it derives costs libsodium's minimum, through the `crypto_pwhash()`
+of `tests/gpaste-test-pwhash.c`, which fails a case deriving with parameters
+GPaste's own check refuses. It, `test-ordering` and `test-storage-failures`
+compile `gpaste-test-history.c` in for what they share: the subprocess traps,
+the waits on `BackupHistory`, `EmptyHistory`, `ListHistories` and a load, how
+long a storage operation is waited for (`G_PASTE_TEST_STORAGE_WAIT_SECONDS`),
+and a file's bytes read and written whole. The
 `eslint`
 test lints the GNOME Shell extension JS, `eslint-launcher` runs
 `tools/run-eslint.sh` in scratch checkouts against a fake npm that installs
@@ -16,60 +30,93 @@ nothing -- from a path with spaces, from inside `tools/`, as `tools/run-eslint.s
 under a `CDPATH` with a `tools/` of its own, and over a root `node_modules` link
 that does not resolve, again over an install older than its lock, and
 under meson's `G_PASTE_LINT_NO_INSTALL` with nothing installed -- and `completions` checks the shell completions and the
-man page against `gpaste-client`'s own list of verbs and what zsh and fish list of an item for control characters, and runs the bash one: history names any shell would expand offered quoted and none of them run, under bash 5.1's rules too, a name holding a control character offered for the letters typed of it, the histories of a `GPaste` directory listed by all three shells, and the verb and --use-index read through bundled short options and `--option=value`. These three are scripts
-that touch no settings, bus or display. `tests/clipboard/` exercises the shared update lifecycle and the clipboards manager with a mock provider, including text put on every selection without becoming an item (`select_text`), overlapping reads, superseded callbacks, typed cache commits, cross-selection copy ordering, rich-text refreshes, the selections a password's
-history entry leaving is taken off, and password expiry across a persisted handover; it needs no display or desktop session bus; the common test environment still requires `dbus-daemon` for isolation. Its password countdowns are real GLib timeouts, so the suite runs under a 120-second Meson timeout. The test advances the ready time of the production manager’s forced-expiry source, exercising the shipped object under owner churn without waiting sixty seconds. The timeout-edit table names each scenario alongside its timings and expected contents. Its configuration and data directories are isolated, including the file-backend handover test. Every case starts from the schema's defaults (`make_settings()`): the memory backend is shared by the whole binary, so a key one case sets would otherwise reach every case after it. `test-clipboard-gdk` drives the GDK backend's own ownership and read callbacks behind GTK mocks, with no display or live clipboard -- the formats deadline telling a released selection from an owner merely slow to serve `TARGETS` -- and from a display that could not be asked which -- included, the shorter grace a selection X already says nobody owns waits with too, and the fallback that reads the hints off the formats where the workaround cannot convert the selection at all; which of an offer's formats is read (text before an image, a bare `text/plain` read as UTF-8, by a sync too, and an empty one as the empty text), that an image read re-owns nothing, that an update its provider can no longer make still answers its caller (`unmade`), and that a claim GDK refuses leaves the cache unknown -- `test-clipboard-hints` covers the update API the X11 hints workaround reads through -- the sensitive offer read and the special and sensitive halves of the MIME-reading policy -- and `test-clipboard-x11-hints` covers the workaround itself, compiling `src/daemon/gpaste-clipboard-x11-hints.c` in (it belongs to the daemon executable, not to a library) and running it against the private Xvfb and a selection owner of the suite's own on a second connection, driven from the same pump as the main loop: what the selection answers about the hint and what each non-answer -- a refusal, an INCR reply, a silence -- is read as, the ownership query, the requestor window a conversion given up on leaves standing for a late reply, and the timestamps ICCCM has an owner judge a conversion by, the bootstrap case included, which is the one the server's clock is read for -- a read a signal interrupts included, which the suite stages by interposing `g_poll()` and `XCheckIfEvent()`, the workaround being compiled into it. Both go when that workaround does. `test-clipboard-meta`, built with the GNOME Shell extension, drives the mutter backend against a `MetaSelection` of its own (`meta_selection_new (NULL)`) with GTK never initialised, as in gnome-shell: images, colours and file lists offered alone are recorded and an image is published as a PNG that reads back, a NUL-terminated text is the text before it, a read stops past `max-memory-usage` however much its owner serves, and what was published is still served once the clipboard that published it is gone, as when gnome-shell disposes its daemon. The least an update needs of a provider is shared by the two as `gpaste-test-clipboard-provider.c`, which `tests/daemon/` builds its daemon on too.
+man page against `gpaste-client`'s own list of verbs and what zsh and fish list of an item for control characters and length, bash's options after each against the ones its row reads, and every option, short form beside it, against the man page's, the argument it takes -- or none -- as `--help` prints it from its row; and runs the bash one: history names any shell would expand offered quoted and none of them run, under bash 5.1's rules and a failglob too, one starting with a dot included, a name the user opened a quote for put in as it is, one holding a control character offered for the letters typed of it, one holding a colon put back together where bash-completion is installed, and a path holding a space one candidate and none offered for a second, the histories of a `GPaste` directory listed by all three shells; the verb and --use-index read through bundled short options and `--option=value`, nothing offered for the value a bundle ends with, `--zero` offered after `list-histories`, which reads it; and runs the zsh one's functions with `_describe` and `_arguments` stubbed: a colon and a backslash in a history name escaped, one starting with a dot offered, the options known after every verb too, one taking no argument included, and file one path alone; and, where fish is installed, the fish one, which reads the verb past an option's value and offers a history or a path for the first argument alone, never a name holding a line break or a tab. These three are scripts
+that touch no settings, bus or display. `tests/clipboard/` exercises the shared update lifecycle and the clipboards manager with a mock provider, including text put on every selection without becoming an item (`select_text`), overlapping reads, superseded callbacks, a copy whose owner left mid-read and that something overtook before it concluded recorded as the entry it stands for rather than as a password's cleartext -- a password trim-items would have trimmed included -- or a stripped text's formats, as the text it is when its owner said it is no secret, and not at all with tracking paused or once that password's countdown has run out, and one nothing overtook put back on the selection by the release answered after it, which the mock provider chains onto the read as both backends do, answering one with no read left on a later turn of the main loop (`/clipboard/released_copy/*`), typed cache commits, cross-selection copy ordering, rich-text refreshes, the selections a password's
+history entry leaving is taken off, and password expiry across a persisted handover; it needs no display or desktop session bus; the common test environment still requires `dbus-daemon` for isolation. Its password countdowns are real GLib timeouts, so the suite runs under a 240-second Meson timeout. The test advances the ready time of the production manager’s forced-expiry source, exercising the shipped object under owner churn without waiting sixty seconds. The timeout-edit table names each scenario alongside its timings and expected contents. Its configuration and data directories are isolated, including the file-backend handover test. Every case starts from the schema's defaults (`make_settings()`, through `g_paste_test_env_reset_settings()`). `test-clipboard-gdk` drives the GDK backend's own ownership and read callbacks behind GTK mocks, with no display or live clipboard, every case from the schema's defaults too: the formats deadline telling a released selection from an owner merely slow to serve `TARGETS` and from a display that could not be asked which (an owner whose targets name nothing GDK knows being answered before it, `unmapped-targets`), the shorter grace a selection X already says nobody owns waits with, an owner claiming it inside that grace read as any other (`claimed-during-grace`) and a copy whose owner served it and left handed to the primary selection before that grace begins (`release-after-text-synced`), which no read overtaken before it starts (`overtaken-release-arms-nothing`), and the fallback that reads the hints off the formats where the workaround cannot convert the selection at all; which of an offer's formats is read (text before an image, a bare `text/plain` read as UTF-8, by a sync too, and an empty one as the empty text), that an image read re-owns nothing, that an update its provider can no longer make still answers its caller (`unmade`), and that a claim GDK refuses leaves the cache unknown; that a colour and a file list are read through GDK's value reads and recorded as what they are, the same colour again no new copy (`/gdk/read/color`, `/gdk/read/file-list`), and that a colour, a file list and an image are published as the typed values they are (`/gdk/publish/kinds`), a password's copy wiped once its provider goes (`/gdk/publish/wipes-password`) -- `test-clipboard-hints` covers the update API the X11 hints workaround reads through -- the sensitive offer read and the special and sensitive halves of the MIME-reading policy -- and `test-clipboard-x11-hints` covers the workaround itself, compiling `src/daemon/gpaste-clipboard-x11-hints.c` in (it belongs to the daemon executable, not to a library) and running it against the private Xvfb and a selection owner of the suite's own on a second connection, driven from the same pump as the main loop: what the selection answers about the hint and what each non-answer -- a refusal, an INCR reply, a silence -- is read as, the ownership query, the requestor window a conversion given up on leaves standing for a late reply, and the timestamps ICCCM has an owner judge a conversion by, the bootstrap case included, which is the one the server's clock is read for -- a read a signal interrupts included, which the suite stages by interposing `g_poll()` and `XCheckIfEvent()`, the workaround being compiled into it. Both go when that workaround does. `test-clipboard-meta`, built with the GNOME Shell extension, drives the mutter backend against a `MetaSelection` of its own (`meta_selection_new (NULL)`) with GTK never initialised, as in gnome-shell, every case starting from the schema's defaults as the clipboard suite's do: images, colours and file lists offered alone are recorded and an image is published as a PNG that reads back, a text offered beside an image is the text whichever the owner lists first (`/meta/capture/text-beside-image`, `/meta/capture/text-before-image`), a NUL-terminated text is the text before it, a read goes up to `max-memory-usage` and stops just past it however much its owner serves (`/meta/read/bounded`), and what was published is still served once the clipboard that published it is gone, as when gnome-shell disposes its daemon, and let go, texture included, once another owner takes the selection over (`/meta/publish/let-go`) -- an image carrying its own PNG holding no texture of it at all (`/meta/publish/image-holds-no-texture`). What it publishes offers what the GDK backend's does -- a text's bare `text/plain` beside the UTF-8 one and its rich formats, a colour's text form, a password's hint, a file list's paths as text (`/meta/publish/offers`, `/meta/publish/uris`) -- and the uri-list serializer it registers writes nothing for an empty file list (`/meta/serialize/empty-file-list`); a password published is wiped from the source as from the cache once another owner takes over (`/meta/publish/wipes-password`), counted by defining libgpaste-daemon's `g_paste_util_free_cleartext()` again, which the paragraph on the suites replacing a library's function says when it skips; a release has the history's head put back -- after every owner-changed handler has heard of the release, those connected after GPaste's included (`/meta/release/emission-order`) --, the read it ended recording first what its owner served before leaving with a hint still out (`/meta/release/after-text`) and handing it to the primary selection as any copy (`/meta/release/after-text-synced`) -- unless GPaste publishes before that read concludes, which then records the copy and leaves the cache and the selection to what was published (`/meta/release/publish-before-conclusion`, `/meta/release/trimmed-before-publication` with a copy trim-items trims, and `/gdk/formats/release-publish` for the GDK backend), or another owner claims it, both copies being recorded (`/meta/release/claimed-before-conclusion`), the selection's own text a read kept aside for the cache wiped all the same once none takes it (`/meta/release/overtaken-wipes-text`), and two releases before that conclusion are both answered, the later one as the live one (`/meta/release/twice`) --, a provider disposed with a read out gives that read up rather than re-own the selection with its trimmed text (`/meta/read/disposed`), an empty transfer is the empty text, an owner offering nothing GPaste handles keeps the selection, and a sync hands the primary selection the clipboard's text (`/meta/release/head-back`, `/meta/read/empty-text`, `/meta/read/unhandled-kept`, `/meta/sync/delivers`). `test-read-guard` compiles `gpaste-clipboard-content.c` in with `G_PASTE_CLIPBOARD_READ_TIMEOUT` at two seconds, the header leaving that macro to whoever defines it first, and the clock and the seconds timer it reads stood in for, so that a deadline fires at the very second it is due: a silent batch expires as the allowance runs out and is cancelled only after its conclusion, one whose reads keep landing goes on past it, the allowance running from the last of them, and one re-armed after a read gets what is left of the allowance rather than a new one. The least an update needs of a provider is shared by the two as `gpaste-test-clipboard-provider.c`, which `tests/daemon/` builds its daemon on too.
 
-`test-ordering` checks what the history does with storage writes still out. It interposes `g_paste_storage_backend_write_history()` and `g_paste_storage_backend_add_item()` to hold one history's writes in the worker threads at the backend boundary, and `g_paste_storage_backend_read_history()` to check a read comes after the writes it has to see, while the shipped model and saver run as they are: a history deleted with its writes in flight or queued stays deleted, and deleting another history waits for none of them; a history switched away from and straight back to is read once its writes have landed, while another history is read at once and the one left still gets its queued snapshot written, and counts what its writes still out leave its store holding -- no password on a plain flavour, an incremental add counted though it carries no snapshot, images-support turned off and max-history-size lowered since applying to either; `BackupHistory` and `EmptyHistory`, run through `g_paste_daemon_methods_*()`, see what a history just left still has out, the one waiting for none of the current history's writes and holding the main thread for none, its copy landing behind them (`backup-current`), a second backup under the name the first is writing refused (`backup-twice`), the other writing another history on a worker (`empty-other-off-main-loop`), and refuse once the store is handed over; a password renamed while a write holding it is out leaves that write the name and timeout it was recorded with, the interposer noting what it was handed. A load left pending behind a write when the history is flushed stays pending once that write lands, rather than take back the storage lock the case has released (`flush-holds-pending-load`). A case that must not wait has the write released five seconds on, which it then finds released instead of hanging. `test-ordering`, `storage-failures` and `test-portal-provider` replace a libgpaste-daemon function (or, for the portal, the whole client) from the executable, which reaches the library's own calls only through the PLT: `tests/meson.build` leaves the first and the last unregistered when `c_link_args` (`LDFLAGS`) carries `-Bsymbolic`, which binds those calls inside the library. `storage-failures` runs all the same, its cases needing the library's own calls to reach the binary -- hiding a storage kind, counting a storage worker in the binary's copy of the counter -- skipping themselves when they do not (`library_calls_interposed()`): the rest interpose calls into other libraries, or the migration's own calls from the copy of it the binary includes. `test-saver` drives `GPasteHistorySaver` alone against a backend of its own whose writes wait to be released, to check that writes coalesce per history name. `test-ordering`'s `remove-image-during-write` deletes an image while a write holding it is out: once the writes land, its file has to be gone, as `test-history`'s `file_*image*` cases check of an image file's other ways out -- evicted while flushed (kept, then swept once recording resumes), deleted from an unreadable history (kept), skipped by a read (kept, whether images are off, its date missing or the document cut short) and then by a save (swept) -- and `file_sweep_bounds` of what a sweep must leave: another history's directory, the other file flavour's images, files named otherwise, and everything a database write leaves. `file_encrypting_migration_*` and `sqlite_migration_takes_source_images` move a plain history the way a migration does and check no screenshot stays in clear, bar one an encrypted entry still falls back on; `file_legacy_images_sweep` writes a history the way GPaste 50 did, into its shared images directory, and sweeps it before and after that history is written again. `file_parser_malformed` reads documents no GPaste wrote -- a value under an unknown mime, values of whitespace alone, elements out of place, an image date or checksum out of range, a stray `.xml` -- with no critical on the way.
+`test-ordering` checks what the history does with storage writes still out. It interposes `g_paste_storage_backend_write_history()`, `g_paste_storage_backend_add_item()` and `g_paste_storage_backend_clear_history()` to hold one history's writes in the worker threads at the backend boundary, and `g_paste_storage_backend_read_history()` to check a read comes after the writes it has to see, while the shipped model and saver run as they are: a history deleted with its writes in flight or queued stays deleted, and deleting another history waits for none of them; a history switched away from and straight back to is read once its writes have landed, while another history is read at once and the one left still gets its queued snapshot written, and counts what its writes still out leave its store holding -- no password on a plain flavour, an incremental add counted though it carries no snapshot, an incremental emptying as nothing, as another history's emptying still out is (`count-pending-emptied-other`), images-support turned off and max-history-size lowered since applying to either; `BackupHistory` and `EmptyHistory`, run through `g_paste_daemon_methods_*()`, see what a history just left still has out, the one waiting for none of the current history's writes and holding the main thread for none, its copy landing behind them (`backup-current`), a second backup under the name the first is writing refused (`backup-twice`), the other writing another history on a worker (`empty-other-off-main-loop`), and refuse once the store is handed over; a password renamed while a write holding it is out leaves that write the name and timeout it was recorded with, the interposer noting what it was handed. A load left pending behind a write when the history is flushed stays pending once that write lands, rather than take back the storage lock the case has released (`flush-holds-pending-load`). A case that must not wait has the write released five seconds on, which it then finds released instead of hanging. `test-ordering`, `storage-failures`, `test-portal-provider` and `test-ui-preferences` replace a library function (or, for the portal, the whole client; for the preferences, libgpaste-gtk4's rows) from the executable, which reaches the library's own calls only through the PLT. `tests/meson.build` says where they do not (`library_interposable`): against static libraries, which have none; where `c_link_args` (`LDFLAGS`) carries `-Bsymbolic`, which binds those calls inside the library; and under an optimised link-time optimisation -- `b_lto`, or an `-flto` among `c_args` or `c_link_args` -- by a compiler assuming no semantic interposition, Clang's default and GCC's with `-fno-semantic-interposition`. It leaves `test-ordering` and `test-portal-provider` unregistered under the last two. `storage-failures` and `test-ui-preferences` run all the same, their cases needing the library's own calls to reach the binary skipping themselves when they do not: for the first, hiding a storage kind, counting a storage worker in the binary's copy of the counter or counting the reads of the process passphrase (`library_calls_interposed()`), and holding or watching the counts of a store, as the ListHistories cases do (`counts_interposed()`, `/storage/list-histories-off-main-loop` checking the sizes it lists all the same), the rest interposing calls into other libraries, or the migration's own calls from the copy of it the binary includes; for the second, building the library's dialog or widget, whose group type the executable's copy would register a second time (`library_widgets_clash()`). `test-clipboard-meta` defines one of libgpaste-daemon's functions too, the wipe its `/meta/publish/wipes-password` counts: built with `G_PASTE_TEST_LIBRARY_NOT_INTERPOSABLE` where `library_interposable` is false, whichever of the three above makes it so, it leaves that definition out and that case skips itself (`g_paste_test_env_library_interposable()`). Against static libraries, an executable defining one of a library's functions again does not link, the archive's object defining it too, so `test-history`, `read-guard`, `test-ordering`, `storage-failures` and `test-ui-preferences` are not even built; `test-portal-provider`, whose copy of the client's file defines everything the archive's would, runs there. `test-saver` drives `GPasteHistorySaver` alone against a backend of its own whose writes wait to be released, to check that writes coalesce per history name, and that an incremental store reads another history only once every operation queued for any history has landed, the SQLite flavours' single connection otherwise taken from under them (`incremental-load-waits`). `test-ordering`'s `remove-image-during-write` deletes an image while a write holding it is out: once the writes land, its file has to be gone, as `test-history`'s `file_*image*` cases check of an image file's other ways out -- evicted while flushed (kept, then swept once recording resumes), deleted from an unreadable history (kept), skipped by a read (kept, whether images are off, its date missing or the document cut short) and then by a save (swept) -- and `file_sweep_bounds` of what a sweep must leave: another history's directory, the other file flavour's images, files named otherwise, and everything a database write leaves. `file_encrypting_migration_*` and `sqlite_migration_takes_source_images` move a plain history the way a migration does and check no screenshot stays in clear, bar one an encrypted entry still falls back on; `file_legacy_images_sweep` writes a history the way GPaste 50 did, into its shared images directory, and sweeps it before and after that history is written again, `file_legacy_images_past_nul` with a NUL in it, which ends no scan; `/storage/unstored-leftovers-swept` has a start take what a cut-short write left under a name no history has, and only that. `file_parser_malformed` reads documents no GPaste wrote -- a value under an unknown mime, values of whitespace alone, elements out of place, an image date or checksum out of range, a stray `.xml` -- with no critical on the way.
 
-`test-storage-failures` reads an alternative representation that decodes to nothing, from a file and from a database, which has to be dropped with the item read from its plain value, and fails a history write's install, which has to sweep no image. A history a flavour hidden from the build keeps is out of reach of the file flavour standing in for it: deleting or emptying it is refused, the store left on disk (`unopenable-out-of-reach`). It also includes `gpaste-storage-migration.c`, so its cases reach the migration's static helpers, and injects the storage failures each one is about by interposing the functions they go through: `g_paste_storage_backend_write_history()` leaves out the first item of what one backend kind is handed, which makes an import fail after writing to its destination, or cuts the footer off a file one writes, which leaves a destination that does not read back; either way the copy has to be gone afterwards -- with the screenshots an import out of the encrypted file flavour decrypted on its way, and short of a destination history it could not read, which it stops before -- the source still there, detection has to find it again, and the prompt has to be told. `g_paste_storage_is_supported()` refuses one flavour, standing for a build without the feature it needs, so that a build with every feature runs those cases too: such a source offers neither migration toggle, a reply ticking them anyway is clamped, and an encrypted one asks for no passphrase. Detection keeping a format this build cannot open as what it is shows only in a build lacking that format, which the identity cases are for. `sqlite3_exec()` fails one statement as a full disk would: a version 1 database whose upgrade fails at a column, at the version write or at the commit has to come out of it unchanged and upgrade on the next open; `sqlite3_step()` makes the version read fail, the first one or the one under the write lock, which has to refuse the open rather than stamp the old tables current, and another connection upgrading the database just before the transaction begins has to leave nothing to do. `sqlite3_prepare_v2()`, `sqlite3_step()` and `sqlite3_exec()` fail each step of a remove, a replace and an emptying, and an add's read of the top rank, each of which has to have the history written in full; the binds refuse a value past a length, as SQLite refuses one past `SQLITE_MAX_LENGTH`, which leaves the item out of its history's store and the rest written around it; and `sqlite3_wal_checkpoint_v2()` counts the checkpoints, none of which an add evicting the oldest item asks for. An encrypted SQLite history with one of its parameters deleted, or whose count fails as a wrong passphrase comes, has to be refused with its salt and key check left as they were, and a wrong passphrase refused while another connection holds the database in exclusive locking mode for a moment. `g_file_move()` fails the moves whose source ends with a given suffix, which is how a re-key is stopped at the history's install, or at that and the putting back of an image: a clean rollback leaves the files' bytes as they were and nothing beside them, a failed one says the history is split, keeps the image's original beside it and has the user told so, and a re-key that goes through leaves nothing behind either. What a process dying in an import or between two histories' re-keys leaves is a journal written by hand: the next start takes the copy back unless the move happened, before a migration as before an unlock, and tells the change of passphrase through the prompt, once; one that ends in the process leaves none, the journal being on the disk while each history is written. What a process dying in a re-key leaves is made by hand, without deriving a key: the next start puts back one that had not made its last rename, through `g_paste_storage_decryption_needed()`, and drops the originals of one that had, through the migration; until then a read refuses the history, deleting the history takes them along, what is left beside a history that is gone is dropped rather than put back, a stray file naming no valid history is left alone, nothing is settled while another open file holds the storage lock, an import and a re-key each count as busy from their worker's start to its report, and a re-key settles them before its own -- one whose images directory cannot be listed failing without calling the history split. The storage lock is held by an open file of the case's own, which `flock()` tells apart even within the process: two waits of one process both get it once it is let go of, a load still waiting when the process lets go of it reads nothing, a flushed history whose name changes takes no load and so no lock until it is resumed, a history dropped while its load waits goes at once, nothing taking the lock after it, and the startup gates wait for it, asking nothing meanwhile -- no passphrase verified, the keyring's included -- and nothing at all once the process lets go of it (`/storage/lock/*`). `flock()` fails as a home on NFS without lockd fails it, which, like a lock file that cannot be opened and a history directory that cannot be made, has to leave the store to be touched rather than blame another daemon (`/storage/lock/file-unusable`, `/storage/lock/dir-unmade`); and it pauses a wait between taking the lock and the rest of it, a `try_lock()` then having to find the lock the process's own (`/storage/lock/taken-is-ours`). `fsync()` records what it synced and fails by suffix, which is how `synced-before-install` and `rekey/success` check that nothing is renamed into place before it is on the disk, and that an image whose write fails leaves nothing at its name. `crypto_pwhash()` derives every key at libsodium's minimum cost, which is what keeps those cases cheap, and counts them: a change of passphrase reads each history it re-keys once (`/storage/rekey/cost`). `free()` searches what it frees for a secret while one is set, GMarkup's own buffers aside, and `realloc()` moves every block meanwhile, searching each it moves away for half the secret: a read of an encrypted history leaves no copy of a password in freed memory, a growing buffer's included. `gcr_secure_memory_alloc()` and `_free()` check that what gcr hands out goes back wiped, a key and a stream's plaintext buffers alike. An import copies a history past the size cap, its screenshots included while images are off (`/storage/migration/import-copies-whole`). A store holding nothing a wrong passphrase is refused over -- a foreign file, a stream cut short in its first frame, an encrypted database emptied -- is no verifiable one, its passphrase asked for twice. Cases that warn run in a subprocess, since structured logging bypasses `g_test_expect_message()`, and every case gets directories of its own (`G_TEST_OPTION_ISOLATE_DIRS`), detection counting what the history directory holds. A `.pngs` under a name no entry's side file has is left as it is by a re-key (`/storage/rekey/foreign-side-file`). A database row's checksum that is no checksum is computed again rather than written back (`/storage/sqlite/checksum-refused`). Only a key opening nothing refutes a passphrase: a history damaged past its first chunk, a foreign file under the flavour's name or one the user may not read leaves the right one accepted (`/storage/passphrase-survives-*`). An image under a history whose name is not UTF-8 is named by its file name alone (`/storage/image-name-not-utf8`). Histories left on two passphrases open by the one the active history takes, which a change re-keys (`/storage/rekey/split-passphrases`); checking a passphrase decrypts the active document twice and no image (`/storage/passphrase/verify-cost`); and an empty active database proves nothing (`/storage/sqlite/verification-empty-active-database`). A migration's destination already holding histories is written under the passphrase they take (`/storage/migration/destination-passphrase`). An unlock with nothing to unlock asks nothing, a store holding nothing to check a passphrase against has it asked for twice, and one this build cannot open is asked no change of passphrase (`/storage/decryption/*`, `/storage/rekey/unopenable`). Ranks past the compaction threshold come down on open whatever the rows' order (`/storage/sqlite/rank-compaction`). A SQLite write that fails leaves the store diverged, written in full once by the next write carrying the history -- an add's reconciliation, which only drops rows, scanning when its count fails and diverging when a drop fails; a full write failing on a database it created leaves none, a failed backup or emptying answers that it failed, and an import's rollback spares a destination it never installed (`/storage/sqlite/diverged-*`, `failed-write-*`, `reconcile-*`, `/storage/migration/import-spares-unwritten-destination`). An encrypted stream carried on past its FINAL frame is refused rather than read as its first stream alone (`/storage/encrypted-stream-bounds`). Emptying reaches the store whatever state the history is in, and a delete of an unreadable history that fails leaves it unreadable (`/storage/history/empty-reaches-the-store`, `failed-delete-keeps-unreadable`). What is added while a load is out goes on top of what the load read (`/storage/history/add-during-load-kept`). Backing another history up, emptying or deleting one is refused until the lock a daemon taken over from holds is this process's (`/storage/lock/store-methods`). A history is created only under a name the storage in use can keep every file of (`/storage/new-history-name-fits`).
+`test-storage-failures` reads an alternative representation that decodes to nothing, from a file and from a database, which has to be dropped with the item read from its plain value, and fails a history write's install, which has to sweep no image. A history a flavour hidden from the build keeps is out of reach of the file flavour standing in for it: deleting or emptying it is refused, the store left on disk, and so is backing it up unless the stand-in keeps it too, which is copied as listed (`unopenable-out-of-reach`, skipped where the library binds the calls it makes within one file, the hidden kind being asked within one). It also includes `gpaste-storage-migration.c`, so its cases reach the migration's static helpers, and injects the storage failures each one is about by interposing the functions they go through: `g_paste_storage_backend_write_history()` leaves out the first item of what one backend kind is handed, which makes an import fail after writing to its destination, or cuts the footer off a file one writes, which leaves a destination that does not read back; either way the copy has to be gone afterwards -- with the screenshots an import out of the encrypted file flavour decrypted on its way, and short of a destination history it could not read, which it stops before -- the source still there, detection has to find it again, and the prompt has to be told. `g_paste_storage_is_supported()` refuses one flavour, standing for a build without the feature it needs, so that a build with every feature runs those cases too: such a source offers neither migration toggle, a reply ticking them anyway is clamped, and an encrypted one asks for no passphrase. Detection keeping a format this build cannot open as what it is shows only in a build lacking that format, which the identity cases are for. `sqlite3_exec()` fails one statement as a full disk would: a version 1 database whose upgrade fails at a column, at the version write or at the commit has to come out of it unchanged and upgrade on the next open; `sqlite3_step()` makes the version read fail, the first one or the one under the write lock, which has to refuse the open rather than stamp the old tables current, and another connection upgrading the database just before the transaction begins has to leave nothing to do. `sqlite3_prepare_v2()`, `sqlite3_step()` and `sqlite3_exec()` fail each step of a remove, a replace and an emptying, and an add's read of the top rank, each of which has to have the history written in full; the binds refuse a value past a length, as SQLite refuses one past `SQLITE_MAX_LENGTH`, which leaves the item out of its history's store and the rest written around it, a displacing add's count leaving it out too and an edit of it having the history written in full (`/storage/sqlite/left-out-accounted`); and `sqlite3_wal_checkpoint_v2()` counts the checkpoints, none of which an add evicting the oldest item asks for, where a delete asks for one without waiting out a reader (`/storage/sqlite/checkpoint-spares-readers`) and a re-key empties the log the live history's connection would otherwise keep (`/storage/sqlite/rekey-checkpoints`). An encrypted SQLite history with one of its parameters deleted, or whose count fails as a wrong passphrase comes, has to be refused with its salt and key check left as they were, and a wrong passphrase refused while another connection holds the database in exclusive locking mode for a moment; a database another connection keys and writes to while one derives its own key keeps that connection's parameters, `crypto_pwhash()` running the other connection from inside the derivation (`/storage/sqlite/keyed-meanwhile`). `g_file_move()` fails the moves whose source ends with a given suffix, which is how a re-key is stopped at the history's install, or at that and the putting back of an image: a clean rollback leaves the files' bytes as they were and nothing beside them, a failed one says the history is split, keeps the image's original beside it and has the user told so, and a re-key that goes through leaves nothing behind either. What a process dying in an import or between two histories' re-keys leaves is a journal written by hand: the next start takes the copy back unless the move happened, before a migration as before an unlock, and tells the change of passphrase through the prompt, once, the history it was changing as on either passphrase (`/storage/rekey/cut-short-under-way`), before a migration of that start asks anything, its import otherwise refused over the journal (`/storage/rekey/cut-short-then-import`), and one naming nothing not at all (`/storage/rekey/journal-naming-none`); one that ends in the process leaves none, the journal being on the disk while each history is written. What a process dying in a re-key leaves is made by hand, without deriving a key: the next start puts back one that had not made its last rename, through `g_paste_storage_decryption_needed()`, and drops the originals of one that had, through the migration; until then a read refuses the history, deleting the history takes them along, what is left beside a history that is gone is dropped rather than put back, what is left beside an image a write has since swept is settled all the same (`/storage/rekey/settled-without-image`), each history off one listing of its images (`/storage/rekey/settle-lists-once`), a stray file naming no valid history is left alone, nothing is settled while another open file holds the storage lock, an import and a re-key each count as busy from their worker's start to its report, and a re-key settles them before its own -- one whose images directory cannot be listed failing without calling the history split. The storage lock is held by an open file of the case's own, which `flock()` tells apart even within the process: two waits of one process both get it once it is let go of, a load still waiting when the process lets go of it reads nothing, a flushed history whose name changes takes no load and so no lock until it is resumed, a history dropped once its load is waiting goes at once, nothing taking the lock after it, and the startup gates wait for it, asking nothing meanwhile -- no passphrase verified, the keyring's included -- and nothing at all once the process lets go of it, before a wait starts, while it sleeps between two attempts or once it has answered, a later wait taking it back meanwhile or not (`/storage/lock/*`). `flock()` fails as a home on NFS without lockd fails it, which, like a lock file that cannot be opened and a history directory that cannot be made, has to leave the store to be touched rather than blame another daemon, bar by a wait counted before the process let go of the lock (`/storage/lock/file-unusable`, `/storage/lock/dir-unmade`); and it pauses a wait between taking the lock and the rest of it until the case asks a `try_lock()` and a second after, or until that answers, the `try_lock()` having to find the lock the process's own and a pause given up on before it was asked failing the case (`/storage/lock/taken-is-ours`). `g_usleep()` holds a wait sleeping between two attempts until the case has let go of the lock and taken it back (`/storage/lock/released-then-relocked-while-waiting`). `fsync()` records what it synced and fails by suffix, which is how `synced-before-install` and `rekey/success` check that nothing is renamed into place before it is on the disk -- and, counted on one sequence with the moves, that `rekey/success`'s renames have their directory synced after them --, and that an image whose write fails leaves nothing at its name. `g_paste_storage_backend_get_passphrase()` counts the reads of the process passphrase, which a backend keyed with one of its own makes none of, one keyed with the process's showing first that the count sees them, the case skipped where it does not (`/storage/passphrase/keyed-backend-reads-none`, skipped where the library inlines its own calls, the read being made within one file), and setting it again to its own cleartext keeps it (`/storage/passphrase/set-again`). `crypto_pwhash()` derives every key at libsodium's minimum cost, which is what keeps those cases cheap, and counts them: a change of passphrase reads each history it re-keys once (`/storage/rekey/cost`). It fails a derivation asked with parameters GPaste's own check refuses, as `tests/gpaste-test-pwhash.c` does, and a file history whose header asks for those is refused before any key is derived (`/storage/passphrase/unreasonable-underived`). `free()` searches what it frees for a secret while one is set, GMarkup's own buffers aside, a secret left behind found whether GLib frees its block through `free()` or knowing its size (`/storage/secret-search-counts`) -- as do `free_sized()` and `free_aligned_sized()`, which a block of known size goes through where the C library has them (glibc's own call `free()`, so no case tells them apart from it) --, and `realloc()` moves every block meanwhile, searching each it moves away for half the secret: a read of an encrypted history leaves no copy of a password in freed memory, a growing buffer's included. `gcr_secure_memory_alloc()` and `_free()` check that what gcr hands out goes back wiped, a key and a stream's plaintext buffers alike. An import copies a history past the size cap, its screenshots included while images are off (`/storage/migration/import-copies-whole`). A store holding nothing a wrong passphrase is refused over -- a foreign file, a stream cut short in its first frame, an encrypted database emptied -- is no verifiable one, its passphrase asked for twice. Cases that warn run in a subprocess, since structured logging bypasses `g_test_expect_message()`, and every case gets directories of its own (`G_TEST_OPTION_ISOLATE_DIRS`), detection counting what the history directory holds. A `.pngs` under a name no entry's side file has is left as it is by a re-key (`/storage/rekey/foreign-side-file`). One the passphrase in use cannot read is passed over and then deleted, the change going through, unless the new passphrase reads it, which keeps it as it is (`/storage/rekey/past-unreadable-image`). A database row's checksum that is no checksum is computed again rather than written back (`/storage/sqlite/checksum-refused`). Only a key opening nothing refutes a passphrase: a history damaged past its first chunk, a foreign file under the flavour's name or one the user may not read leaves the right one accepted (`/storage/passphrase-survives-*`), and one whose key cannot be derived is refused, unchecked, in either flavour (`/storage/passphrase/verify-underived`). An image under a history whose name is not UTF-8 is named by its file name alone (`/storage/image-name-not-utf8`). Histories left on two passphrases open by the one the active history takes, which a change re-keys, writing nothing for the others (`/storage/rekey/split-passphrases`), a change finding every history on another passphrase says so, and reports how to put them on one (`/storage/rekey/all-elsewhere`), and one whose images alone are on the other passphrase has them re-keyed by the doctor once it is typed, offered to be deleted and said to be unreadable when it is not (`/storage/doctor/split-images`), its document carried through as it is, the new key asked of it once and the copy read back by its bytes (`/storage/rekey/document-carried-through`), asked for once a check -- a damaged image opening with no passphrase -- and deleted once that is confirmed (`/storage/doctor/split-images-unreadable`); checking a passphrase decrypts the active document twice and no image (`/storage/passphrase/verify-cost`); and an empty active database proves nothing (`/storage/sqlite/verification-empty-active-database`). A migration's destination already holding histories is written under the passphrase they take (`/storage/migration/destination-passphrase`). An unlock with nothing to unlock asks nothing, a store holding nothing to check a passphrase against has it asked for twice, and one this build cannot open is asked no change of passphrase (`/storage/decryption/*`, `/storage/rekey/unopenable`). Ranks past the compaction threshold come down on open whatever the rows' order (`/storage/sqlite/rank-compaction`). A SQLite write that fails leaves the store diverged until an emptying levels it (`/storage/sqlite/emptied-converges`), written in full once by the next write carrying the history, which levels it unless it fails too (`/storage/sqlite/diverged-add-converges`) -- an add's reconciliation, which only drops rows, scanning when its count fails and diverging when a drop fails; a full write failing on a database it created leaves none, a failed backup or emptying answers that it failed, and an import's rollback spares a destination it never installed and takes back one installed without an image (`/storage/sqlite/diverged-*`, `failed-write-*`, `reconcile-*`, `/storage/migration/import-spares-unwritten-destination`, `import-takes-back-partial-destination`); a copy its rollback cannot delete stays journaled, `g_file_delete()` failing the deletes of a given suffix, and that journal is no later operation's to write over or remove (`/storage/migration/import-rollback-keeps-undeleted`), a death during a write over a copy the destination held leaves that copy (`import-death-spares-kept-copy`), and an item SQLite leaves out as too large is excused (`import-excuses-left-out`). An encrypted stream carried on past its FINAL frame is refused rather than read as its first stream alone (`/storage/encrypted-stream-bounds`). Emptying reaches the store whatever state the history is in, and a delete of an unreadable history that fails leaves it unreadable (`/storage/history/empty-reaches-the-store`, `failed-delete-keeps-unreadable`). What is added while a load is out goes on top of what the load read (`/storage/history/add-during-load-kept`). Backing another history up, emptying or deleting one is refused until the lock a daemon taken over from holds is this process's (`/storage/lock/store-methods`). A history is created only under a name the storage in use can keep every file of (`/storage/new-history-name-fits`), as the history directory's filesystem bounds a file name, `pathconf()` interposed (`/storage/name-fits-directory`). ListHistories counts the other histories off the main thread (`/storage/list-histories-off-main-loop`), sizes the history in use as it answers (`/storage/list-histories-current-as-answered`), sizes again another history emptied, or the one in use left, meanwhile, and that one alone (`/storage/list-histories-recounted-after-empty`, `-recounted-after-leave`), and holds the history weakly, one let go of meanwhile going there and then (`/storage/list-histories-history-dropped`); a delete of a flavour this build cannot delete is refused (`/storage/delete-unsupported-refused`); a read given up on creates no store (`/storage/cancelled-read-creates-nothing`); a file history whose last save failed is written level by the flush (`/storage/file-diverged-history`); and an active history damaged past its header is asked about a passphrase once (`/storage/passphrase/damaged-active-asked-once`).
 
 `tests/tools/test-extension-locale.py` installs the build into a scratch
 directory and checks that the extension's `locale` leads to the catalogs:
 GNOME Shell binds the extension's gettext domain there, for the daemon it hosts
-too. It runs only with `gnome-shell`.
+too. The link is followed whether it is absolute or relative, which it checks
+first on a link of each kind. It runs only with `gnome-shell`.
 
 `tests/tools/test-release.py` runs `release.sh` in a scratch repository with
 meson, ninja, appstreamcli and msgattrib stood in for: the version it checks is
-meson.build's, the soversions go in the release commit, a file modified for
+meson.build's, the soversions go in the release commit, and so do `NEWS`, the
+README, the metainfo and a catalog written beforehand (`notes`), a file modified for
 anything else -- beside the catalogs and the metainfo, or a line of the two
 `meson.build` files beyond the version and the soversions -- and a catalog
 msgattrib fails on each stop it before it commits, and nothing stray in `po/`
 is committed.
 
-`tests/tools/test-gen-keybindings.py` runs the control center's keybindings
-generator on headers of its own, under a locale with no UTF-8 in it: a
-description holding a typographic apostrophe comes out as UTF-8, and an entry
-it cannot read -- `K(` with no space, an escaped quote -- fails it rather
-than leave the shortcut out of the file.
+`tests/build/` covers the installed headers: `c-headers` includes the three
+umbrella headers as a C consumer does, without `G_PASTE_COMPILATION`, and
+calls the inline helpers they carry; where a C++ compiler is found,
+`cxx-headers` does the same as a C++ consumer.
+
+`tests/tools/test-keybindings-xml.c` reads the control center's keybindings
+file the build generated: every shortcut `g_paste_keybindings()` lists, in its
+order, under its key and with its untranslated description, and nothing else.
 
 `tests/tools/test-gir-finish-funcs.py` reads the generated GIRs: every async
 callable's finish function is one its class has, under its GI name, and every
 async method has one -- a finish the scanner cannot pair, taking no instance,
 leaving bindings with no async pairing.
 
-`tests/tools/test-gi-constants.py` asks gjs whether every `Gio`, `GLib` and
-`GObject` constant the extension names is defined: GJS reads a misspelt one as
-`undefined` and passes it on as 0, which the suites' doubles of Gio cannot
-tell, defining whatever the code spells. With the build's own typelibs -- every
-build with introspection -- it asks the same of every `GPaste`,
-`GPasteDaemon` and `GPasteGtk` name the extension reaches. It is skipped
+`tests/tools/test-gi-constants.py` asks gjs whether every `Gio`, `GLib`,
+`GObject` and `Pango` constant the extension's code names, its comments aside,
+is defined: GJS reads a misspelt one as `undefined` and passes it on as 0, which
+the suites' doubles cannot tell, defining whatever the code spells. With the
+build's own typelibs -- every shared build with introspection, a static one's
+naming no library GJS could load their types from -- it asks the same of
+every `GPaste`, `GPasteDaemon` and `GPasteGtk` name the extension reaches, a
+class's function included -- one it calls as `name?.()`, which a build without
+the feature compiling it in has no binding for, looked for by its C name in the
+libraries' headers instead -- and where the extension is built, of every
+`Clutter` and `St` one, against mutter's and the shell's typelibs. It is skipped
 without gjs.
 
 `tests/tools/test-search-provider.py` reads the overview search provider's
 registration, which has to carry `AutoStart=false`: the overview asks a
 daemon that is running and starts none.
 
-`tests/daemon/` covers the daemon's bus objects. `test-daemon-teardown` builds a whole `GPasteDaemon` and takes it down (and checks, on that daemon, that the extension's state resumes only what its going paused, a pause of the user's own outliving every report): it includes `gpaste-daemon.c`, standing in for the GlobalShortcuts portal's constructor, which the private bus has no service for, and counting the password expiries a re-exec asks for, and exports the daemon on the private bus over the shared providers and a NOOP history: disposing it twice, then unregistering it, finds no export left to drop, and one disposed before the screensaver and the portal answer it -- both built for real there, the answers counted -- sets nothing on what dispose left, while one exported again follows the screensaver as before. Its startup update is looked up through the field the daemon tracks it in: unregistering destroys that source, a daemon let go of while it is pending is finalized at once, and one that has run reaches a listener on the bus and leaves unregistering nothing to cancel. `test-search-provider` exports the GNOME Shell search provider, built through its public constructor, beside a fake daemon serving two results to every search, and asks it for their metas once an `Update` has gone by: after one item's removal they come from what the search found, both of them and in order, with no call to the daemon, and with no `clipboardText` for the shell to put on the clipboard ahead of Select; after any other update they are asked of `GetItems`, whose `NOT_FOUND` for an item gone gets an empty answer, with no warning and no `GetHistory`; and what the overview's terms join to is
-searched for escaped, as text. It waits for the provider's client by searching until a search reaches the fake daemon, rather than by including the provider's source, which would build the generated search provider skeleton a second time. A re-exec has the passwords taken off and both providers stored before the host's `reexecute-self` runs: the shared provider counts its `store` calls, every vfunc of the interface being required. The in-process daemon `g_paste_daemon_new_meta()` builds asks for no expiry, nothing exec'ing there. Every method the interface declares has a handler connected on the skeleton. A history-name naming no history has the `History` property name the default history the daemon went to instead, from the export on, the warning quoting it escaped, and an upload of a password is refused before any command runs. A bus whose objects fail to export as it connects says so once, after trying them all, from where its listener can unown the name without a critical. An upload answering more than one url, on a second line or in an escape sequence, fails; one still writing is cut off once it has written more than a url can be, and one answering before it has read the whole item -- a megabyte, far past what a pipe holds -- is judged by its exit and its answer. An upload out when the daemon leaves the bus, or re-execs, is answered as cancelled at once, a daemon let go of after it being finalized; the in-process daemon carries its uploads through a re-exec. `test-daemon-host` compiles the standalone daemon's host in (`src/daemon/gpaste-daemon.c`, with the files it is built of), the storage concerns it starts and the daemon calls it makes stood in for: a passphrase change asked for during a check of the store runs once the check is done. `test-prompt-adw` compiles the standalone daemon's libadwaita prompt in and drives it through the `GPastePrompt` calls on the private Xvfb, the keyring lookup stood in for: a migration picks the backend in use and offers to keep it, or with that backend off the list picks nothing, offers nothing to keep -- nor names it -- and applies nothing until one is picked, and picking another backend keeps what was ticked; losing the window is a dismissal; a passphrase error and a report are shown as written, a "&" and a "<" in them included, no row taking its text for markup; and a new passphrase is taken, Enter included, only once typed twice alike.
+`tests/daemon/` covers the daemon's bus objects. `test-daemon-teardown` builds a whole `GPasteDaemon` and takes it down (and checks, on that daemon, that the extension's state resumes only what its going paused, a pause of the user's own outliving every report): it includes `gpaste-daemon.c`, standing in for the GlobalShortcuts portal's constructor, which the private bus has no service for, and counting the password expiries a re-exec asks for, and exports the daemon on the private bus over the shared providers and a NOOP history: disposing it twice, then unregistering it, finds no export left to drop, and one disposed before the screensaver and the portal answer it -- both built for real there, the answers counted -- sets nothing on what dispose left, while one exported again follows the screensaver as before. Its startup update is looked up through the field the daemon tracks it in: unregistering destroys that source, a daemon let go of while it is pending is finalized at once, and one that has run reaches a listener on the bus and leaves unregistering nothing to cancel. `test-search-provider` exports the GNOME Shell search provider, built through its public constructor, beside a fake daemon serving two results to every search, and asks it for their metas once an `Update` has gone by: after one item's removal they come from what the search found, both of them and in order, with no call to the daemon, and with no `clipboardText` for the shell to put on the clipboard ahead of Select; after any other update they are asked of `GetItems`, whose `NOT_FOUND` for an item gone gets an empty answer, with no warning and no `GetHistory`; and what the overview's terms join to is searched for escaped, as text. It waits for the provider's client by searching until a search reaches the fake daemon, rather than by including the provider's source, which would build the generated search provider skeleton a second time. A re-exec has the passwords taken off before the host's `reexecute-self` runs -- refused before that while the host holds re-execs back (`reexecute/held`) -- and hands neither provider to a clipboard manager: the shared provider counts its `store` calls, every vfunc of the interface being required. The in-process daemon `g_paste_daemon_new_meta()` builds asks for no expiry, nothing exec'ing there. Every method the interface declares has a handler connected on the skeleton, and a daemon exported again announces its properties again. A history-name naming no history has the `History` property name the default history the daemon went to instead, from the export on, the warning quoting it escaped, and an upload of a password is refused before any command runs. A bus whose objects fail to export as it connects says so once, after trying them all, from where its listener can unown the name without a critical -- and not at all once the name was unowned before that (`/daemon/bus/export-failed-unowned`). An upload answering more than one url, on a second line or in an escape sequence, fails, and one whose url NULs follow, as termbin's do, is that url (`/daemon/upload/answer-ending-with-nul`); one still writing is cut off once it has written more than a url can be, and one answering before it has read the whole item -- a megabyte, far past what a pipe holds -- is judged by its exit and its answer. An upload out when the daemon leaves the bus is answered as cancelled at once, a daemon let go of after it being finalized; a re-exec leaves it running for the host, whose stand-in ends it as the real one does just before its exec, answered there and then; the in-process daemon carries its uploads through a re-exec, and one held back by the host -- SIGUSR1 from the start, a request over the bus once its expiry has started -- carries them until the exec it owes comes, which answers them as cancelled (`/daemon/upload/survives-held-reexec`). `test-daemon-host` is the `daemon-host` suite, below. `test-prompt-adw` compiles the standalone daemon's libadwaita prompt in and drives it through the `GPastePrompt` calls on the private Xvfb, the keyring lookup stood in for: a migration picks the backend in use and offers to keep it, or with that backend off the list picks nothing, offers nothing to keep -- nor names it -- and applies nothing until one is picked, and picking another backend keeps what was ticked; losing the window is a dismissal; a passphrase error and a report are shown as written, a "&" and a "<" in them included, no row taking its text for markup; and a new passphrase is taken, Enter included, only once typed twice alike. Escape closes every prompt as its close button does (`escape`); a passphrase asked for other histories says what it is wanted for and offers no switch to remember it (`passphrase/other-histories`); the remember switch remembers when on, forgetting when off only what is remembered (`passphrase/remember-answer`); and a confirmation shows what it was worded with, escaped, its destructive button alone answering yes and Cancel its default, with the focus (`confirm/answered`).
+
+`daemon-host` (`test-daemon-host`) compiles the standalone daemon's host in (`src/daemon/gpaste-daemon.c`, with the files it is built of), the storage concerns it starts, the daemon's exit calls, the exec and the storage workers stood in for: a change of passphrase asked during a check runs once the check is done (`change-during-check`), one asked, or a check, just before a takeover does nothing once no daemon is left (`concern-after-takeover`), a takeover waiting on a worker lets go of the name (`takeover-lets-go`), a stop takes the running countdowns' passwords off before its last flush (`stop-order`), a re-exec flushes the history, lets what that landed answer, ends the uploads out, then flushes the bus's replies (`reexec-order`), a re-exec while a stop waits is refused (`reexec-while-stopping`), one while a check of the store or a change of passphrase is under way owed and carried out once it is done (`reexec-while-checking`), a request over the bus held back by all three (`reexecute-held`), and each asked again once the exec's turn of the loop may have let one through, the uploads left running (`reexec-loop-lets-through`), a second stop signal queues no second quit (`stop-once`), an extension disabled while the settle held the daemon at a prompt is reported gone once the daemon is there (`extension-gone-while-settling`), SIGUSR1 asks the daemon for its re-exec only once the store is idle and no stop waits (`usr1-waits-for-store`), and what the daemon answered from idles as it went -- the uploads it gave up on -- goes out before the exit flushes the bus (`exit-answers`).
 
 `history-switcher` runs the shipped Shell controller under Node.js with actor
 and bus doubles. It checks backup drafts and focus across refresh, source
 removal, dialog closure after daemon loss, the current history's count (a
-listing that omits it, which updates ask, overtaken replies), that only the
-key focus sets the switcher row's `active`, and that a call nothing waits on
-reports its refusal to the log. It is omitted when Node.js is
-unavailable and exercises no real Shell rendering or session.
+listing that omits it, which updates ask, overtaken replies), an emptied
+history's set from the signal, a size of the one in use asked before it given
+up on, unless a listing is out, which is then asked again, and again by a
+second empty once the listing superseded has settled, that only the key focus
+sets the switcher row's `active`, and that a call
+nothing waits on reports its refusal to the log. It checks that hiding the
+switcher -- which the daemon going does, a handoff to another included -- gives
+up both its listing and its size read, and that nothing is sized while the
+presence is not `READY`, the name still having an owner; and that a history in
+use no listing names gets a row, its count and its open actions all the same, a
+switch to one with no row listing again; and that a history row's bin, and the
+switcher row's, leave the width the row asks for as it was. It is omitted when Node.js is
+unavailable and exercises no real Shell rendering or session. Like every Node
+suite whose body awaits (`runSuite()`), it fails when that body stops on a
+promise that never settles, rather than exit 0 with its later assertions
+skipped.
+
+`suite.cjs`, beside the Node suites, holds what they share rather than keep a
+copy each: `runSuite()`; `settle()`, which lets what a reply resolved by hand
+sets off run; `Signals`, the `connect()` and `emit()` an actor's double extends
+to have a signal emitted by hand; `loadShipped()`, which runs a shipped module
+in a suite's context, its imports left to the doubles there and its exports
+declared plainly; and `runShipped()`, which runs one function of a shipped
+file -- a helper of a module the suite does not load whole, as the rows'
+`widthWithoutRevealed()` from `dependencies.js`. Both find the file through
+`shipped()`: the one the suite was handed, or one beside it.
 
 `indicator` runs the shipped indicator the same way: its teardown, run once and
 chained up to `PanelMenu.Button`'s even before `_setup()` has built anything --
@@ -84,7 +131,9 @@ row but not one after it, handing a focus inside them back to the row; a failed
 upload is a notification, a done one is announced in one, without the address, the menu
 writes no clipboard of its own -- `UploadAndCopy` leaves that to the daemon --
 and nothing reaches the screen from an indicator torn down while the upload was
-out.
+out: a revocable weak-reference double models collection during an upload, so
+its reply is finished, once, without a notification from an indicator that is
+gone.
 
 The indicator double also clears focus when a row is destroyed: keyboard-opened
 actions on a removed last row must focus a surviving row, as must the row
@@ -99,49 +148,76 @@ an update applies nothing and no size is read. A pass superseding another
 rebinds from the earlier of their first rows, an update re-running a filter
 keeps the scroll and shows the keyboard's row, and the history's height is
 divided by the UI scale factor.
-`history-switcher` checks that hiding the switcher -- which the daemon going
-does, a handoff to another included -- gives up both its listing and its size
-read, and that nothing is sized while the presence is not `READY`, the name
-still having an owner. A revocable weak-reference double
-models collection during an upload, so its reply is finished without a
-notification from an indicator that is gone.
 
-The `indicator` test also checks that the menu's search goes out escaped and
-not lowercased, and that one the daemon refuses lists nothing without a failure;
+The `indicator` test also checks that the menu's search goes out as typed,
+never lowercased, for `search_text()` to search for as text, an answer of
+nothing listing nothing;
 that a keystroke's search waits for the typing to pause, an emptied entry listing
 at once and a teardown or a close stopping a search still waiting; and that the search box
 keeps its width with `element-size` at 0.
 
 `item` runs the shipped history row over St, Clutter and client doubles: text
-past `element-size` is cut with an ellipsis, by characters, and a larger size
-shows more of it again; a row rebound to another uuid selects and deletes
+past `element-size` is cut with an ellipsis -- libgpaste's cut, by characters,
+being `/util/display-line`'s, the row never reading a text's whole value -- and
+a larger size shows more of it again; a row rebound to another uuid selects and deletes
 nothing until that item is what it shows, then acts on it with a callback that
-logs a refusal, as the star does; the menu key on the star or the bin opens the
-row's actions; and a failed read is said at debug level only.
+logs a refusal, as the star does; a read that a newer binding, to a position or
+to a uuid, overtook paints nothing; a rebound row's star shows no pin until its
+item is there, revealed or not; the menu key on the star or the bin opens the
+row's actions; a failed read goes to `debugFailure()` alone; and the pin and the
+bin a look at the row shows leave the width it asks for as it was, a pinned
+star counting either way.
+
+`dependencies` runs the helpers every other suite stands in for, from
+`dependencies.js` itself: a row's failed read said at debug level and nowhere
+else, a refusal nothing waits on logged, a replaced request cancelled, and a
+reply read as unwanted once its cancellable is, as is a call failing as
+cancelled, any other failure rethrown, and a row's width asked for less the
+buttons it reveals, spacing included, never under its minimum.
+
+`extension` runs the shipped `enable ()` and `disable ()` over shell, bus and
+libgpaste doubles: with the in-shell daemon told in process the indicator
+reports nothing more, the extension's own report calls the names libgpaste
+introspects, a daemon not there -- whichever way the bus says so -- being no
+error while any other refusal is logged, and the indicator it builds reads the
+extension's `GPaste.Settings` through its `settings` getter, which answers it
+until the extension is disabled.
+
+`item-actions` runs the shipped item actions row the same way: the keyboard
+reaching either of its buttons scrolls the row into the history's view, and the
+buttons act on the item the row was opened for.
+
+`actions` runs the shipped menu footer: Open GPaste launches the graphical tool
+through the shell's app system, which hands it an activation token, and through
+`GPaste.util_spawn()` only for a tool the shell does not know.
 
 `daemon` runs the shipped in-shell daemon runner over bus, daemon, storage and
 main loop doubles: a takeover, a failed export and a dropped connection all
 flush and dispose the daemon, and a takeover, a failed export and a failed
 build all shut the prompt down and wipe the passphrase with the lock, which a
 shutdown during a storage rewrite defers until the store is idle; a runner acquiring the name meanwhile
-keeps both and settles only then, or stops waiting when it is shut down; an
-export failing stands it down from inside the first `add_object ()`, nothing
+keeps both and settles only then, or stops waiting when it is shut down; one
+owning the name with no daemon built yet answers for the extension's report
+itself; an export failing stands it down from inside the first `add_object ()`, nothing
 exported after it; a concern queued behind another flushes no daemon a
 reconnect has let go of; a re-exec the daemon asks for runs once, from an
 idle; and a check of the store runs once, from an idle, between a flush and a
 reload, what it found -- or the prompt's failure in its place -- going back to
 the daemon.
 
-`extension` runs the shipped extension over panel and session-mode doubles:
-the indicator it builds reads the extension's `GPaste.Settings` through its
-`settings` getter, which answers it until the extension is disabled.
-
 `prompt` runs the shipped GNOME Shell prompt over St, dialog and session-mode
 doubles: the strength meter and its hint wear classes the shell's theme styles;
 locking hides a dialog up and unlocking shows it again; a question or a report
-asked while locked waits for the unlock; a shutdown dismisses a question
-still waiting, logs a report, and stops watching the session; and the
-migration dialog names "Keep as is" only where it offers it.
+asked while locked waits for the unlock; a shutdown dismisses a question still
+waiting, logs a report, and stops watching the session; a dialog destroyed
+without being closed answers its request, once; the migration dialog names
+"Keep as is" only where it offers it, and with nothing picked its Apply is
+greyed out and answers nothing; a passphrase asked for other
+histories says what it is wanted for and offers no switch to remember it; what
+the switch answers is asked of `g_paste_prompt_remember_answer()`; a
+confirmation shows what its caller worded, Cancel its default, and answers yes
+from its other button alone; and every word either prompt shows, the other
+shows too.
 
 `state-switch` runs the shipped tracking switch over a `PopupSwitchMenuItem`
 double that clicks through `toggle()`, as GNOME Shell's does: a `SetActive` the
@@ -149,6 +225,9 @@ daemon refuses puts it back where the daemon still is, without asking again on
 the way, an accepted one leaves it where the click put it, the daemon moving it
 asks nothing back, and a refusal reaching a switch the menu has destroyed is
 only logged.
+`search-item` runs the shipped search item over St doubles: its Pinned filter's
+star is drawn empty while the filter is off and full while it is on, as the
+rows' stars are, and a reset leaves it empty.
 `test-history`'s `/history/set_active_refused` refuses the `track-changes` write
 the way a locked key does, by interposing `g_settings_set_boolean()`: the
 daemon's side of that call has to fail, the tracking left as it was, unless it
@@ -167,6 +246,11 @@ and `/history/switch_unstored` has dconf give it back: SwitchHistory fails, and
 DeleteHistory of the current history deletes nothing.
 `/history/sqlite_save_elsewhere_keeps_connection` interposes `sqlite3_open_v2()`
 to count the connections opened on a history saved under another name.
+`/history/search_off_main_loop` interposes `g_regex_match()` to hold a
+search's first match until the main loop has turned, and checks that it ran on
+another thread, however fast the regex engine is;
+`/history/search_past_match_limit` has a pattern PCRE2 gives up on answer no
+match, with no error and no warning.
 
 `test-ui-shortcuts` opens the shortcut-help dialog and verifies that both the
 master switch and accelerator edits retire its snapshot. It also covers that
@@ -180,38 +264,7 @@ The portal suite also exercises `GPasteKeybinder` with real settings changes:
 starting enabled or disabled, toggling both ways, preserving unchanged sessions,
 and disposal with a rebind pending.
 
-`test-client-reexec` covers the command line tool by `#include`-ing
-`src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own
-handler directly. Anything that would leave the test — the re-exec call,
-libgpaste's re-exec of an older daemon, the version the proxy caches — is a
-`#define` over the name the file uses, which is how the empty cases (a daemon that has not answered for
-its version, one that refused a re-exec) are reached without a daemon to go
-missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather
-than sent. It covers the re-exec fallback, the migration gate across it,
-an item's control characters shown on a terminal rather than acted on
-(`/client/terminal-controls`),
-`daemon-version` with and without an answer, `upload-and-copy` making
-`UploadAndCopy` and not `Upload`, and which command lines
-`dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no
-verb and so have the verb-less add's shape, and the listing's own flags
-included -- and how it is read: a non-blocking stdin waited on to its end, a
-thread writing the rest once the client is waiting (`/client/pipe/nonblocking`),
-and a stdin nothing can be read from taken for nothing piped by a line with no
-verb, refused by a verb (`/client/pipe/unreadable`). The client's constructor is `#define`d too, counting the clients
-built: none for help, version or a verb nobody knows. So are the daemon's
-lookups, answering from a history the case sets, for what `--use-index`
-resolves: a malformed index -- a sign, a space or a vertical tab in front,
-anything after the digits, past `guint64` -- refused before any lookup or
-client, a single index on its own, every argument of a merge off one listing
-even when a copy lands after the first answer, a merge index past the end
-refused with the error the daemon gives a single one, and text and patterns
-left alone on an empty history. A case runs its command line through
-`gpaste_client_main ()`, `optind` rewound, a refusal printed and exiting with a
-failure there as it is for the user (`failure-reported`), or through
-`g_paste_dispatch ()` where the case reads the error itself. Every argument of
-every verb that talks to the daemon, walked off `commands[]`, the text piped in
-for one and merge's decoration and separator are refused when not UTF-8, before
-any client is built, while UTF-8 beyond ASCII goes through.
+`test-client-reexec` covers the command line tool by `#include`-ing `src/client/gpaste-client.c` with `main` renamed, so a case calls a verb's own handler directly. Anything that would leave the test — the re-exec call, libgpaste's re-exec of an older daemon, the version the proxy caches — is a `#define` over the name the file uses, which is how the empty cases (a daemon that has not answered for its version, one that refused a re-exec) are reached without a daemon to go missing, and so is `g_paste_client_upload_and_copy_sync ()`, recorded rather than sent. It covers the re-exec fallback, the migration gate across it, the re-exec verbs waiting for a daemon of this version still starting, a GPaste 45 or 50 left unwaited for, and an owner the question could not reach, which the re-exec's route signals when it is one and migrate refuses whichever it is, its gate left closed and the question's failure reported, as it refuses an owner the presence shows gone by then, a GPaste 45 or 50 leaving as it answers included, while one gone unseen has the re-exec, which starts no daemon, fail and the gate close again, its words passed on as daemon-reexec passes them, and one another daemon serving replaced meanwhile is re-executed (`/client/reexec/starting-waited`, `/client/waits-for-daemon`, `/client/reexec/unknown-owner`, `/client/reexec/unknown-owner-left`, `/client/reexec/migrate-starting`), an item's control characters shown on a terminal rather than acted on, and a text that is not UTF-8 walked there without reading past its end or stepping over a control character, what lies between two control characters going out in one write -- counted on a stream with no buffer, one write per stdio call whichever it is (`/client/terminal-controls`), `daemon-version` with and without an answer, `upload-and-copy` making `UploadAndCopy` and not `Upload`, and which command lines `dispatch_reads_stdin ()` takes near stdin -- the flag actions, which carry no verb and so have the verb-less add's shape, and the listing's own flags included -- and how it is read: a non-blocking stdin waited on to its end, a thread writing the rest once the client is waiting (`/client/pipe/nonblocking`), and a stdin nothing can be read from taken for nothing piped by a line with no verb, refused by a verb (`/client/pipe/unreadable`). The client's constructor is `#define`d too, counting the clients built: none for help, version or a verb nobody knows. So are the daemon's lookups, answering from a history the case sets, for what `--use-index` resolves: a malformed index -- a sign, a space or a vertical tab in front, anything after the digits, past `guint64` -- refused before any lookup or client, a single index on its own, every argument of a merge off one listing even when a copy lands after the first answer, a merge index past the end refused with the error the daemon gives a single one, and text and patterns left alone on an empty history. A case runs its command line through `gpaste_client_main ()`, `optind` rewound, a refusal printed and exiting with a failure there as it is for the user (`failure-reported`), or through `g_paste_dispatch ()` where the case reads the error itself. Every argument of every verb that talks to the daemon, walked off `commands[]`, the text piped in for one and merge's decoration and separator are refused when not UTF-8, before any client is built, while UTF-8 beyond ASCII goes through.
 
 `test-client-presence` follows `GPasteClient:daemon-presence` on the private
 bus, which has nothing to activate, with the generated skeleton standing in for
@@ -219,8 +272,9 @@ a daemon on a connection of its own: owning the name before it exports anything
 reads as starting, a `History` as ready, and a daemon going away as starting for
 the grace second and absent after it -- as does a retry the bus cannot answer.
 A daemon serving only `org.gnome.GPaste2` is told apart from one serving this
-interface and from one exporting nothing yet, and only it is signalled to
-re-execute, the pid file naming the process owning the name, and only one
+interface and from one exporting nothing yet -- a question failing as a call
+does, GDBus' prefix off an error that maps to a domain and left on one that
+does not (`legacy-errors`) -- and only it is signalled to re-execute, the pid file naming the process owning the name, and only one
 serving this interface is one the bash completion lists items from. A
 client built through `GInitable`/`GAsyncInitable` rather than its constructors
 starts out with the right presence, a handler connected before a two-step init
@@ -236,7 +290,14 @@ starting until it does, and one replacing that making it ready once
 (`handoff-after-init`); one built through the initables for a name of its own
 follows that name alone, GPaste's own changing hands leaving it ready
 (`handoff-other-name`). What `g_paste_client_is_daemon_gone_error()` counts as a
-daemon gone is checked error by error, an unknown method left out. The
+daemon gone is checked error by error, an unknown method left out. An owner
+leaving before it ever served reads as starting for the grace second, not
+absent at once (`starting-owner-leaves`); a client built under a thread-default
+context of its own moves its presence as that context runs
+(`own-context`), the reply to a request for a daemon made from another context
+included (`own-context-probe`); and one on a peer-to-peer connection, with no name, asks no
+bus of owners, a filter on that connection counting every call sent to one
+(`peer-to-peer`). The
 stand-in answers calls too, asynchronously since it answers from the client's
 own context: a refusal reaches the caller with its domain, its code and the
 daemon's words, no `GDBus.Error:` before them, whatever the method's shape; an
@@ -245,20 +306,35 @@ is an error alone and left out of a list; a file path not in UTF-8, a relative
 one's working directory included, is refused before anything is sent, and a
 NULL one at the precondition; and a Reexecute the stand-in leaves unanswered by
 closing its connection is a success where one refused with
-`G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not.
+`G_IO_ERROR_NOT_DIRECTORY`, NoReply's code in another domain, is not; a
+Reexecute starts no daemon, a name nobody owns failing it with NameHasNoOwner
+rather than the ServiceUnknown of a call the bus may start one for, the owner
+gone before the client hears of it and the presence still ready included,
+worded as the wait for a daemon words one gone and still a daemon gone to
+`g_paste_client_is_daemon_gone_error()` (`reexecute-starts-nothing`); and
+BackupHistory, EmptyHistory and ListHistories wait for their answer past the
+proxy's default timeout (`store-calls-wait`).
+
+`test-client-give-up` compiles `gpaste-client.c` in with
+`G_PASTE_CLIENT_GIVE_UP_SECONDS` at two seconds, the two minutes a followed
+client waits on an owner that never serves: once they run out the owner reads as
+absent, its leaving changes nothing, and the next owner gets a wait of its own,
+already starting when a handler of the `active`, `tracking` or `history` it
+announces reads the presence.
 
 `test-ui-panel-history` puts one sidebar history row on the private Xvfb and
 drives its state flags directly: the delete button shows for the pointer and for
 a visible keyboard focus, but not for the focus a click leaves, and the row's
 shortcut is Delete without BackSpace. It also checks that an item row notifies
 `selection-mode` only when it changes, and that its star is named for what
-clicking it does, that a row handed to another item blanks its text and
+clicking it does, its accessible name and its tooltip alike, that a row handed to another item blanks its text and
 offers no action until that item is read, that a row lays out a bounded part
 of a long item's text, and that an image row keeps its thumbnail and hover
 preview at the size they are drawn, aspect kept, and drops an image it cannot
 decode. It includes `gpaste-ui-panel.c` too, its switch and backup
 calls faked, to check that a history name the daemon would refuse is never sent,
-that Switch or Create keeps its text until the switch is answered, that Back Up
+that Switch or Create keeps its text until the switch is answered and moves
+the focus on to the search only while it is open, that Back Up
 waits for a name neither refused nor listed and backs up on Enter, that its
 dialog goes with its window, and that a Back Up or a deletion confirmed once the
 daemon left sends nothing, the daemon's presence faked as the switch is. It is built without `G_LOG_USE_STRUCTURED`, so
@@ -294,10 +370,14 @@ window closes lets the sidebar go. A window presented
 for a failed connection and set up again into a daemon already there takes its
 banner down. A daemon serving only `org.gnome.GPaste2` gets the banner offering to
 restart it, which signals it, this process standing in for it and the pid file
-naming it.
+naming it; asked again whether one runs, the presence moved or the name passed
+to another such daemon, the banner goes on offering the restart while the
+question is out, a recorder on its title seeing nothing else (`legacy-kept`),
+and a Restart pressed as the name passes on waits for the answer, signalling
+another such daemon and nothing at all for this version's (`legacy-restart-asked`).
 A window closed and let go of while the list's size request is out leaves the
 list standing, held by the reply, and the reply lands without reaching for the
-sidebar that went with the window. With the widest window buttons (KDE's
+sidebar that went with the window, the list going once it has. With the widest window buttons (KDE's
 icon, minimize, maximize and close), the window at its minimum width opens on
 the history page, the list keeping the focus, and fits in each of its states --
 selection mode, the search bar, the banner -- and at text scales up to 1.5; it
@@ -326,8 +406,10 @@ shows the new value, and a pick on it goes. Entering selection mode and
 leaving it keep the list scrolled where it was and the focus on the very row
 widget that had it. The stand-in answers `Merge`, its items' uuids following a
 shift the test sets: a merge joins the rows picked as they showed when picked,
-though the history moved before the refresh came back, and rows picked before
-they were read are read by their position alone. What is typed in the search
+though the history moved before the refresh came back, rows picked before
+they were read are read by their position alone, and a merge whose picks are
+still read when the window closes goes out once they are, holding the
+application until then. What is typed in the search
 goes out escaped. Image rows read no thumbnail
 while previews are off, and read it as they are turned on. A history filled
 one item at a time shows every item while they fit the window. Moving the
@@ -366,6 +448,10 @@ rows staying as it was, and a pinned-items read answered so is no "No Pinned
 Items". A stand-in stops by
 closing its connection first, as a real daemon goes: unexported while still
 owning the name, it would answer a call with an error no real daemon gives.
+What it answered goes out before it closes (`fake_daemon_stop()` says why): a
+Select answered right before it goes, its answer held behind an announcement on
+GDBus' worker, is answered (`stand-in-answers-first`, which skips itself when
+the test was held off the processor for as long as the announcement was).
 One allowing its replacement is not queued for the name once replaced, a real
 daemon quitting then. The focus restoration case
 checks that its wait predicate rejects focus still on the list.
@@ -390,7 +476,9 @@ restart the menu withholds too, while a Shell owning its name apart leaves the
 standalone daemon its offer. Both paths assert that the watch's first answer
 has not arrived just after setup: no toast is offered yet, and the in-shell
 daemon's Restart action is disabled then. Some twenty seconds of it all, the
-suite runs under a 120-second Meson timeout.
+suite runs under a 120-second Meson timeout. The header's Pinned filter star is
+drawn as the rows' are, empty while the filter is off and full while it is on
+(`/ui/header/pinned-filter-star`).
 
 `test-ui-preferences` compiles the preferences' group and shortcut row in
 and drives them on the private Xvfb: a range row emptied, or holding no
@@ -406,7 +494,10 @@ the warning it must emit being fatal under `g_test`; nothing goes out to a
 daemon not yet serving, the request waiting for one and giving up, the gate
 never opened, when none comes; the application is held while a request is
 out; and a change of passphrase goes out asynchronously, a refusal shown as a
-migration's is.
+migration's is. And it compiles the standalone application in, `main` renamed:
+its window is the application's, its WM_CLASS the application's id; the embeddable widget comes up without a
+warning; and the widget and the dialog let go of their rows before their
+settings, which an interposed `g_paste_settings_new()` reports.
 
 `test-ui-history-model` checks that `GPasteUiHistoryModel` ignores an
 invalidated range past its rows, however far past, a position near the top of
@@ -440,7 +531,8 @@ keeps what the process was using; a file where older builds spelled the
 directory `GPaste` is found; and the storage migration's gate opens by
 resetting the revision and closes back to what it was -- a completed
 migration's winning over a late failure, a key with no value left with none --
-a gate the file could not be rewritten to open being none.
+a gate the file could not be rewritten to open being none, and a write it
+could not store reading back as what the file holds (`sync-key-unstored`).
 
 `test-shell-settings` supplies a minimal test-local Shell schema and real memory
 and non-writable GSettings backends. It compiles the shipped settings source,
@@ -454,21 +546,32 @@ out of the other, a reload reading it again and saying so once when it moved.
 This settings-only suite uses
 `G_PASTE_TEST_ENV_OWN_BUS` to leave both bus addresses unreachable.
 
-`test-util` compiles `gpaste-util.c` with the session bus proxy's constructors
-and calls faked, and checks how both `g_paste_util_activate_ui()` flavours take
-their argument, whether the proxy comes up or is refused: a floating one is
-consumed, a caller's own reference left to the caller -- who may drop it before
-the asynchronous flavour's proxy is up, the call still made with it. A
-migration gate whose reset GSettings refuses, faked there, fails to open. It also
+`test-util` compiles `gpaste-util.c` with the session bus and its calls faked,
+and checks how both `g_paste_util_activate_ui()` flavours take their argument,
+whether the bus is reached or refused: a floating one is consumed, a caller's
+own reference left to the caller -- who may drop it before the asynchronous
+flavour reaches the bus, the call still made with it. A
+migration gate whose reset GSettings refuses, faked there, fails to open, and
+a launcher's Wayland activation token reaches the graphical tool in the
+platform data. It also
 checks what a client draws for an item: one line, the Unicode line breaks
 folded too; each kind's decoration, a kind it does not know shown as it
 arrived; and a files item's paths percent-decoded, a home file from "~" --
 a whole leading component only, a `$HOME` ending in a slash included, set in a
 subprocess since GLib reads it once -- and a name not in UTF-8 shown as text.
+The line a row draws is that string as the cut shows it, a files item having
+only as many of its uris decoded as the line shows (`/util/display-line`), and
+the cut walks a text that is not UTF-8 no further than its end.
 
 `test-util` also reads back pid files: the positive decimal pid written in one,
 and -1 for anything else, a 0 above all, which `kill ()` takes for the caller's
 own process group (`/util/pid-file`).
+
+`test-app-call` runs `g_paste_util_spawn()` against the test bus for real, each
+case in a subprocess holding no other reference to the session bus: the call
+reaches an app owning its name, the connection kept until the reply, with the
+activation token the daemon is handed (`g_paste_util_spawn_with_token()`), and
+one the bus cannot start is warned about.
 
 `test-portal-provider` runs the GlobalShortcuts client against a fake portal on
 private buses, without GTK initialization or a desktop session. It controls
@@ -478,8 +581,11 @@ paths differing from predictions, invalid session handles, untrusted senders,
 partial/empty grants, retry exhaustion and cancellation -- a portal appearing
 after the budget was spent against an unowned name getting it whole --, and
 retired-request deadlines. The keybinder hands the portal its bindings in the
-order they were added, a re-added key taking its place; a keypad key's
-trigger names the keypad key. Name handoffs leave the old server alive and assert that its known
+order they were added, a re-added key taking its place, and the activation
+token an activation carries reaches the binding (`activation-token`), and a
+shortcut cleared is dropped from the grab, no session asked for it
+(`cleared`); a keypad
+key's trigger names the keypad key. Name handoffs leave the old server alive and assert that its known
 and late-created sessions are closed on its unique connection; separate tests
 actually disconnect that server. `Closed` immediately following a create
 response is queued on the I/O thread before main-context dispatch to test the
@@ -495,7 +601,8 @@ the client before activation completes. The test target compiles the same
 client source with a 50 ms retry interval and a 1 s retirement deadline;
 production uses one second and ten minutes respectively.
 
-A test that needs a fake service on a private bus links `gpaste_test_bus_dep`
+A test that needs a fake service on a private bus, or only one of the waits,
+the drain or the signal counter below, links `gpaste_test_bus_dep`
 (`tests/gpaste-test-bus.c`) rather than rolling its own: `g_paste_test_bus_new_server()`
 puts a second connection on the bus with an object registered on it — a connection
 of its own being what lets a test hand the well-known name over the way a restart
@@ -505,9 +612,13 @@ that second connection alone, to any address -- the bus `gpaste-test-env` set up
 included, for a stand-in daemon under a client that follows it -- and
 `g_paste_test_bus_wait_until()`, `_wait_for_enum()`, `_wait_for_count()` and
 `_wait_for_owner()` iterate the main context until a condition, a property, a
-counter a fake service keeps or a proxy's name owner gets there, failing after
-`G_PASTE_TEST_BUS_WAIT_SECONDS`; `g_paste_test_bus_count_emission()`, connected
-swapped, is the counter for a signal.
+counter a fake service keeps or a proxy's name owner gets there, for at most
+`G_PASTE_TEST_BUS_WAIT_SECONDS` -- the three wrappers then failing, while
+`g_paste_test_bus_wait_until()` returns quietly and leaves the asserting to its
+caller, who has to assert what it waited for, `g_paste_test_bus_is_set()`,
+`_is_unset()` and `_is_true()` being its conditions for a pointer filled in, a
+pointer cleared and a flag set;
+`g_paste_test_bus_count_emission()`, connected swapped, is the counter for a signal.
 `g_paste_test_bus_barrier()` is three rounds addressed to the server's *unique*
 name: a reply behind the calls on the client's connection makes a no-op
 assertion deterministic, the later rounds drain what a reply's own callback
@@ -518,21 +629,52 @@ one, for a server with nothing but a generated skeleton on it: a single
 `g_paste_test_bus_pump()` runs the main context for a fixed time, for what
 nothing announces -- a warning *not* coming, or a timer the code under test
 runs on its own; anything with a state to wait for waits on it instead.
+`g_paste_test_bus_drain()` dispatches what is ready on it, waiting for nothing.
+
+The suites looking widgets up, `tests/ui/`'s and `test-prompt-adw`, link
+`gpaste_test_gtk_dep` (`tests/gpaste-test-gtk.c`), which carries
+`gpaste_test_bus_dep` along, rather than keep a copy of each helper:
+`g_paste_test_gtk_find_widget()` and `_find_button()` search a widget's tree,
+`_find_all()` collects every widget of a type in it,
+`_shows_label()` whether a label or an inscription in it shows a text as written,
+`_widget_mapped()` is the `GPasteTestBusDone` for a widget being mapped,
+`_wait_dialog_closed()` waits on the dialog of an `AdwWindow` or an
+`AdwApplicationWindow` going, at most `G_PASTE_TEST_BUS_WAIT_SECONDS`, and
+`_dialog_buffer()`, `_dialog_text()` and `_set_dialog_text()` reach, read and
+write a dialog's text view. A `GPasteTestGtkSave` is the call -- a dialog's
+save, the sidebar's switch -- a suite's stand-in for the client keeps for its
+case to answer (`_save_send()`, `_save_finish()`, `_save_answer()`), which
+`_assert_refusal_kept()` walks through a refusal and a second try, the text
+kept through both and carried by each save -- the save's `text`, which the
+stand-in records --, expecting the composer's warning: its caller builds the
+composer without `G_LOG_USE_STRUCTURED`, as `test-ui-edit-item` and
+`test-ui-new-item` do.
 
 `test-ui-password` controls the edit dialog's two asynchronous replies while using
 real GTK on the private Xvfb. It checks both late-reply orders, closure between
 replies, a closed parent retained by another operation, and an intentionally
 hidden parent. The edit must not hold the window alive and thereby prevent the
-`destroy` signal cancelling its reads. `test-ui-edit-item` holds Edit Item's one
+`destroy` signal cancelling its reads. It also answers the save itself: an
+untouched timeout goes out as unchanged, the dialog and its Cancel are held while
+the save is out but go with their window, and a failed edit says it could not
+save the password. It is built without `G_LOG_USE_STRUCTURED`, so that
+`g_test_expect_message()` catches the warning a failure leaves.
+`test-ui-edit-item` holds Edit Item's one
 read to the same: a closed parent and a retained closed one get no dialog, an
 open one does, and a window closed under the dialog goes and frees what the edit
 held, even while something else holds the dialog; a text dialog refuses a
 parent libadwaita would not host it in, answering once as a cancellation, and
 Edit Item refuses such a window before its read goes out. Saving the text as
-it was read sends no Replace, a changed one does.
+it was read sends no Replace and closes. A refused save keeps the dialog up,
+which neither closes nor takes a second press while the save is out, with the
+text and the failure in it, and a window going while it is out frees what the
+edit held.
 `test-ui-new-item` checks that a window closed under the New Item composer
-goes and frees what the composer held, and that a window the dialog would
-refuse is refused on the way in.
+goes and frees what the composer held, that a window the dialog would
+refuse is refused on the way in, and that a refused item stays in the dialog as
+Edit Item's does, over an application window as the graphical tool's is. Both,
+and `test-ui-password`, build `gpaste-ui-composer.c` in, without
+`G_LOG_USE_STRUCTURED`.
 
 Clipboard regressions also cover synchronous password eviction invalidating a
 source cache during synchronization, distinct named passwords sharing a value,
@@ -542,6 +684,10 @@ from bare-text synchronization until an ordinary read identifies new content.
 A plain-text sync whose reply lands after MakePassword turned the source's text
 into a password puts the password, countdown included, on the other selection,
 and its expiry takes it off both.
+
+The clipboard suite's encrypted stores derive every key at libsodium's minimum,
+through the `crypto_pwhash()` it shares with `test-history`: those cases need a
+store that keeps its passwords, not a costly key.
 
 The clipboard suite also checks unlisted password capture/merge twins against
 unrelated named entries, strips and automatic synchronization after an

@@ -21,50 +21,162 @@
 #endif
 
 /* Every GPaste app is reached the same way: the standard interface a desktop
- * application exports, on the bus name and object path its own name makes. The
- * graphical tool is the one addressed by a caller that is not spawning it, so
- * it is spelled out rather than built. */
+ * application exports, on the bus name and object path its own name makes
+ * (g_paste_util_app_call_new ()). */
 #define G_PASTE_APPLICATION_IFACE "org.freedesktop.Application"
-#define G_PASTE_UI_BUS_NAME       "org.gnome.GPaste.Ui"
-#define G_PASTE_UI_OBJECT_PATH    "/org/gnome/GPaste/Ui"
 
-/* Copied from glib's gio/gapplication-tool.c */
+/* Copied from glib's gio/gapplication-tool.c: X11's startup id, and Wayland's
+ * activation token, without which the window opened has the shell's
+ * focus-stealing prevention say it is ready rather than come up.
+ *
+ * Only a process started with them has them in its environment -- gpaste-client
+ * run from a launcher. The daemon is handed a token with a shortcut, by the
+ * portal, and passes it as @activation_token; GNOME Shell opens the tool
+ * through its own launch, which makes one (actions.js); a search the overview
+ * hands over comes with none. */
 static GVariant *
-app_get_platform_data (void)
+app_get_platform_data (const gchar *activation_token)
 {
-    g_auto (GVariantBuilder) builder;
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     const gchar *startup_id;
 
-    g_variant_builder_init_static (&builder, G_VARIANT_TYPE_VARDICT);
-
+    if (!activation_token)
+        activation_token = g_getenv ("XDG_ACTIVATION_TOKEN");
     if ((startup_id = g_getenv ("DESKTOP_STARTUP_ID")))
         g_variant_builder_add (&builder, "{sv}", "desktop-startup-id", g_variant_new_string (startup_id));
+    if (activation_token)
+        g_variant_builder_add (&builder, "{sv}", "activation-token", g_variant_new_string (activation_token));
 
     return g_variant_builder_end (&builder);
 }
 
-static void
-g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
-                                   GAsyncResult *res,
-                                   gpointer      user_data G_GNUC_UNUSED)
+/* What one call to a GPaste app takes: a connection to the bus and the call,
+ * which the bus starts the app for. No proxy, which would first ask the bus
+ * who owns the name and the app for its properties, and watch both, for a
+ * call made once. */
+typedef struct
 {
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
+    gchar       *name;
+    gchar       *path;
+    const gchar *method;
+    GVariant    *parameters;
+} GPasteUtilAppCall;
 
-    if (!proxy)
+static void
+g_paste_util_app_call_free (GPasteUtilAppCall *call)
+{
+    g_free (call->name);
+    g_free (call->path);
+    g_variant_unref (call->parameters);
+    g_free (call);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteUtilAppCall, g_paste_util_app_call_free)
+
+/* The call of @method on the GPaste app named @app. @parameters is consumed if
+ * floating, and held until the call is made; @method is a static string. */
+static GPasteUtilAppCall *
+g_paste_util_app_call_new (const gchar *app,
+                           const gchar *method,
+                           GVariant    *parameters)
+{
+    GPasteUtilAppCall *call = g_new (GPasteUtilAppCall, 1);
+
+    call->name = g_strdup_printf ("org.gnome.GPaste.%s", app);
+    call->path = g_strdup_printf ("/org/gnome/GPaste/%s", app);
+    call->method = method;
+    call->parameters = g_variant_ref_sink (parameters);
+
+    return call;
+}
+
+/* The reply, waited for to say why an app did not open: the bus answers one it
+ * cannot start with an error, which is all a broken install or a failing unit
+ * is told by. Waiting is also what keeps the connection: the call's task holds
+ * it until the reply, where a caller holding no other reference to the bus
+ * would drop it, and the call queued on it, on return. */
+static void
+g_paste_util_app_called (GObject      *source_object,
+                         GAsyncResult *res,
+                         gpointer      user_data)
+{
+    g_autofree gchar *name = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GVariant) reply = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
+
+    if (!reply)
+        g_warning ("Failed to call %s: %s", name, error->message);
+}
+
+static void
+g_paste_util_app_call_on_bus (GObject      *source_object G_GNUC_UNUSED,
+                              GAsyncResult *res,
+                              gpointer      user_data)
+{
+    g_autoptr (GPasteUtilAppCall) call = user_data;
+    g_autoptr (GError) error = NULL;
+    g_autoptr (GDBusConnection) bus = g_bus_get_finish (res, &error);
+
+    if (!bus)
     {
-        g_warning ("Failed to get D-Bus proxy: %s", error->message);
+        g_warning ("Failed to reach the session bus: %s", error->message);
         return;
     }
 
-    g_dbus_proxy_call (proxy,
-                       "Activate",
-                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                       G_DBUS_CALL_FLAGS_NONE,
-                       -1,
-                       NULL, /* cancellable */
-                       NULL, /* callback */
-                       NULL); /* user_data */
+    /* Handed on to the reply, which names the app should the call fail. */
+    gchar *name = g_steal_pointer (&call->name);
+
+    g_dbus_connection_call (bus,
+                            name,
+                            call->path,
+                            G_PASTE_APPLICATION_IFACE,
+                            call->method,
+                            call->parameters,
+                            NULL, /* reply type */
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1,
+                            NULL, /* cancellable */
+                            g_paste_util_app_called,
+                            name);
+}
+
+/* Its arguments are taken as g_paste_util_app_call_new () takes them. */
+static void
+g_paste_util_call_app (const gchar *app,
+                       const gchar *method,
+                       GVariant    *parameters)
+{
+    g_bus_get (G_BUS_TYPE_SESSION, NULL /* cancellable */, g_paste_util_app_call_on_bus,
+               g_paste_util_app_call_new (app, method, parameters));
+}
+
+/* The call's own result is what says whether it worked: @error may be %NULL, in
+ * which case there is nothing to look at. */
+static gboolean
+g_paste_util_call_app_sync (const gchar *app,
+                            const gchar *method,
+                            GVariant    *parameters,
+                            GError     **error)
+{
+    g_autoptr (GPasteUtilAppCall) call = g_paste_util_app_call_new (app, method, parameters);
+    g_autoptr (GDBusConnection) bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL /* cancellable */, error);
+
+    if (!bus)
+        return FALSE;
+
+    g_autoptr (GVariant) ret = g_dbus_connection_call_sync (bus,
+                                                            call->name,
+                                                            call->path,
+                                                            G_PASTE_APPLICATION_IFACE,
+                                                            call->method,
+                                                            call->parameters,
+                                                            NULL, /* reply type */
+                                                            G_DBUS_CALL_FLAGS_NONE,
+                                                            -1,
+                                                            NULL, /* cancellable */
+                                                            error);
+
+    return !!ret;
 }
 
 /**
@@ -76,54 +188,18 @@ g_paste_util_spawn_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
 G_PASTE_VISIBLE void
 g_paste_util_spawn (const gchar *app)
 {
+    g_paste_util_spawn_with_token (app, NULL);
+}
+
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE void
+g_paste_util_spawn_with_token (const gchar *app,
+                               const gchar *activation_token)
+{
     g_return_if_fail (g_utf8_validate (app, -1, NULL));
+    g_return_if_fail (!activation_token || g_utf8_validate (activation_token, -1, NULL));
 
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-
-    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                              G_DBUS_PROXY_FLAGS_NONE,
-                              NULL,
-                              name,
-                              object,
-                              G_PASTE_APPLICATION_IFACE,
-                              NULL,
-                              g_paste_util_spawn_on_proxy_ready,
-                              NULL);
-}
-
-static GDBusProxy *
-_bus_proxy_new_sync (const gchar *app,
-                     GError     **error)
-{
-    g_autofree gchar *name = g_strdup_printf ("org.gnome.GPaste.%s", app);
-    g_autofree gchar *object = g_strdup_printf ("/org/gnome/GPaste/%s", app);
-
-    return g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                          G_DBUS_PROXY_FLAGS_NONE,
-                                          NULL,
-                                          name,
-                                          object,
-                                          G_PASTE_APPLICATION_IFACE,
-                                          NULL,
-                                          error);
-}
-
-static gboolean
-_spawn_sync (GDBusProxy *proxy,
-             GError    **error)
-{
-    /* The call's own result is what says whether it worked: @error may be %NULL,
-     * in which case there is nothing to look at. */
-    g_autoptr (GVariant) res = g_dbus_proxy_call_sync (proxy,
-                                                       "Activate",
-                                                       g_variant_new ("(@a{sv})", app_get_platform_data ()),
-                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
-                                                       NULL,
-                                                       error);
-
-    return !!res;
+    g_paste_util_call_app (app, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data (activation_token)));
 }
 
 /**
@@ -145,12 +221,7 @@ g_paste_util_spawn_sync (const gchar *app,
     g_return_val_if_fail (g_utf8_validate (app, -1, NULL), FALSE);
     g_return_val_if_fail (!error || !(*error), FALSE);
 
-    g_autoptr (GDBusProxy) proxy = _bus_proxy_new_sync (app, error);
-
-    if (!proxy)
-        return FALSE;
-
-    return _spawn_sync (proxy, error);
+    return g_paste_util_call_app_sync (app, "Activate", g_variant_new ("(@a{sv})", app_get_platform_data (NULL)), error);
 }
 
 /* The ActivateAction payload, which is the whole of what the two flavours below
@@ -160,41 +231,12 @@ static GVariant *
 activate_ui_params (const gchar *action,
                     GVariant    *arg)
 {
-    g_auto (GVariantBuilder) params;
-
-    g_variant_builder_init_static (&params, G_VARIANT_TYPE ("av"));
+    g_auto (GVariantBuilder) params = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("av"));
 
     if (arg)
         g_variant_builder_add (&params, "v", arg);
 
-    return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data ());
-}
-
-static void
-g_paste_util_activate_ui_on_proxy_ready (GObject      *source_object G_GNUC_UNUSED,
-                                         GAsyncResult *res,
-                                         gpointer      user_data)
-{
-    g_autofree gpointer *data = (gpointer *) user_data;
-    g_autofree gchar *action = data[0];
-    g_autoptr (GVariant) arg = data[1];
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_finish (res, &error);
-
-    if (!proxy)
-    {
-        g_warning ("Failed to get D-Bus proxy: %s", error->message);
-        return;
-    }
-
-    g_dbus_proxy_call (proxy,
-                       "ActivateAction",
-                       activate_ui_params (action, arg),
-                       G_DBUS_CALL_FLAGS_NONE,
-                       -1,
-                       NULL, /* cancellable */
-                       NULL, /* callback */
-                       NULL); /* user_data */
+    return g_variant_new ("(sav@a{sv})", action, &params, app_get_platform_data (NULL));
 }
 
 /**
@@ -213,19 +255,9 @@ g_paste_util_activate_ui (const gchar *action,
 {
     g_return_if_fail (g_utf8_validate (action, -1, NULL));
 
-    gpointer *data = g_new (gpointer, 2);
-    data[0] = g_strdup (action);
-    data[1] = (arg) ? g_variant_ref_sink (arg) : NULL;
+    g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
 
-    g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                              G_DBUS_PROXY_FLAGS_NONE,
-                              NULL,
-                              G_PASTE_UI_BUS_NAME,
-                              G_PASTE_UI_OBJECT_PATH,
-                              G_PASTE_APPLICATION_IFACE,
-                              NULL,
-                              g_paste_util_activate_ui_on_proxy_ready,
-                              data);
+    g_paste_util_call_app ("Ui", "ActivateAction", activate_ui_params (action, owned));
 }
 
 /**
@@ -243,6 +275,9 @@ g_paste_util_activate_ui (const gchar *action,
  *
  * @arg is taken as g_paste_util_activate_ui() takes it.
  *
+ * Errors are those of the session bus: %G_DBUS_ERROR, or %G_IO_ERROR for a
+ * transport that failed.
+ *
  * Returns: %FALSE, with @error set, when the app could not be reached
  */
 G_PASTE_VISIBLE gboolean
@@ -253,27 +288,8 @@ g_paste_util_activate_ui_sync (const gchar *action,
     g_return_val_if_fail (g_utf8_validate (action, -1, NULL), FALSE);
 
     g_autoptr (GVariant) owned = (arg) ? g_variant_ref_sink (arg) : NULL;
-    g_autoptr (GDBusProxy) proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                                  G_DBUS_PROXY_FLAGS_NONE,
-                                                                  NULL,
-                                                                  G_PASTE_UI_BUS_NAME,
-                                                                  G_PASTE_UI_OBJECT_PATH,
-                                                                  G_PASTE_APPLICATION_IFACE,
-                                                                  NULL, /* cancellable */
-                                                                  error);
 
-    if (!proxy)
-        return FALSE;
-
-    g_autoptr (GVariant) ret = g_dbus_proxy_call_sync (proxy,
-                                                       "ActivateAction",
-                                                       activate_ui_params (action, owned),
-                                                       G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
-                                                       NULL, /* cancellable */
-                                                       error);
-
-    return !!ret;
+    return g_paste_util_call_app_sync ("Ui", "ActivateAction", activate_ui_params (action, owned), error);
 }
 
 /**
@@ -294,9 +310,9 @@ g_paste_util_activate_ui_sync (const gchar *action,
  * ".xml.tmp" after it. A name past that has a placeholder written and listed,
  * while no save of it could ever land. The other flavours need more room after
  * the name still -- the SQLite ones a "-journal" beside their database, the
- * encrypted file one the original a re-key keeps aside -- which only the
- * creation of a history asks of them (g_paste_storage_name_fits ()): a name a
- * history was saved under stays one.
+ * encrypted file one the original a re-key keeps aside -- and a filesystem may
+ * take shorter file names, which only the creation of a history asks of them
+ * (g_paste_storage_name_fits ()): a name a history was saved under stays one.
  *
  * Installed and introspected, where the paths it guards are the daemon's alone:
  * a client with nowhere to report a refusal -- the GNOME Shell extension's
@@ -323,6 +339,17 @@ g_paste_util_history_name_is_valid (const gchar *name)
     return TRUE;
 }
 
+/* What g_paste_util_one_line () does, to @line in place. */
+static void
+g_paste_util_fold_line (GString *line)
+{
+    /* NEL as its UTF-8 bytes: C has no universal character name below U+00A0. */
+    g_string_replace (line, "\xc2\x85", " ", 0);
+    g_string_replace (line, "\u2028", " ", 0);
+    g_string_replace (line, "\u2029", " ", 0);
+    g_strdelimit (line->str, "\n\r\t", ' ');
+}
+
 /**
  * g_paste_util_one_line:
  * @text: the initial text
@@ -343,12 +370,37 @@ g_paste_util_one_line (const gchar *text)
 
     g_autoptr (GString) line = g_string_new (text);
 
-    /* NEL as its UTF-8 bytes: C has no universal character name below U+00A0. */
-    g_string_replace (line, "\xc2\x85", " ", 0);
-    g_string_replace (line, "\u2028", " ", 0);
-    g_string_replace (line, "\u2029", " ", 0);
+    g_paste_util_fold_line (line);
 
-    return g_strdelimit (g_string_free_and_steal (g_steal_pointer (&line)), "\n\r\t", ' ');
+    return g_string_free_and_steal (g_steal_pointer (&line));
+}
+
+/* See gpaste-util-private.h. */
+gchar *
+g_paste_util_shown_line (const gchar *text,
+                         guint        max_chars)
+{
+    g_return_val_if_fail (text, NULL);
+
+    if (!max_chars)
+        return g_paste_util_one_line (text);
+
+    const gchar *end = text;
+
+    /* Not g_utf8_next_char (), which steps over the NUL after a sequence cut
+     * short: a text that is not UTF-8 is walked no further than its end. */
+    for (guint i = 0; *end && i < max_chars; ++i)
+        end = g_utf8_find_next_char (end, NULL);
+
+    if (!*end)
+        return g_paste_util_one_line (text);
+
+    g_autoptr (GString) line = g_string_new_len (text, (gssize) (end - text));
+
+    g_paste_util_fold_line (line);
+    g_string_append (line, "…");
+
+    return g_string_free_and_steal (g_steal_pointer (&line));
 }
 
 /* The uris a files item holds, as a line to read rather than a list to act on:
@@ -358,11 +410,12 @@ g_paste_util_one_line (const gchar *text)
  * Done here rather than in the daemon because it is presentation, and because
  * the daemon got it wrong when it did it: a blind substitution over the uri
  * spelled a home file "file://~/a". */
-G_PASTE_VISIBLE gchar *
-g_paste_util_uris_display_string (const gchar *value)
+static gchar *
+g_paste_util_compose_uris (const gchar *value,
+                           guint        max_chars)
 {
-    g_auto (GStrv) uris = g_strsplit (value, "\n", -1);
     g_autoptr (GString) shown = g_string_new (NULL);
+    glong chars = 0;
     const gchar *home = g_get_home_dir ();
     gsize home_len = (home) ? strlen (home) : 0;
 
@@ -371,48 +424,81 @@ g_paste_util_uris_display_string (const gchar *value)
     while (home_len > 1 && home[home_len - 1] == '/')
         --home_len;
 
-    for (GStrv u = uris; *u; ++u)
-    {
-        const gchar *uri = *u;
+    /* Composed until past @max_chars, all a line cut there shows: the cut
+     * needs one character more than it keeps to know to put its ellipsis. A
+     * uri is read out of the list only once the walk reaches it, each but the
+     * last copied into one buffer to end it where its line does -- the
+     * daemon's search composes every path of every files item it holds. */
+    g_autoptr (GString) piece = g_string_new (NULL);
 
-        /* A value ending in a newline splits into a trailing empty piece, which
-         * is no uri and would only hang a separator off the end of the line. */
+    for (const gchar *start = value; start && (!max_chars || chars <= max_chars);)
+    {
+        const gchar *end = strchr (start, '\n');
+        const gchar *uri = start;
+
+        if (end)
+        {
+            g_string_truncate (piece, 0);
+            g_string_append_len (piece, start, (gssize) (end - start));
+            uri = piece->str;
+        }
+
+        start = (end) ? end + 1 : NULL;
+
+        /* A value ending in a newline has an empty piece after it, which is no
+         * uri and would only hang a separator off the end of the line. */
         if (!*uri)
             continue;
 
         if (shown->len)
             g_string_append_c (shown, ' ');
 
+        gsize before = shown->len;
         g_autofree gchar *path = g_filename_from_uri (uri, NULL, NULL);
 
         /* Anything but a local file -- another scheme, a uri that does not
          * decode -- is shown as the uri it is. */
         if (!path)
-        {
             g_string_append (shown, uri);
-            continue;
-        }
-
-        const gchar *p = path;
-
-        /* Only a whole leading component, so /home/joe never shortens /home/joey. */
-        if (home_len && !strncmp (p, home, home_len) && (!p[home_len] || p[home_len] == '/'))
+        else
         {
-            g_string_append_c (shown, '~');
-            p += home_len;
+            const gchar *p = path;
+
+            /* Only a whole leading component, so /home/joe never shortens
+             * /home/joey. */
+            if (home_len && !strncmp (p, home, home_len) && (!p[home_len] || p[home_len] == '/'))
+            {
+                g_string_append_c (shown, '~');
+                p += home_len;
+            }
+
+            /* A name in another encoding than UTF-8 -- an old archive's
+             * Latin-1 -- decodes to bytes no label can draw and no D-Bus string
+             * can carry: it is read in the filename encoding the user set
+             * (G_FILENAME_ENCODING), and failing that, what reads as text is
+             * kept, the rest shown as U+FFFD. */
+            g_autofree gchar *display = g_filename_display_name (p);
+
+            g_string_append (shown, display);
         }
 
-        /* A name in another encoding than UTF-8 -- an old archive's Latin-1 --
-         * decodes to bytes no label can draw and no D-Bus string can carry: it
-         * is read in the filename encoding the user set (G_FILENAME_ENCODING),
-         * and failing that, what reads as text is kept, the rest shown as
-         * U+FFFD. */
-        g_autofree gchar *display = g_filename_display_name (p);
-
-        g_string_append (shown, display);
+        chars += g_utf8_strlen (shown->str + before, -1) + 1;
     }
 
     return g_string_free_and_steal (g_steal_pointer (&shown));
+}
+
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE gchar *
+g_paste_util_uris_display_string (const gchar *value)
+{
+    return g_paste_util_compose_uris (value, 0);
+}
+
+static gchar *
+g_paste_util_decorate_uris (const gchar *shown)
+{
+    return g_strdup_printf ("[%s] %s", _("Files"), shown);
 }
 
 /**
@@ -456,7 +542,7 @@ g_paste_util_display_string (const gchar   *value,
     {
         g_autofree gchar *uris = g_paste_util_uris_display_string (value);
 
-        return g_strdup_printf ("[%s] %s", _("Files"), uris);
+        return g_paste_util_decorate_uris (uris);
     }
     /* The value here is the password's *name*: the daemon masks the password
      * itself and never sends it. */
@@ -466,6 +552,35 @@ g_paste_util_display_string (const gchar   *value,
      * rather than mislabelled. */
     default:
         return g_strdup (value);
+    }
+}
+
+/* See gpaste-util-private.h. */
+gchar *
+g_paste_util_display_line (const gchar   *value,
+                           GPasteItemKind kind,
+                           guint          max_chars)
+{
+    g_return_val_if_fail (value, NULL);
+
+    switch (kind)
+    {
+    case G_PASTE_ITEM_KIND_URIS:
+    {
+        g_autofree gchar *uris = g_paste_util_compose_uris (value, max_chars);
+        g_autofree gchar *shown = g_paste_util_decorate_uris (uris);
+
+        return g_paste_util_shown_line (shown, max_chars);
+    }
+    /* Text wears nothing: no copy of it to make before the cut. */
+    case G_PASTE_ITEM_KIND_TEXT:
+        return g_paste_util_shown_line (value, max_chars);
+    default:
+    {
+        g_autofree gchar *shown = g_paste_util_display_string (value, kind);
+
+        return g_paste_util_shown_line (shown, max_chars);
+    }
     }
 }
 
@@ -816,6 +931,11 @@ g_paste_util_read_pid_file (const gchar *component)
  * replies after accepting its restart; a standalone exec closes the connection.
  * A caller that must not block uses g_paste_client_reexecute().
  *
+ * Errors are those of #GPasteClient's calls: %G_PASTE_ERROR for a daemon
+ * refusing the re-exec, %G_DBUS_ERROR or %G_IO_ERROR for the transport --
+ * %G_DBUS_ERROR_NAME_HAS_NO_OWNER with no daemon running, as the call starts
+ * none, said in GPaste's words (g_paste_client_reexecute_sync()).
+ *
  * Returns: %TRUE if the daemon honoured the re-exec
  */
 G_PASTE_VISIBLE gboolean
@@ -865,7 +985,10 @@ on_legacy_introspected (GObject      *source_object,
     g_autoptr (GVariant) answer = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source_object), res, &error);
 
     if (!answer)
+    {
+        g_paste_client_strip_remote_error (&error);
         g_task_return_error (task, error);
+    }
     else
         g_task_return_boolean (task, g_paste_util_introspected_legacy (answer));
 }
@@ -912,7 +1035,10 @@ g_paste_util_daemon_is_legacy (GPasteClient       *client,
  *
  * Finish g_paste_util_daemon_is_legacy (). Fails with %G_DBUS_ERROR or
  * %G_IO_ERROR when the daemon's path could not be asked -- no daemon there,
- * above all.
+ * above all. As with #GPasteClient's calls, an error that maps to a domain
+ * comes without GDBus' "GDBus.Error:" prefix, its domain and code saying what
+ * that did; one mapping to none keeps it, the name being all there is to tell
+ * it by.
  *
  * Returns: whether the daemon owning the name is a GPaste 45 or 50
  */
@@ -983,6 +1109,13 @@ daemon_wait_answer (GTask  *task,
     g_object_unref (task);
 }
 
+/* See gpaste-util-private.h. */
+G_PASTE_VISIBLE const gchar *
+g_paste_util_no_daemon_message (void)
+{
+    return _("No GPaste daemon is serving a history.");
+}
+
 static void
 on_daemon_wait_presence (GPasteClient *client,
                          GParamSpec   *pspec G_GNUC_UNUSED,
@@ -994,7 +1127,7 @@ on_daemon_wait_presence (GPasteClient *client,
         daemon_wait_answer (user_data, NULL);
         break;
     case G_PASTE_DAEMON_PRESENCE_ABSENT:
-        daemon_wait_answer (user_data, g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, _("No GPaste daemon is serving a history.")));
+        daemon_wait_answer (user_data, g_error_new_literal (G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED, g_paste_util_no_daemon_message ()));
         break;
     default:
         break;

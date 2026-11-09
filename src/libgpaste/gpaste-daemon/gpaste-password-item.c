@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
-#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-password-item-private.h>
 
 #include <string.h>
 
@@ -102,6 +102,12 @@ g_paste_password_item_set_timeout (GPastePasswordItem *self,
     self->timeout = MIN (timeout, G_PASTE_PASSWORD_TIMEOUT_MAX);
 }
 
+gboolean
+g_paste_password_item_is_nameless (GPastePasswordItem *self)
+{
+    return g_paste_str_equal (self->name, G_PASTE_PASSWORD_ITEM_NO_NAME);
+}
+
 static const gchar *
 g_paste_password_item_get_value (GPasteItem *self G_GNUC_UNUSED)
 {
@@ -136,8 +142,8 @@ g_paste_password_item_equals (GPasteItem *self,
     if (!G_PASTE_IS_PASSWORD_ITEM (other))
         return FALSE;
 
-    if (!g_paste_str_equal (G_PASTE_PASSWORD_ITEM (self)->name, G_PASTE_PASSWORD_ITEM_NO_NAME) ||
-        !g_paste_str_equal (G_PASTE_PASSWORD_ITEM (other)->name, G_PASTE_PASSWORD_ITEM_NO_NAME))
+    if (!g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (self)) ||
+        !g_paste_password_item_is_nameless (G_PASTE_PASSWORD_ITEM (other)))
         return FALSE;
 
     return g_paste_str_equal (g_paste_item_get_real_value (self), g_paste_item_get_real_value (other));
@@ -200,7 +206,9 @@ g_paste_password_item_new (const gchar *name,
 
     GPasteItem *self = g_paste_item_new (G_PASTE_TYPE_PASSWORD_ITEM, password);
 
-    /* A password weighs nothing against the caps: its length is the secret. */
+    /* The secret counts for nothing against the caps, its length being part
+     * of it: what a password weighs is its name, set below, and the display
+     * string showing that name. */
     g_paste_item_set_size (self, 0);
     g_paste_password_item_set_name (G_PASTE_PASSWORD_ITEM (self), name);
     g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (self), timeout);

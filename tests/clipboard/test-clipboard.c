@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
@@ -8,9 +9,32 @@
 #include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 
 #define TEST_TYPE_CLIPBOARD (test_clipboard_get_type ())
 G_DECLARE_FINAL_TYPE (TestClipboard, test_clipboard, TEST, CLIPBOARD, GObject)
+
+/* A release waiting for the read it ended, answered once that read has
+ * concluded as both backends answer theirs (g_paste_clipboard_update_then ()),
+ * or on the next turn of the main loop with none left, and overtaken by
+ * whatever reaches the selection first. The provider is held weakly, as the
+ * mutter backend holds it for that turn. */
+typedef struct
+{
+    GWeakRef                              self;
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    gboolean                              superseded;
+} TestRelease;
+
+static void
+test_release_free (TestRelease *release)
+{
+    g_weak_ref_clear (&release->self);
+    g_free (release);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (TestRelease, test_release_free)
 
 struct _TestClipboard
 {
@@ -29,6 +53,10 @@ struct _TestClipboard
     /* What a deferred read reads, a text when left unset. */
     GPasteClipboardContentKind defer_kind;
     gboolean                   reject_next;
+    /* The next change is a release, and the one left to answer: see
+     * update (). */
+    gboolean                   release_next;
+    TestRelease               *release;
     /* Another client takes the selection before every claim. */
     gboolean                   refuse_claims;
     /* Every claim made, refused ones included. */
@@ -87,6 +115,57 @@ is_identified (GPasteClipboardProvider *provider)
     return g_paste_clipboard_content_is_identified (&self->content);
 }
 
+/* Every change and every claim overtakes the release left to answer. */
+static void
+supersede_release (TestClipboard *self)
+{
+    TestRelease *release = g_steal_pointer (&self->release);
+
+    if (release)
+        release->superseded = TRUE;
+}
+
+/* A release answered, as the mutter backend answers one: the selection is
+ * empty, which has the manager put the history's head back on it, unless
+ * something overtook the release -- or disposed the provider -- which then says
+ * nothing. */
+static void
+release_answer (TestRelease *release,
+                gboolean     superseded)
+{
+    g_autoptr (TestClipboard) self = g_weak_ref_get (&release->self);
+
+    if (self && self->release == release)
+        self->release = NULL;
+    superseded |= release->superseded || !self;
+    if (!superseded)
+        g_paste_clipboard_content_clear (&self->content);
+    if (release->callback)
+    {
+        release->callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded,
+                           (superseded) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN : G_PASTE_CLIPBOARD_SECRET_NO,
+                           release->user_data);
+    }
+}
+
+static void
+release_after_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+                    gboolean                 superseded,
+                    gpointer                 data)
+{
+    g_autoptr (TestRelease) release = data;
+
+    release_answer (release, superseded);
+}
+
+static gboolean
+release_due (gpointer data)
+{
+    release_answer (data, FALSE);
+
+    return G_SOURCE_REMOVE;
+}
+
 static void
 update (GPasteClipboardProvider              *provider,
         gboolean                              record,
@@ -95,7 +174,33 @@ update (GPasteClipboardProvider              *provider,
 {
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
-    if (self->defer_reads)
+    supersede_release (self);
+
+    /* A release ends the read in flight with what it read, which stays for
+     * whatever reaches the selection next to overtake, as both backends leave
+     * it, and is answered once that read has concluded -- on the next turn of
+     * the main loop with none left, never from inside the notify () it came
+     * in on, as neither backend answers one. */
+    if (self->release_next)
+    {
+        GPasteClipboardUpdate *read = g_paste_clipboard_update_owner_gone (&self->pending);
+        TestRelease *release = g_new0 (TestRelease, 1);
+
+        self->release_next = FALSE;
+        g_weak_ref_init (&release->self, self);
+        release->callback = callback;
+        release->user_data = user_data;
+        self->release = release;
+        if (read)
+            g_paste_clipboard_update_then (read, release_after_read, release);
+        else
+        {
+            guint source_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, release_due, release, (GDestroyNotify) test_release_free);
+
+            g_source_set_name_by_id (source_id, "[GPaste] test clipboard release");
+        }
+    }
+    else if (self->defer_reads)
     {
         GPasteClipboardUpdate *pending = g_paste_clipboard_update_new (provider, self->settings,
                                                                        (self->defer_kind) ? self->defer_kind : CLIPBOARD_CONTENT_TEXT,
@@ -125,6 +230,7 @@ select_item (GPasteClipboardProvider *provider,
         return G_PASTE_CLIPBOARD_PUBLICATION_INVALID;
 
     g_paste_clipboard_update_supersede (&self->pending);
+    supersede_release (self);
     ++self->claims;
     if (self->refuse_claims)
     {
@@ -145,6 +251,7 @@ select_text (GPasteClipboardProvider *provider,
     TestClipboard *self = TEST_CLIPBOARD (provider);
 
     g_paste_clipboard_update_supersede (&self->pending);
+    supersede_release (self);
     ++self->claims;
     if (self->refuse_claims)
     {
@@ -210,8 +317,7 @@ test_clipboard_dispose (GObject *object)
     G_OBJECT_CLASS (test_clipboard_parent_class)->dispose (object);
 }
 
-/* The cached value is a plain allocation, and a disposed provider still answers
- * get_text () for it, as the GDK backend does. */
+/* As in gpaste-test-clipboard-provider.c. */
 static void
 test_clipboard_finalize (GObject *object)
 {
@@ -242,21 +348,11 @@ make_clipboard (GPasteSettings *settings)
     return self;
 }
 
-/* Every case starts from the schema's defaults. The memory backend is shared by
- * the whole binary, so a key one case sets would otherwise reach every case
- * after it -- and a case run alone with -p would see different settings. */
+/* Every case starts from the schema's defaults. */
 static GPasteSettings *
 make_settings (void)
 {
-    g_autoptr (GSettings) raw = g_settings_new (G_PASTE_SETTINGS_NAME);
-    g_autoptr (GSettingsSchema) schema = NULL;
-
-    g_object_get (raw, "settings-schema", &schema, NULL);
-
-    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
-
-    for (GStrv key = keys; *key; ++key)
-        g_settings_reset (raw, *key);
+    g_paste_test_env_reset_settings (G_PASTE_SETTINGS_NAME);
 
     return g_paste_settings_new ();
 }
@@ -273,6 +369,33 @@ make_history (GPasteSettings *settings)
     g_paste_history_load (history, "clipboard-tests");
     return history;
 }
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A history whose store keeps its passwords, as an encrypted flavour's does: a
+ * switch away from it leaves them there, and the records naming them outlive
+ * it. Its writes land, and the passphrase -- the process's -- goes, in
+ * drop_keeping_history (), before the case's directories do. */
+static GPasteHistory *
+make_keeping_history (GPasteSettings *settings)
+{
+    g_paste_storage_backend_set_passphrase ("clipboard tests");
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_ENCRYPTED_FILE);
+    g_paste_settings_set_growing_lines (settings, FALSE);
+    g_paste_settings_set_track_changes (settings, TRUE);
+
+    GPasteHistory *history = g_paste_history_new (settings);
+
+    g_paste_history_load (history, "clipboard-keeping-tests");
+    return history;
+}
+
+static void
+drop_keeping_history (GPasteHistory *history)
+{
+    g_paste_history_flush (history);
+    g_paste_storage_backend_set_passphrase (NULL);
+}
+#endif
 
 static void
 test_strip_refreshes_matching_selections (gconstpointer user_data)
@@ -341,6 +464,63 @@ test_add_password_default_timeout (void)
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (password)), ==, 42);
 }
 
+/* Select answers for the selection it makes: an item the selection refuses is
+ * dropped from the history, and the call says it failed. */
+static void
+test_select_refused (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_history_add (history, g_paste_text_item_new ("refused"));
+
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (g_paste_history_get (history, 0)));
+
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    clipboard->refuse_value = "refused";
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_select (&methods, uuid, &error);
+
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+    g_assert_null (g_paste_history_get_by_uuid (history, uuid));
+}
+
+/* Stripping an item with no rich text changes nothing, so nothing is
+ * republished: the selection holding its text stays its owner's. */
+static void
+test_strip_plain_publishes_nothing (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    GPasteItem *plain = g_paste_text_item_new ("plain text");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (plain));
+
+    g_paste_history_add (history, plain);
+
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_clipboard_content_set_text (&primary->content, "plain text");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_settings_set_track_changes (settings, FALSE);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (primary->publications, ==, 0);
+    g_assert_true (g_paste_history_get_by_uuid (history, uuid) == plain);
+}
+
 static void
 text_ready (TestClipboard         *self G_GNUC_UNUSED,
             GPasteSettings        *settings G_GNUC_UNUSED,
@@ -356,19 +536,63 @@ text_ready (TestClipboard         *self G_GNUC_UNUSED,
     g_paste_clipboard_update_maybe_done (pending);
 }
 
+static gboolean
+update_concluded (gconstpointer pending,
+                  gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const GPasteClipboardUpdate *) pending)->concluded;
+}
+
+/* The read guard's deadline run out at once, and the update it concludes. */
+static void
+expire_read_guard (GPasteClipboardUpdate *pending)
+{
+    pending->guard.last_read -= (gint64) pending->guard.timeout * G_USEC_PER_SEC;
+    g_source_set_ready_time (g_main_context_find_source_by_id (NULL, pending->guard.timeout_id), 0);
+    g_paste_test_bus_wait_until (update_concluded, pending, NULL);
+    g_assert_true (pending->concluded);
+}
+
 static void
 assert_superseded (GPasteClipboardUpdate *pending)
 {
-    gint64 deadline = g_get_monotonic_time () + 3 * G_USEC_PER_SEC;
-
-    while (!pending->concluded && g_get_monotonic_time () < deadline)
-    {
-        g_main_context_iteration (NULL, FALSE);
-        g_usleep (1000);
-    }
-
+    g_paste_test_bus_wait_until (update_concluded, pending, NULL);
     g_assert_true (pending->concluded);
     g_assert_true (g_cancellable_is_cancelled (pending->guard.cancellable));
+}
+
+/* What an update hands its callback, counted on the way through. */
+typedef struct
+{
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    guint                                 items;
+} ItemCounter;
+
+static void
+count_item (GPasteClipboardProvider *provider,
+            GPasteItem              *item,
+            gboolean                 superseded,
+            GPasteClipboardSecret    secret,
+            gpointer                 user_data)
+{
+    ItemCounter *counter = user_data;
+
+    if (item)
+        ++counter->items;
+    counter->callback (provider, item, superseded, secret, counter->user_data);
+}
+
+/* Count the items @pending hands its callback into @counter. */
+static void
+count_items (GPasteClipboardUpdate *pending,
+             ItemCounter           *counter)
+{
+    counter->callback = pending->callback;
+    counter->user_data = pending->user_data;
+    counter->items = 0;
+    pending->callback = count_item;
+    pending->user_data = counter;
 }
 
 static void
@@ -409,12 +633,17 @@ test_overlapping_copies (gconstpointer user_data)
     g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "copied text");
     g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "copied text");
 
-    /* A completed copy, unlike an abandoned one, still suppresses duplicates. */
+    /* A completed copy, unlike an abandoned one, still suppresses duplicates:
+     * the duplicate makes no item at all, rather than one the history's own
+     * equal-head merge would absorb with the length left as it was. */
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     GPasteClipboardUpdate *duplicate = clipboard->pending;
+    ItemCounter counter;
 
+    count_items (duplicate, &counter);
     text_ready (clipboard, settings, duplicate, "copied text");
     g_paste_clipboard_update_maybe_done (duplicate);
+    g_assert_cmpuint (counter.items, ==, 0);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
 }
 
@@ -460,6 +689,235 @@ test_superseded_empty_cache (gconstpointer user_data)
     g_assert_cmpuint (clipboard->publications, ==, 0);
     g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "new copy");
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
+/* What the copy a released read brings back is, for test_released_copy (). */
+typedef enum
+{
+    /* The password the selection was carrying, copied again, its hint offered
+     * and never served. */
+    RELEASED_RECORD,
+    /* As RELEASED_RECORD, the password ending in a line break, which
+     * trim-items takes off a text. */
+    RELEASED_PADDED,
+    /* As RELEASED_RECORD, the hint served first and saying no secret. */
+    RELEASED_ANSWERED_NO,
+    /* As RELEASED_RECORD, the password's countdown brought forward while the
+     * read is out, so that the read is what takes it off. */
+    RELEASED_EXPIRED,
+    /* A password entry a timeout edit made during the read waits on, its hint
+     * offered and never served. */
+    RELEASED_EDIT,
+    /* A text the user stripped while it was being read. */
+    RELEASED_STRIP,
+    /* Anything, read with tracking paused. */
+    RELEASED_UNTRACKED,
+    /* Anything, with nothing overtaking it. */
+    RELEASED_LIVE,
+    /* Or'd in: a new owner overtakes the copy, its read concluding first,
+     * rather than a publication. */
+    RELEASED_CLAIMED = 1 << 4,
+} ReleasedCopy;
+
+/* A copy its owner served whole before leaving, overtaken before it concluded,
+ * is recorded as the read would have recorded it had it concluded first --
+ * whatever overtook it having moved the selection's own records on by then: a
+ * copy of the password the selection was carrying is that password rather than
+ * its cleartext, trimming or not, unless its owner said it is no secret or its
+ * countdown has run out -- nothing then, the password being taken off -- one
+ * of an entry a timeout edit waits on that entry, a copy of a text stripped
+ * meanwhile the stripped entry rather than the rich formats back, and one read
+ * with tracking paused nothing at all. Nothing overtaking it, the release is
+ * answered once the copy is in, which puts the history's head -- that copy --
+ * back on the selection. */
+static void
+test_released_copy (gconstpointer user_data)
+{
+    ReleasedCopy kind = GPOINTER_TO_UINT (user_data) & ~RELEASED_CLAIMED;
+    gboolean claimed = !!(GPOINTER_TO_UINT (user_data) & RELEASED_CLAIMED);
+    gboolean recorded = kind == RELEASED_RECORD || kind == RELEASED_PADDED || kind == RELEASED_ANSWERED_NO || kind == RELEASED_EXPIRED;
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteItem) picked = g_paste_text_item_new ("picked");
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    const gchar *value = (kind == RELEASED_STRIP) ? "rich text" :
+                         (kind == RELEASED_PADDED) ? "hunter2\n" :
+                         (kind == RELEASED_UNTRACKED || kind == RELEASED_LIVE) ? "served then gone" : "hunter2";
+    GPasteItem *entry = NULL;
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    if (recorded || kind == RELEASED_EDIT)
+    {
+        entry = g_paste_password_item_new ("Work", value, (kind == RELEASED_EXPIRED) ? 60 : 0);
+        g_paste_history_add (history, g_object_ref (entry));
+        if (recorded)
+            g_assert_true (g_paste_clipboards_manager_select (manager, entry));
+    }
+    else if (kind == RELEASED_STRIP)
+    {
+        entry = g_paste_text_item_new ("rich text");
+        g_paste_item_add_special_value (entry, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                       g_bytes_new_static ("<b>rich text</b>", 16)));
+        g_paste_history_add (history, g_object_ref (entry));
+    }
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autofree gchar *uuid = (entry) ? g_strdup (g_paste_item_get_uuid (entry)) : NULL;
+    guint64 length = g_paste_history_get_length (history);
+
+    g_clear_object (&entry);
+    if (kind == RELEASED_UNTRACKED)
+        g_paste_settings_set_track_changes (settings, FALSE);
+    if (kind == RELEASED_PADDED)
+        g_paste_settings_set_trim_items (settings, TRUE);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *copy = clipboard->pending;
+    GPasteClipboardMimeCtx *hint = NULL;
+
+    if (kind == RELEASED_EDIT)
+        g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
+    else if (kind == RELEASED_STRIP)
+    {
+        g_autoptr (GError) error = NULL;
+
+        g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+        g_assert_no_error (error);
+    }
+
+    if (kind == RELEASED_ANSWERED_NO)
+    {
+        g_autoptr (GBytes) no = g_bytes_new_static ("none", 4);
+
+        g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (copy, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), no);
+    }
+    else if (recorded || kind == RELEASED_EDIT)
+        hint = g_paste_clipboard_update_add_sensitive_mime_read (copy, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+    if (kind == RELEASED_EXPIRED)
+        g_paste_clipboards_manager_expire_password (manager);
+
+    text_ready (clipboard, settings, copy, value);
+    if (kind == RELEASED_STRIP)
+        copy->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML] = g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML, g_bytes_new_static ("<b>rich text</b>", 16));
+    clipboard->release_next = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_assert_true (clipboard->pending == copy);
+
+    guint publications = clipboard->publications;
+
+    /* Concluded on the next turn of the main loop either way, and its reads
+     * cancelled, which is all assert_superseded () asks. */
+    if (kind == RELEASED_LIVE)
+    {
+        assert_superseded (copy);
+        ++length;
+    }
+    else
+    {
+        if (claimed)
+        {
+            g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+            GPasteClipboardUpdate *next = clipboard->pending;
+
+            text_ready (clipboard, settings, next, "next copy");
+            g_paste_clipboard_update_maybe_done (next);
+            ++length;
+        }
+        else
+            g_assert_true (g_paste_clipboards_manager_select (manager, picked));
+
+        assert_superseded (copy);
+    }
+    if (hint)
+        g_paste_clipboard_update_on_mime_read (hint, NULL);
+    g_paste_clipboard_update_maybe_done (copy);
+
+    switch (kind)
+    {
+    case RELEASED_RECORD:
+    case RELEASED_PADDED:
+    case RELEASED_EDIT:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+        {
+            GPasteItem *item = g_paste_history_get (history, i);
+
+            g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item) || !g_str_equal (g_paste_item_get_real_value (item), "hunter2"));
+        }
+        break;
+    case RELEASED_EXPIRED:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), !=, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+        {
+            GPasteItem *item = g_paste_history_get (history, i);
+
+            g_assert_true (G_PASTE_IS_PASSWORD_ITEM (item) || !g_str_equal (g_paste_item_get_real_value (item), "hunter2"));
+        }
+        break;
+    case RELEASED_ANSWERED_NO:
+        g_assert_false (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+        g_assert_cmpstr (g_paste_item_get_real_value (g_paste_history_get (history, 0)), ==, "hunter2");
+        ++length;
+        break;
+    case RELEASED_STRIP:
+        g_assert_cmpstr (g_paste_item_get_uuid (g_paste_history_get (history, 0)), ==, uuid);
+        for (guint64 i = 0; i < g_paste_history_get_length (history); ++i)
+            g_assert_null (g_paste_item_get_special_values (g_paste_history_get (history, i)));
+        break;
+    case RELEASED_LIVE:
+        g_assert_cmpstr (g_paste_item_get_value (g_paste_history_get (history, 0)), ==, "served then gone");
+        g_assert_cmpuint (clipboard->publications, ==, publications + 1);
+        g_assert_cmpstr (clipboard->content.str, ==, "served then gone");
+        break;
+    case RELEASED_UNTRACKED:
+    case RELEASED_CLAIMED:
+        break;
+    }
+    /* What the copy stands for moves to the head; nothing beside it is added,
+     * bar the text a copy said to be no secret is, and nothing at all with
+     * tracking paused. */
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, length);
+}
+
+static gboolean
+published_once (gconstpointer clipboard,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    return ((const TestClipboard *) clipboard)->publications > 0;
+}
+
+/* A release with no read left to end is answered on a later turn of the main
+ * loop, as both backends answer one, and not from inside the change it came
+ * in on: the history's head goes back on the selection then. */
+static void
+test_release_nothing_out (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+    clipboard->defer_reads = TRUE;
+    clipboard->release_next = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+
+    g_paste_test_bus_wait_until (published_once, clipboard, NULL);
+    g_assert_cmpuint (clipboard->publications, ==, 1);
+    g_assert_cmpstr (clipboard->content.str, ==, "head");
 }
 
 static void
@@ -962,11 +1420,11 @@ pump_for (guint milliseconds)
 
     do
     {
-        while (g_main_context_iteration (NULL, FALSE));
+        g_paste_test_bus_drain ();
         g_usleep (1000);
     } while (g_get_monotonic_time () < deadline);
 
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 /* Whether @milliseconds after @start is still ahead. A "has not fired yet"
@@ -1274,10 +1732,9 @@ test_reenable_pending_timeout_through_history (void)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
-/* The record converges on the same-value twin a later publication carries, so a
- * rename of the original during a read changes no duration and keeps the
- * countdown running rather than restarting it. */
-/* A switch's load landing, as the daemon's main loop sees it. */
+/* A switch's load landing, as the daemon's main loop sees it: each round drains
+ * the default context, so what the load's completion queues has run as well by
+ * the time this returns, where history_loaded_on () stops at the completion. */
 static gboolean
 history_loaded (GPasteHistory *history)
 {
@@ -1290,13 +1747,33 @@ history_loaded (GPasteHistory *history)
     return !g_paste_history_is_loading (history);
 }
 
-/* A record outliving a switch is the first history's entry: an edit of a
- * distinct entry of the second sharing its value leaves its countdown alone. */
+/* As history_loaded (), for a load started under @loading as its context's
+ * thread default, which is where its completion is dispatched: a load left
+ * pending fails the case after the deadline rather than blocking the suite in
+ * the poll until meson kills it. */
+static gboolean
+history_loaded_on (GPasteHistory *history,
+                   GMainContext  *loading)
+{
+    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
+
+    while (g_paste_history_is_loading (history) && g_get_monotonic_time () < deadline)
+    {
+        if (!g_main_context_iteration (loading, FALSE))
+            g_usleep (1000);
+    }
+    return !g_paste_history_is_loading (history);
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A record outliving a switch -- away from a store that keeps its passwords --
+ * is the first history's entry: an edit of a distinct entry of the second
+ * sharing its value leaves its countdown alone. */
 static void
 test_timeout_edit_other_history_twin (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
@@ -1316,7 +1793,9 @@ test_timeout_edit_other_history_twin (void)
     g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, uuid));
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, ==, "replacement");
+    drop_keeping_history (history);
 }
+#endif
 
 /* Taking the passwords off as the daemon stands down can push out of the
  * history the very password an edit still waits on, its pending edit going
@@ -1371,11 +1850,19 @@ test_expiry_evicts_pending_edit (void)
     g_paste_clipboard_update_maybe_done (pending);
 }
 
+/* The record converges on the same-value twin a later publication carries, so a
+ * rename of the original during a read changes no duration and keeps the
+ * countdown running rather than restarting it.
+ *
+ * The countdown is armed as the fixture selects the password, so the time read
+ * once the fixture is built is no earlier than that: 1100 ms past it is past the
+ * countdown's deadline however long the fixture took, and short of a countdown
+ * the rename restarted, 600 ms on. */
 static void
 test_rename_twin_during_read (void)
 {
-    gint64 armed = g_get_monotonic_time ();
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    gint64 armed = g_get_monotonic_time ();
     g_autoptr (GPasteItem) twin = g_paste_password_item_new (NULL, "same secret", 1);
 
     password_read_ready (fixture, "same secret");
@@ -1549,16 +2036,7 @@ test_unidentified_selection (gconstpointer user_data)
     }
     else if (outcome == 3)
     {
-        pending->guard.last_read -= (gint64) pending->guard.timeout * G_USEC_PER_SEC;
-        g_source_set_ready_time (g_main_context_find_source_by_id (NULL, pending->guard.timeout_id), 0);
-        gint64 deadline = g_get_monotonic_time () + G_USEC_PER_SEC;
-
-        while (!pending->concluded && g_get_monotonic_time () < deadline)
-        {
-            g_main_context_iteration (NULL, FALSE);
-            g_usleep (1000);
-        }
-        g_assert_true (pending->concluded);
+        expire_read_guard (pending);
         g_paste_clipboard_update_maybe_done (pending);
         g_paste_clipboard_update_maybe_done (pending);
     }
@@ -1602,16 +2080,6 @@ test_emptied_under_password (void)
 
     g_assert_cmpuint (clipboard->publications, ==, 0);
     g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
-}
-
-static void
-capture_expiry (GObject      *source G_GNUC_UNUSED,
-                GAsyncResult *result,
-                gpointer      user_data)
-{
-    GAsyncResult **captured = user_data;
-
-    *captured = g_object_ref (result);
 }
 
 typedef enum
@@ -1786,7 +2254,7 @@ test_follow_release (gconstpointer user_data)
         g_assert_cmpstr (primary->content.str, ==, "copied secret");
 
         /* A wait for expiry asks for the identifying read, which finds it. */
-        g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &expiry);
+        g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &expiry);
         pending = clipboard->pending;
         g_assert_nonnull (pending);
         text_ready (clipboard, settings, pending, "");
@@ -2067,13 +2535,11 @@ test_not_text_retires_record (gconstpointer user_data)
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     answer_content (clipboard, secret);
 
-    g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (20);
     if (clipboard->pending)
         answer_content (clipboard, secret);
-    for (guint i = 0; i < 3000 && !result; ++i)
-        pump_for (1);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, 3);
     g_assert_true (g_paste_clipboards_manager_expire_password_finish (manager, result, &error));
     g_assert_no_error (error);
 
@@ -2369,19 +2835,20 @@ test_expiry_skips_padded_twin (void)
 
 /* Another password heads the history, so nothing is moved up and activated
  * first: what goes on the selection is the first item fit to, skipping the
- * cleartext twin and a replacement the provider refuses -- an image below the
- * head, its texture dropped -- rather than settling for the empty string. */
+ * cleartext twin and a replacement the provider refuses -- a text the test
+ * provider turns down by its value, as a backend turns down an image whose
+ * texture is gone -- rather than settling for the empty string. */
 static void
 test_expiry_below_another_password (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
     password_read_ready (fixture, "same secret");
     g_paste_history_add (fixture->history, g_paste_text_item_new ("same secret"));
-    g_paste_history_add (fixture->history, g_paste_text_item_new ("idle image"));
+    g_paste_history_add (fixture->history, g_paste_text_item_new ("refused"));
     g_paste_history_add (fixture->history, g_object_ref (fixture->password));
     g_paste_history_add (fixture->history, g_paste_password_item_new ("other", "other secret", 0));
     g_paste_clipboard_content_set_text (&fixture->clipboard->content, "same secret");
-    fixture->clipboard->refuse_value = "idle image";
+    fixture->clipboard->refuse_value = "refused";
     pump_for (1100);
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
@@ -2414,7 +2881,7 @@ test_expiry_rechecks_new_read (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
     g_autoptr (GAsyncResult) result = NULL;
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &result);
     password_read_ready (fixture, "same secret");
     pump_for (10);
     g_assert_nonnull (result);
@@ -2482,7 +2949,7 @@ test_empty_text_retires_record (gconstpointer user_data)
     g_autoptr (GAsyncResult) result = NULL;
     g_autoptr (GError) error = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (10);
     g_assert_null (clipboard->pending);
     g_assert_nonnull (result);
@@ -2520,7 +2987,7 @@ test_expiry_deadline_with_changing_owner (void)
 {
     g_autoptr (PasswordFixture) fixture = password_fixture_new (37);
     g_autoptr (GAsyncResult) result = NULL;
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &result);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &result);
     /* Exercise the shipped manager and its actual source, without a second
      * GType implementation or a minute of wall-clock waiting. */
     GSource *wait = find_source_named ("[GPaste] password expiry deadline");
@@ -2573,7 +3040,7 @@ check_restart_order (GObject      *source G_GNUC_UNUSED,
     order->completed = TRUE;
 }
 
-static gboolean
+static void
 finish_restart_read (gpointer user_data)
 {
     RestartOrder *order = user_data;
@@ -2582,7 +3049,6 @@ finish_restart_read (gpointer user_data)
     password_read_ready (order->fixture, "new tracked copy");
     g_assert_false (order->completed);
     order->inside_mutation = FALSE;
-    return G_SOURCE_REMOVE;
 }
 
 static void
@@ -2596,7 +3062,7 @@ test_restart_waits_for_history (void)
     RestartOrder order = { .fixture = fixture };
 
     g_paste_clipboards_manager_expire_password_async (fixture->manager, check_restart_order, &order);
-    g_idle_add (finish_restart_read, &order);
+    g_source_set_name_by_id (g_idle_add_once (finish_restart_read, &order), "[GPaste] test restart read");
     pump_for (20);
     g_assert_true (order.completed);
 }
@@ -2608,10 +3074,10 @@ test_expiry_independent_deadlines (void)
     g_autoptr (GAsyncResult) first = NULL;
     g_autoptr (GAsyncResult) second = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &first);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &first);
     GSource *deadline = find_source_named ("[GPaste] password expiry deadline");
     g_assert_nonnull (deadline);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &second);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &second);
     /* Only the older request reaches its deadline; the later one must retain
      * both its budget and the force flag that makes the read complete it. */
     g_source_set_ready_time (deadline, 0);
@@ -2638,8 +3104,8 @@ test_expiry_pending_preserves_other_waiter (void)
     g_autoptr (GAsyncResult) second = NULL;
     g_autoptr (GAsyncResult) retry = NULL;
 
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &first);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &second);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &first);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &second);
     password_read_ready (fixture, "same secret");
     pump_for (10);
     g_assert_nonnull (first);
@@ -2650,7 +3116,7 @@ test_expiry_pending_preserves_other_waiter (void)
     g_assert_false (g_paste_clipboards_manager_expire_password_finish (fixture->manager, first, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_PENDING);
     g_clear_error (&error);
-    g_paste_clipboards_manager_expire_password_async (fixture->manager, capture_expiry, &retry);
+    g_paste_clipboards_manager_expire_password_async (fixture->manager, g_paste_test_env_keep_result, &retry);
     /* This caller gives up after PENDING; the first caller's retry still owns
      * a wait and must not depend on the second caller rearming anything. */
     g_assert_false (g_paste_clipboards_manager_expire_password_finish (fixture->manager, second, &error));
@@ -3166,16 +3632,6 @@ test_overdue_password_is_reread (gconstpointer user_data)
     g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
 }
 
-static void
-on_expiry_kept (GObject      *source G_GNUC_UNUSED,
-                GAsyncResult *result,
-                gpointer      user_data)
-{
-    GAsyncResult **kept = user_data;
-
-    *kept = g_object_ref (result);
-}
-
 /* The wait answers on an idle, and a password left unconfirmed in between is
  * one more selection to classify: finishing then asks the caller to wait again
  * rather than tell it every password is off. */
@@ -3196,7 +3652,7 @@ test_unconfirmed_after_expiry_answered (void)
     g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
     g_paste_clipboards_manager_activate (manager);
 
-    g_paste_clipboards_manager_expire_password_async (manager, on_expiry_kept, &result);
+    g_paste_clipboards_manager_expire_password_async (manager, g_paste_test_env_keep_result, &result);
     pump_for (10);
     g_assert_nonnull (result);
 
@@ -3397,6 +3853,15 @@ complete_new_copy_read (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
+static gboolean
+expiry_checked (gconstpointer check,
+                gconstpointer arg G_GNUC_UNUSED)
+{
+    const ExpiryHistoryCheck *self = check;
+
+    return self->read_done && self->counter.completed;
+}
+
 /* Forced expiry answers only once the read that resolved it has updated the
  * history, even though GTask may invoke the callback inline. */
 static void
@@ -3413,13 +3878,7 @@ test_forced_expiry_after_history_update (void)
     g_paste_clipboard_update_maybe_done (untracked);
     g_paste_clipboards_manager_expire_password_async (fixture->manager, on_expired_check_history, &check);
     g_source_set_name_by_id (g_timeout_add (5, complete_new_copy_read, &check), "[GPaste] test new copy read");
-    gint64 deadline = g_get_monotonic_time () + 10 * G_USEC_PER_SEC;
-
-    while ((!check.read_done || !check.counter.completed) && g_get_monotonic_time () < deadline)
-    {
-        if (!g_main_context_iteration (NULL, FALSE))
-            g_usleep (1000);
-    }
+    g_paste_test_bus_wait_until (expiry_checked, &check, NULL);
     g_assert_true (check.read_done);
     g_assert_true (check.counter.completed);
     g_assert_true (check.saw_new_copy);
@@ -3928,6 +4387,35 @@ test_unknown_hint_dropped_text (void)
     g_assert_cmpuint (clipboard->publications, ==, 0);
 }
 
+/* A text the size policy turns down for being too short is a few bytes, which
+ * the cache keeps as it keeps any text a read could not identify: what a
+ * standing password record is then matched against. */
+static void
+test_unknown_hint_short_text (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_min_text_item_size (settings, 3);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    text_ready (clipboard, settings, pending, "ab");
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (clipboard)), ==, "ab");
+}
+
 /* A password's entry leaving the history takes its cleartext off the selections
  * carrying it, from whatever position that entry held: with password-timeout at 0
  * there is no countdown to take it off, and the entry the user just deleted was
@@ -4354,15 +4842,52 @@ test_dropped_password_pending_edit (void)
     g_assert_null (g_paste_history_get_by_uuid (history, uuid));
 }
 
-/* A record outlives a history switch, the selection still carrying what it
- * carried; a hinted re-copy of that secret in the other history is a capture of
- * its own there, not the first history's named entry, uuid and all -- running
- * the countdown the record ran, not password-timeout's. */
+/* A switch away from a store that keeps no password takes the one it leaves off
+ * the clipboard, the entry gone with its record
+ * (GPasteHistory::password-dropped); a read still out concludes on what that
+ * left there, recording neither the entry, uuid and all, nor its secret. */
+static void
+test_switch_takes_password_off (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_object_ref (bank));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_paste_clipboards_manager_select (manager, bank);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_history_switch (history, "another-history");
+    g_assert_true (history_loaded (history));
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, "s3cret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+    g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+}
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+/* A record outlives a switch away from a store that keeps its passwords, the
+ * selection still carrying what it carried; a hinted re-copy of that secret in
+ * the other history is a capture of its own there, not the first history's
+ * named entry, uuid and all -- running the countdown the record ran, not
+ * password-timeout's. */
 static void
 test_record_from_another_history (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 1);
@@ -4396,6 +4921,7 @@ test_record_from_another_history (void)
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 1);
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, !=, "s3cret");
+    drop_keeping_history (history);
 }
 
 /* The same, the hint unanswered twice: once with the text read failing, which
@@ -4405,7 +4931,7 @@ static void
 test_record_from_another_history_unanswered (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
@@ -4439,17 +4965,18 @@ test_record_from_another_history_unanswered (void)
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
     g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
     g_assert_cmpstr (g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (head)), ==, G_PASTE_PASSWORD_ITEM_NO_NAME);
+    drop_keeping_history (history);
 }
 
-/* A timeout edit made while a read is out outlives a switch as the record does:
- * the read concluding in the other history is a capture of its own there, not
- * the first history's entry the edit was made to, uuid and all -- running the
- * edit's countdown, not password-timeout's. */
+/* A timeout edit made while a read is out outlives such a switch as the record
+ * does: the read concluding in the other history is a capture of its own there,
+ * not the first history's entry the edit was made to, uuid and all -- running
+ * the edit's countdown, not password-timeout's. */
 static void
 test_timeout_edit_from_another_history (void)
 {
     g_autoptr (GPasteSettings) settings = make_settings ();
-    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteHistory) history = make_keeping_history (settings);
     g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
     g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
     g_autoptr (GPasteItem) bank = g_paste_password_item_new ("bank", "s3cret", 0);
@@ -4479,7 +5006,9 @@ test_timeout_edit_from_another_history (void)
     g_assert_true (G_PASTE_IS_PASSWORD_ITEM (head));
     g_assert_cmpstr (g_paste_item_get_uuid (head), !=, g_paste_item_get_uuid (bank));
     g_assert_cmpuint (g_paste_password_item_get_timeout (G_PASTE_PASSWORD_ITEM (head)), ==, 600);
+    drop_keeping_history (history);
 }
+#endif
 
 /* An add made while the store is handed over is answered, put on the clipboard
  * and kept by the reload ending the handover, as a copy made meanwhile is:
@@ -4625,8 +5154,7 @@ test_record_while_loading (void)
     g_paste_clipboard_update_maybe_done (pending);
     g_assert_true (g_paste_history_is_loading (history));
 
-    while (g_paste_history_is_loading (history))
-        g_main_context_iteration (loading, TRUE);
+    g_assert_true (history_loaded_on (history, loading));
 
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_true (g_paste_history_get (history, 0) == bank);
@@ -4837,10 +5365,12 @@ typedef enum
  * arriving is an add here, which raises the same update a load does; the load
  * itself, bringing no head, leaves the link waiting.
  *
- * add_during_load: an add made while the load is in flight shows a head the
- * load then replaces, adding it back on top of what it read, and must not spend
- * the link. The load runs on a context of its own, so that the manager's idle
- * runs while it is still loading, deterministically.
+ * add_during_load: a text added while the load is in flight is selected once
+ * the load is done, which publishes it over the capture. A password added so,
+ * which no load selects, is what the link must not be spent on while the load
+ * is in flight (/clipboard/bootstrap_before_load/password_added_during_load).
+ * The load runs on a context of its own, so that the manager's idle runs while
+ * it is still loading, deterministically.
  *
  * unconfirmed: linking reads nothing, so a record a later read left unconfirmed
  * stays so, and a sync out of that selection is still refused.
@@ -4910,8 +5440,7 @@ test_bootstrap_before_load (gconstpointer user_data)
         pump_for (10);
         g_assert_true (g_paste_history_is_loading (history));
 
-        while (g_paste_history_is_loading (history))
-            g_main_context_iteration (loading, TRUE);
+        g_assert_true (history_loaded_on (history, loading));
     }
     else
     {
@@ -4946,17 +5475,19 @@ test_bootstrap_before_load (gconstpointer user_data)
         return;
     }
 
-    /* Taken off at the stored timeout, for what else the history holds: the
-     * add made during the load, or nothing. */
+    /* Taken off at the stored timeout, for what else the history holds -- or,
+     * with add_during_load, published over by the add the load selects. */
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, ==, (variant == BOOTSTRAP_BEFORE_LOAD_ADD_DURING_LOAD) ? "added during the load" : "");
 }
 
-/* A bootstrap read concluding while the history is still loading is linked once
- * it has loaded, even when something was added in the meantime: the head it
- * sees then is one the load replaces -- adding it back on top of what it read
- * -- not the one to link against (see identify_ready ()). The load runs on a
- * context of its own, so that it is still in flight when the read concludes. */
+/* A bootstrap read concluding while the history is still loading, a text added
+ * meanwhile: the load selects that add, which publishes it over the capture. A
+ * password added instead, which no load selects, shows a head the load
+ * replaces, not the one to link against (see identify_ready ()), which
+ * /clipboard/bootstrap_during_load/password_added_during_load pins. The load
+ * runs on a context of its own, so that it is still in flight when the read
+ * concludes. */
 static void
 test_bootstrap_during_load (void)
 {
@@ -4990,12 +5521,11 @@ test_bootstrap_during_load (void)
     pump_for (10);
     g_assert_true (g_paste_history_is_loading (history));
 
-    while (g_paste_history_is_loading (history))
-        g_main_context_iteration (loading, TRUE);
+    g_assert_true (history_loaded_on (history, loading));
 
     g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
 
-    /* Taken off at the stored timeout, for the add made during the load. */
+    /* The add the load selected, published over the capture. */
     pump_for (1100);
     g_assert_cmpstr (clipboard->content.str, ==, "added during the load");
 }
@@ -5128,6 +5658,742 @@ test_queued_strip (gconstpointer user_data)
     g_assert_null (plain);
 }
 
+/* A read answering @text, with the password managers' hint served. */
+static void
+hinted_read (TestClipboard  *clipboard,
+             GPasteSettings *settings,
+             const gchar    *text)
+{
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_assert_nonnull (pending);
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    text_ready (clipboard, settings, pending, text);
+    g_paste_clipboard_update_maybe_done (pending);
+}
+
+/* A text item carrying an HTML flavour of itself. */
+static GPasteItem *
+rich_text_item (void)
+{
+    GPasteItem *rich = g_paste_text_item_new ("rich text");
+
+    g_paste_item_add_special_value (rich, g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                   g_bytes_new_static ("<b>rich text</b>", 16)));
+    return rich;
+}
+
+/* A password of another value added while the history loads is no entry a
+ * capture identified before the load can be linked to: the capture keeps its
+ * own countdown, and the entry of its value added once loaded is what takes
+ * the secret off. */
+static void
+test_password_added_during_load (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "destination");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    hinted_read (clipboard, settings, "secret");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
+
+    g_autoptr (GMainContext) loading = g_main_context_new ();
+
+    g_main_context_push_thread_default (loading);
+    g_paste_history_load_async (history, "clipboard-tests");
+    g_main_context_pop_thread_default (loading);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "another secret", 0));
+    pump_for (10);
+    g_assert_true (g_paste_history_is_loading (history));
+    g_assert_true (history_loaded_on (history, loading));
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "");
+}
+
+/* The same, the bootstrap read concluding while the history loads: no head
+ * is taken for the capture's entry before the load has one. */
+static void
+test_identified_during_load_password (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GMainContext) loading = g_main_context_new ();
+
+    g_main_context_push_thread_default (loading);
+    g_paste_history_load_async (history, "clipboard-tests");
+    g_main_context_pop_thread_default (loading);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "another secret", 0));
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    hinted_read (clipboard, settings, "secret");
+    pump_for (10);
+    g_assert_true (g_paste_history_is_loading (history));
+    g_assert_true (history_loaded_on (history, loading));
+
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "");
+}
+
+/* A capture synced explicitly before the history loads, then linked on the
+ * source alone: the source read again still carrying that secret leaves the
+ * copy alone, its record told by value from the source's, not by object. */
+static void
+test_synced_copy_after_link (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+
+    g_paste_settings_set_storage_backend (settings, G_PASTE_STORAGE_NOOP);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "destination");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    hinted_read (clipboard, settings, "secret");
+
+    g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (primary->published));
+    g_assert_cmpstr (primary->content.str, ==, "secret");
+
+    g_autoptr (GPasteItem) capture = g_object_ref (primary->published);
+
+    g_paste_history_load (history, "clipboard-tests");
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 0));
+    pump_for (10);
+
+    guint publications = primary->publications;
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "secret");
+    g_assert_cmpstr (primary->content.str, ==, "secret");
+    g_assert_cmpuint (primary->publications, ==, publications);
+}
+
+/* A password an explicit sync carried over is the synchronization's: its
+ * source cleared, the copy goes too, the destination back to what it held. */
+static void
+test_explicit_sync_release (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_min_text_item_size (settings, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("older copy"));
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "older copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "copied secret");
+    g_assert_cmpstr (primary->content.str, ==, "older copy");
+
+    g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+    g_assert_cmpstr (primary->content.str, ==, "copied secret");
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (primary->published));
+
+    clipboard->defer_reads = FALSE;
+    g_paste_clipboard_content_clear (&clipboard->content);
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_assert_true (is_empty (G_PASTE_CLIPBOARD_PROVIDER (clipboard)));
+    g_assert_cmpstr (primary->content.str, ==, "older copy");
+}
+
+/* A strip queued behind a read is dropped once a write of the manager's own
+ * lands -- here a sync carrying the primary's text over -- and is not
+ * applied to a later, independent copy of the same rich text. */
+static void
+test_strip_after_maintenance_write (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    GPasteItem *rich = rich_text_item ();
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (rich));
+
+    g_paste_history_add (history, rich);
+
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "rich text");
+    g_paste_clipboard_content_set_text (&primary->content, "unrelated sync");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *old = clipboard->pending;
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+
+    g_paste_clipboards_manager_sync_from_to (manager, FALSE);
+    g_assert_cmpstr (clipboard->content.str, ==, "unrelated sync");
+    text_ready (clipboard, settings, old, "rich text");
+    g_paste_clipboard_update_maybe_done (old);
+
+    guint publications = clipboard->publications;
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *fresh = clipboard->pending;
+
+    text_ready (clipboard, settings, fresh, "rich text");
+    fresh->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML] = g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                                      g_bytes_new_static ("<i>rich text</i>", 16));
+    g_paste_clipboard_update_maybe_done (fresh);
+    g_assert_cmpuint (clipboard->publications, ==, publications);
+}
+
+/* A strip the provider refuses on the direct path -- another client won the
+ * claim -- is kept for that client's copy of the very same rich text. */
+static void
+test_refused_direct_strip (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    GPasteItem *rich = rich_text_item ();
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (rich));
+
+    g_paste_history_add (history, rich);
+
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "rich text");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+
+    const GPasteDaemonMethods methods = { .history = history, .settings = settings, .clipboards_manager = manager };
+    g_autoptr (GError) error = NULL;
+
+    clipboard->refuse_claims = TRUE;
+    g_paste_daemon_methods_strip_rich_text (&methods, uuid, &error);
+    g_assert_no_error (error);
+    g_assert_cmpuint (clipboard->claims, ==, 1);
+    g_assert_cmpuint (clipboard->publications, ==, 0);
+    clipboard->refuse_claims = FALSE;
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    text_ready (clipboard, settings, pending, "rich text");
+    pending->mimes.special_mime[G_PASTE_SPECIAL_MIME_TEXT_HTML] = g_paste_binary_data_new (G_PASTE_SPECIAL_MIME_TEXT_HTML,
+                                                                                        g_bytes_new_static ("<b>rich text</b>", 16));
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpuint (clipboard->publications, ==, 1);
+    g_assert_cmpstr (g_paste_item_get_uuid (clipboard->published), ==, uuid);
+    g_assert_null (g_paste_item_get_special_values (clipboard->published));
+}
+
+/* As /clipboard/timeout_edit/plain_selection, tracking on: the read of plain
+ * text keeps its own item rather than the edited password's. */
+static void
+test_timeout_edit_plain_selection_tracked (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteItem) password = g_paste_password_item_new (NULL, "same secret", 0);
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_paste_text_item_new ("replacement"));
+    g_paste_history_add (history, g_object_ref (password));
+    g_paste_clipboard_content_set_text (&clipboard->content, "previous copy");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+
+    g_paste_password_item_set_timeout (G_PASTE_PASSWORD_ITEM (password), 1);
+    g_paste_clipboards_manager_rearm_password (manager, password);
+    text_ready (clipboard, settings, pending, "same secret");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpstr (clipboard->content.str, ==, "same secret");
+
+    GPasteItem *head = g_paste_history_get (history, 0);
+
+    g_assert_false (G_PASTE_IS_PASSWORD_ITEM (head));
+    g_assert_cmpstr (g_paste_item_get_value (head), ==, "same secret");
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "replacement");
+}
+
+/* A password under a countdown that a sync writes plain text over is no
+ * selection's any more: its countdown reorders nothing, and a read that
+ * identifies nothing afterwards leaves no stale record refusing a sync. */
+static void
+test_sync_over_counted_password (gconstpointer user_data)
+{
+    gboolean unknown_read = GPOINTER_TO_INT (user_data);
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 1);
+    g_paste_history_add (history, g_paste_text_item_new ("fallback"));
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "plain");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "secret");
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+
+    g_paste_clipboards_manager_sync_from_to (manager, FALSE);
+    g_assert_cmpstr (clipboard->content.str, ==, "plain");
+
+    if (unknown_read)
+    {
+        /* The next owner offers the hint and never serves it, and its text read
+         * fails: nothing is identified. */
+        g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+        GPasteClipboardUpdate *pending = clipboard->pending;
+
+        g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+        g_paste_clipboard_update_maybe_done (pending);
+        g_paste_clipboard_update_maybe_done (pending);
+        g_assert_null (clipboard->pending);
+        g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+        g_assert_cmpuint (clipboard->sync_reads, ==, 1);
+        return;
+    }
+
+    pump_for (1100);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get (history, 0)));
+    g_assert_cmpstr (clipboard->content.str, ==, "plain");
+}
+
+/* An update the read guard concludes with a hint read still out may be a
+ * secret: a sync out of it is refused, and the destination keeps its text. */
+static void
+test_guard_concludes_with_hint_out (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 0);
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "destination");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "secret");
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+
+    GPasteClipboardUpdate *pending = clipboard->pending;
+    GPasteClipboardMimeCtx *ctx = g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT);
+
+    expire_read_guard (pending);
+    g_paste_clipboard_update_on_mime_read (ctx, NULL);
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+
+    g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+    g_assert_cmpuint (clipboard->sync_reads, ==, 0);
+    g_assert_cmpstr (primary->content.str, ==, "destination");
+}
+
+/* A capture the bootstrap read identifies once the history has loaded is
+ * linked to the entry it equals wherever that sits, as a link made after the
+ * load is: below a head that is no copy of it, the entry's stored timeout is
+ * what takes it off, password-timeout being 0. */
+static void
+test_bootstrap_after_load_entry_below_head (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, g_paste_password_item_new (NULL, "secret", 1));
+    g_paste_history_add (history, g_paste_text_item_new ("head"));
+
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    clipboard->is_clipboard = TRUE;
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    hinted_read (clipboard, settings, "secret");
+    g_assert_cmpstr (clipboard->content.str, ==, "secret");
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "head");
+}
+
+/* A selection carrying a secret the history in use never listed -- a copy
+ * read with tracking paused -- is no password taken off: selecting a plain
+ * entry of the same text publishes that entry, as it does with tracking on. */
+static void
+test_select_twin_of_unlisted_capture (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    GPasteItem *twin = g_paste_text_item_new ("same value");
+    g_autofree gchar *uuid = g_strdup (g_paste_item_get_uuid (twin));
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_history_add (history, twin);
+    g_paste_history_add (history, g_paste_text_item_new ("newest"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    pump_for (10);
+
+    g_paste_settings_set_track_changes (settings, FALSE);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "same value");
+    clipboard->defer_reads = FALSE;
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+
+    guint publications = clipboard->publications;
+
+    g_assert_true (g_paste_history_select (history, uuid));
+    g_assert_cmpuint (clipboard->publications, ==, publications + 1);
+    g_assert_cmpstr (g_paste_item_get_uuid (clipboard->published), ==, uuid);
+    g_assert_cmpstr (clipboard->content.str, ==, "same value");
+}
+
+/* An explicit sync out of a selection its owner emptied with "" publishes
+ * the empty text. */
+static void
+test_sync_empty_text (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&clipboard->content, "");
+    g_paste_clipboard_content_set_text (&primary->content, "copied earlier");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+
+    g_paste_clipboards_manager_sync_from_to (manager, TRUE);
+    g_assert_cmpuint (clipboard->sync_reads, ==, 1);
+    g_assert_cmpstr (primary->content.str, ==, "");
+}
+
+/* Two equal nameless passwords in one history, the selection recorded as
+ * one of them: deleting the other, whose record is not the selection's, leaves
+ * the selection alone. */
+static void
+test_dropped_twin_spares_selection (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    GPasteItem *text = g_paste_text_item_new ("same value");
+    g_autoptr (GPasteItem) first = g_paste_password_item_new (NULL, "same value", 0);
+    g_autofree gchar *text_uuid = g_strdup (g_paste_item_get_uuid (text));
+
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_history_add (history, text);
+    g_paste_history_add (history, g_object_ref (first));
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    g_assert_true (g_paste_clipboards_manager_select (manager, first));
+    g_assert_cmpstr (clipboard->content.str, ==, "same value");
+
+    g_autofree gchar *second = g_paste_history_make_password (history, text_uuid, NULL, 0);
+
+    g_assert_nonnull (second);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+    g_assert_true (G_PASTE_IS_PASSWORD_ITEM (g_paste_history_get_by_uuid (history, second)));
+    g_assert_true (g_paste_item_equals (g_paste_history_get_by_uuid (history, second), first));
+
+    guint publications = clipboard->publications;
+
+    g_assert_true (g_paste_history_remove_by_uuid (history, second));
+    pump_for (10);
+    g_assert_cmpuint (clipboard->publications, ==, publications);
+    g_assert_cmpstr (clipboard->content.str, ==, "same value");
+}
+
+/* A hinted copy read while tracking is paused: armed on the selection, added
+ * nowhere, an equal nameless entry @earlier already in the history. */
+static void
+paused_capture (GPasteHistory           *history,
+                GPasteSettings          *settings,
+                TestClipboard           *clipboard,
+                GPasteClipboardsManager *manager,
+                GPasteItem              *earlier)
+{
+    clipboard->is_clipboard = TRUE;
+    g_paste_settings_set_synchronize_clipboards (settings, FALSE);
+    g_paste_settings_set_password_timeout (settings, 0);
+    g_paste_history_add (history, g_object_ref (earlier));
+    g_paste_history_add (history, g_paste_text_item_new ("an older copy"));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_activate (manager);
+    pump_for (10);
+
+    g_paste_settings_set_track_changes (settings, FALSE);
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    hinted_read (clipboard, settings, "same value");
+    g_assert_null (clipboard->pending);
+    clipboard->defer_reads = FALSE;
+    g_assert_cmpstr (clipboard->content.str, ==, "same value");
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 2);
+}
+
+/* Deleting the nameless entry equal to a capture tracking paused left
+ * unlisted takes that capture off: the record matches by value where no uuid
+ * does. */
+static void
+test_dropped_entry_takes_paused_capture (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) earlier = g_paste_password_item_new (NULL, "same value", 0);
+
+    paused_capture (history, settings, clipboard, manager, earlier);
+
+    g_assert_true (g_paste_history_remove_by_uuid (history, g_paste_item_get_uuid (earlier)));
+    pump_for (10);
+    g_assert_cmpstr (clipboard->content.str, ==, "an older copy");
+}
+
+/* Editing the timeout of the nameless entry equal to such a capture re-arms
+ * the capture, which no entry of the history names. */
+static void
+test_timeout_edit_rearms_paused_capture (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+    g_autoptr (GPasteItem) earlier = g_paste_password_item_new (NULL, "same value", 0);
+
+    paused_capture (history, settings, clipboard, manager, earlier);
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "same value");
+
+    g_autofree gchar *kept = g_paste_history_make_password (history, g_paste_item_get_uuid (earlier), NULL, 1);
+
+    g_assert_cmpstr (kept, ==, g_paste_item_get_uuid (earlier));
+    g_paste_clipboards_manager_rearm_password (manager, g_paste_history_get_by_uuid (history, kept));
+    pump_for (1100);
+    g_assert_cmpstr (clipboard->content.str, ==, "an older copy");
+}
+
+/* A rename at the armed duration first creates the pending edit unchanged;
+ * going to 0 and back to the armed duration afterwards is an edit all the
+ * same, the countdown starting over rather than the one that ran out during
+ * the read taking the password off at once. */
+static void
+test_timeout_edit_back_after_rename (void)
+{
+    g_autoptr (PasswordFixture) fixture = password_fixture_new (1);
+    const gchar *uuid = g_paste_item_get_uuid (fixture->password);
+    const gchar *names[] = { "renamed", NULL, NULL };
+    const guint timeouts[] = { 1, 0, 1 };
+
+    g_paste_history_add (fixture->history, g_object_ref (fixture->password));
+    pump_for (1100);
+
+    gint64 reenabled = 0;
+
+    for (guint i = 0; i < G_N_ELEMENTS (timeouts); ++i)
+    {
+        reenabled = g_get_monotonic_time ();
+
+        g_autofree gchar *kept = g_paste_history_make_password (fixture->history, uuid, names[i], timeouts[i]);
+
+        g_assert_cmpstr (kept, ==, uuid);
+        g_paste_clipboards_manager_rearm_password (fixture->manager, g_paste_history_get_by_uuid (fixture->history, kept));
+    }
+    password_read_ready (fixture, "same secret");
+
+    gboolean early = still_before (reenabled, 1000);
+
+    if (early)
+        g_assert_cmpstr (fixture->clipboard->content.str, ==, "same secret");
+    pump_for (1100);
+
+    g_assert_cmpstr (fixture->clipboard->content.str, ==, "replacement");
+}
+
+/* The primary's owner puts a secret there: the hint comes back and matches,
+ * the text read fails. */
+static void
+sensitive_failed_read (TestClipboard *primary)
+{
+    primary->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (primary));
+
+    GPasteClipboardUpdate *pending = primary->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT),
+                                           g_paste_sensitive_mime_get_bytes (G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT));
+    g_paste_clipboard_update_maybe_done (pending);
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_null (primary->pending);
+    g_assert_null (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)));
+}
+
+/* A read of a selection left sensitive that cannot tell -- its hint offered
+ * and never served -- lands a text beside the secret it may still carry: a
+ * copy synchronized onto it is written all the same, equal to that text as it
+ * is. */
+static void
+test_sync_over_sensitive_unknown_read (void)
+{
+    g_autoptr (GPasteSettings) settings = make_settings ();
+    g_autoptr (GPasteHistory) history = make_history (settings);
+    g_autoptr (TestClipboard) clipboard = make_clipboard (settings);
+    g_autoptr (TestClipboard) primary = make_clipboard (settings);
+    g_autoptr (GPasteClipboardsManager) manager = g_paste_clipboards_manager_new (history, settings);
+
+    g_paste_settings_set_synchronize_clipboards (settings, TRUE);
+    clipboard->is_clipboard = TRUE;
+    g_paste_clipboard_content_set_text (&primary->content, "older string");
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    g_paste_clipboards_manager_add_clipboard (manager, G_PASTE_CLIPBOARD_PROVIDER (primary));
+    g_paste_clipboards_manager_activate (manager);
+    sensitive_failed_read (primary);
+
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (primary));
+
+    GPasteClipboardUpdate *pending = primary->pending;
+
+    g_paste_clipboard_update_on_mime_read (g_paste_clipboard_update_add_sensitive_mime_read (pending, G_PASTE_SENSITIVE_MIME_KDE_PASSWORD_MANAGER_HINT), NULL);
+    text_ready (primary, settings, pending, "older string");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpstr (g_paste_clipboard_provider_get_text (G_PASTE_CLIPBOARD_PROVIDER (primary)), ==, "older string");
+    primary->defer_reads = FALSE;
+
+    guint publications = primary->publications;
+
+    clipboard->defer_reads = TRUE;
+    g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (clipboard));
+    pending = clipboard->pending;
+    text_ready (clipboard, settings, pending, "older string");
+    g_paste_clipboard_update_maybe_done (pending);
+    g_assert_cmpuint (primary->publications, ==, publications + 1);
+}
+
+static void
+on_unprovided_update (GPasteClipboardProvider *provider,
+                      GPasteItem              *item,
+                      gboolean                 superseded,
+                      GPasteClipboardSecret    secret G_GNUC_UNUSED,
+                      gpointer                 user_data)
+{
+    g_assert_null (provider);
+    g_assert_null (item);
+    g_assert_true (superseded);
+    *(gboolean *) user_data = TRUE;
+}
+
+/* An update asked of something that is no provider is a programming error,
+ * and says so -- but its callback still runs, the one release of what the
+ * caller gave it, a manager's update data holding the manager. */
+static void
+test_update_not_a_provider (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*G_PASTE_IS_CLIPBOARD_PROVIDER*");
+        return;
+    }
+
+    g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GObject) object = g_object_new (G_TYPE_OBJECT, NULL);
+    gboolean answered = FALSE;
+
+    g_paste_clipboard_provider_update_full ((GPasteClipboardProvider *) object, FALSE, on_unprovided_update, &answered);
+    g_assert_true (answered);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -5139,6 +6405,7 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/merged_password/expiry", GINT_TO_POINTER (FALSE), test_merged_password_expiry);
     g_test_add_data_func ("/clipboard/merged_password/bootstrap_expiry", GINT_TO_POINTER (TRUE), test_merged_password_expiry);
     g_test_add_func ("/clipboard/select/refused_claim", test_select_refused_claim);
+    g_test_add_func ("/clipboard/update/not_a_provider", test_update_not_a_provider);
     g_test_add_func ("/clipboard/ensure_not_empty/refused", test_ensure_not_empty_refused);
     g_test_add_func ("/clipboard/password/expiry_refused_claim", test_expiry_refused_claim);
     g_test_add_data_func ("/clipboard/sensitive_followup/strip", GINT_TO_POINTER (FALSE), test_sensitive_followup);
@@ -5156,9 +6423,12 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/distinct_entry_edited", test_distinct_entry_edited);
     g_test_add_func ("/clipboard/capture_distinct_entry_edited", test_capture_distinct_entry_edited);
     g_test_add_func ("/clipboard/timeout_edit/other_named_entry", test_timeout_edit_other_named_entry);
+    g_test_add_func ("/clipboard/switch_takes_password_off", test_switch_takes_password_off);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/clipboard/record_from_another_history", test_record_from_another_history);
     g_test_add_func ("/clipboard/record_from_another_history/unanswered", test_record_from_another_history_unanswered);
     g_test_add_func ("/clipboard/timeout_edit/from_another_history", test_timeout_edit_from_another_history);
+#endif
     g_test_add_func ("/clipboard/timeout_edit/newest_object", test_timeout_edit_newest_object);
     g_test_add_func ("/clipboard/record_while_loading", test_record_while_loading);
     g_test_add_func ("/clipboard/record_identified_after_dispose", test_record_identified_after_dispose);
@@ -5183,6 +6453,7 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/strip_idle_password", test_strip_preserves_idle_password);
     g_test_add_data_func ("/clipboard/unknown_hint/primary", GINT_TO_POINTER (FALSE), test_unknown_hint_text_policy);
     g_test_add_func ("/clipboard/unknown_hint/dropped", test_unknown_hint_dropped_text);
+    g_test_add_func ("/clipboard/unknown_hint/short", test_unknown_hint_short_text);
     g_test_add_data_func ("/clipboard/dropped_password/removed", GINT_TO_POINTER (FALSE), test_dropped_password);
     g_test_add_data_func ("/clipboard/dropped_password/emptied", GINT_TO_POINTER (TRUE), test_dropped_password);
     g_test_add_data_func ("/clipboard/unknown_hint/clipboard", GINT_TO_POINTER (TRUE), test_unknown_hint_text_policy);
@@ -5194,6 +6465,8 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/clipboard/copy_uploaded/kept", GINT_TO_POINTER (FALSE), test_copy_uploaded);
     g_test_add_data_func ("/clipboard/copy_uploaded/refused", GINT_TO_POINTER (TRUE), test_copy_uploaded);
     g_test_add_func ("/clipboard/methods/add_password_default_timeout", test_add_password_default_timeout);
+    g_test_add_func ("/clipboard/methods/select_refused", test_select_refused);
+    g_test_add_func ("/clipboard/methods/strip_plain_publishes_nothing", test_strip_plain_publishes_nothing);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_password", GINT_TO_POINTER (TRUE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/removed_only_text", GINT_TO_POINTER (FALSE), test_automatic_head_clears_removed_password);
     g_test_add_data_func ("/clipboard/automatic_head/emptied_password", GINT_TO_POINTER (TRUE), test_emptied_history_clears_password);
@@ -5220,12 +6493,44 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/forced_expiry/after_history_update", test_forced_expiry_after_history_update);
     g_test_add_func ("/clipboard/strip_during_read/growing_duplicate", test_strip_growing_duplicate);
     g_test_add_func ("/clipboard/timeout_edit/plain_selection", test_timeout_edit_plain_selection);
+    g_test_add_func ("/clipboard/bootstrap_before_load/password_added_during_load", test_password_added_during_load);
+    g_test_add_func ("/clipboard/bootstrap_during_load/password_added_during_load", test_identified_during_load_password);
+    g_test_add_func ("/clipboard/sync/copy_kept_after_link", test_synced_copy_after_link);
+    g_test_add_func ("/clipboard/sync/explicit_password_released", test_explicit_sync_release);
+    g_test_add_func ("/clipboard/strip_during_read/after_maintenance_write", test_strip_after_maintenance_write);
+    g_test_add_func ("/clipboard/strip_during_read/refused_direct", test_refused_direct_strip);
+    g_test_add_func ("/clipboard/timeout_edit/plain_selection_tracked", test_timeout_edit_plain_selection_tracked);
+    g_test_add_data_func ("/clipboard/sync/over_counted_password", GINT_TO_POINTER (FALSE), test_sync_over_counted_password);
+    g_test_add_data_func ("/clipboard/sync/over_counted_password_unknown_read", GINT_TO_POINTER (TRUE), test_sync_over_counted_password);
+    g_test_add_func ("/clipboard/guard/concludes_with_hint_out", test_guard_concludes_with_hint_out);
+    g_test_add_func ("/clipboard/sync/empty_text", test_sync_empty_text);
+    g_test_add_func ("/clipboard/select/twin_of_unlisted_capture", test_select_twin_of_unlisted_capture);
+    g_test_add_func ("/clipboard/bootstrap_after_load/entry_below_head", test_bootstrap_after_load_entry_below_head);
+    g_test_add_func ("/clipboard/sync/over_sensitive_unknown_read", test_sync_over_sensitive_unknown_read);
+    g_test_add_func ("/clipboard/dropped_password/twin_spares_selection", test_dropped_twin_spares_selection);
+    g_test_add_func ("/clipboard/dropped_password/takes_paused_capture", test_dropped_entry_takes_paused_capture);
+    g_test_add_func ("/clipboard/timeout_edit/rearms_paused_capture", test_timeout_edit_rearms_paused_capture);
+    g_test_add_func ("/clipboard/timeout_edit/back_after_rename", test_timeout_edit_back_after_rename);
     g_test_add_data_func ("/clipboard/strip_head", GINT_TO_POINTER (TRUE), test_strip_refreshes_matching_selections);
     g_test_add_data_func ("/clipboard/strip_non_head", GINT_TO_POINTER (FALSE), test_strip_refreshes_matching_selections);
     g_test_add_data_func ("/clipboard/overlapping_same_text", GINT_TO_POINTER (TRUE), test_overlapping_copies);
     g_test_add_data_func ("/clipboard/late_text_reply", GINT_TO_POINTER (FALSE), test_overlapping_copies);
     g_test_add_data_func ("/clipboard/superseded_bootstrap", GINT_TO_POINTER (TRUE), test_superseded_empty_cache);
     g_test_add_data_func ("/clipboard/superseded_update", GINT_TO_POINTER (FALSE), test_superseded_empty_cache);
+    g_test_add_data_func ("/clipboard/released_copy/record_published", GUINT_TO_POINTER (RELEASED_RECORD), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/record_claimed", GUINT_TO_POINTER (RELEASED_RECORD | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/padded_published", GUINT_TO_POINTER (RELEASED_PADDED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/padded_claimed", GUINT_TO_POINTER (RELEASED_PADDED | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/answered_no", GUINT_TO_POINTER (RELEASED_ANSWERED_NO), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/expired_published", GUINT_TO_POINTER (RELEASED_EXPIRED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/expired_claimed", GUINT_TO_POINTER (RELEASED_EXPIRED | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/edit_published", GUINT_TO_POINTER (RELEASED_EDIT), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/edit_claimed", GUINT_TO_POINTER (RELEASED_EDIT | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/strip_published", GUINT_TO_POINTER (RELEASED_STRIP), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/strip_claimed", GUINT_TO_POINTER (RELEASED_STRIP | RELEASED_CLAIMED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/untracked", GUINT_TO_POINTER (RELEASED_UNTRACKED), test_released_copy);
+    g_test_add_data_func ("/clipboard/released_copy/live", GUINT_TO_POINTER (RELEASED_LIVE), test_released_copy);
+    g_test_add_func ("/clipboard/released_copy/nothing_out", test_release_nothing_out);
     g_test_add_data_func ("/clipboard/strip_during_read/unrelated", GUINT_TO_POINTER (0), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/matching", GUINT_TO_POINTER (1), test_strip_during_read);
     g_test_add_data_func ("/clipboard/strip_during_read/non_head", GUINT_TO_POINTER (2), test_strip_during_read);
@@ -5272,7 +6577,9 @@ main (int argc, char *argv[])
     g_test_add_func ("/clipboard/timeout_edit/reenable_pending_timeout", test_reenable_pending_timeout);
     g_test_add_func ("/clipboard/timeout_edit/reenable_through_history", test_reenable_pending_timeout_through_history);
     g_test_add_func ("/clipboard/timeout_edit/rename_twin", test_rename_twin_during_read);
+#ifdef G_PASTE_ENABLE_ENCRYPTION
     g_test_add_func ("/clipboard/timeout_edit/other_history_twin", test_timeout_edit_other_history_twin);
+#endif
     g_test_add_func ("/clipboard/password/expiry_evicts_pending_edit", test_expiry_evicts_pending_edit);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/select", GINT_TO_POINTER (FALSE), test_forced_expiry_without_countdown);
     g_test_add_data_func ("/clipboard/forced_expiry/no_countdown/edit", GINT_TO_POINTER (TRUE), test_forced_expiry_without_countdown);

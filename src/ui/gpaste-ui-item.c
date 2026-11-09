@@ -706,34 +706,6 @@ g_paste_ui_item_is_read (GPasteUiItem *self)
     return self->kind != G_PASTE_ITEM_KIND_INVALID;
 }
 
-/**
- * g_paste_ui_item_activate:
- * @self: a #GPasteUiItem instance
- *
- * Activate/Select the item
- *
- * returns: whether there was anything to select or not
- */
-gboolean
-g_paste_ui_item_activate (GPasteUiItem *self)
-{
-    g_return_val_if_fail (G_PASTE_IS_UI_ITEM (self), FALSE);
-
-    if (!self->uuid)
-        return FALSE;
-
-    g_paste_client_select (self->client, self->uuid,
-                           NULL /* cancellable */,
-                           g_paste_ui_report_void_cb,
-                           g_paste_ui_report_void (GTK_WIDGET (self), g_paste_client_select_finish,
-                                                   _("Could not select the item")));
-
-    if (g_paste_settings_get_close_on_select (self->settings))
-        gtk_window_close (self->rootwin); /* Exit the application */
-
-    return TRUE;
-}
-
 static void
 g_paste_ui_item_on_image_ready (GObject      *source_object G_GNUC_UNUSED,
                                 GAsyncResult *res,
@@ -774,38 +746,19 @@ g_paste_ui_item_read_image (GPasteUiItem *self)
     g_paste_client_get_image (self->client, self->uuid, self->fill, g_paste_ui_item_on_image_ready, async_callback_data_new (self));
 }
 
-/* The most of an item's text a row lays out, in characters. A #GtkInscription
- * lays the whole of its text out to ellipsize it, which on one long line costs
- * tens of milliseconds a binding past a hundred kilobytes, and past three
- * hundred no longer fits its allocation at all; no window is wide enough to
- * show more than this. */
-#define G_PASTE_UI_ITEM_MAX_SHOWN_CHARS 1000
-
 static void
 _g_paste_ui_item_ready (GPasteUiItem     *self,
                         GPasteClientItem *item)
 {
-    const gchar *txt = g_paste_client_item_get_display_string (item);
+    /* A #GtkInscription lays the whole of its text out to ellipsize it, and
+     * past a few hundred kilobytes on one line no longer fits its allocation:
+     * see g_paste_util_shown_line (). */
+    g_autofree gchar *oneline = g_paste_client_item_get_display_line (item, G_PASTE_UTIL_SHOWN_CHARS);
 
-    if (!txt)
+    if (!oneline)
         return;
 
     GPasteItemKind kind = g_paste_client_item_get_kind (item);
-    const gchar *end = txt;
-
-    /* The cut found before anything is copied, so that a long item costs a
-     * row what it shows rather than all it holds. It lands where it would on
-     * the folded line, g_paste_util_one_line () putting one space for each
-     * character it folds; no test tells the two apart, the row reading the
-     * same either way. */
-    for (guint i = 0; *end && i < G_PASTE_UI_ITEM_MAX_SHOWN_CHARS; ++i)
-        end = g_utf8_next_char (end);
-
-    g_autofree gchar *head = g_strndup (txt, (gsize) (end - txt));
-    g_autofree gchar *oneline = g_paste_util_one_line (head);
-
-    if (*end)
-        g_set_str_take (&oneline, g_strconcat (oneline, "…", NULL));
 
     g_paste_ui_item_apply_index (self, self->index);
 

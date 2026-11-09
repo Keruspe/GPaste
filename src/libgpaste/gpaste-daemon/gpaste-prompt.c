@@ -17,6 +17,7 @@ typedef enum
 {
     REQUEST_PASSPHRASE,
     REQUEST_MIGRATION,
+    REQUEST_CONFIRM,
 } RequestKind;
 
 struct _GPastePromptRequest
@@ -28,7 +29,9 @@ struct _GPastePromptRequest
     RequestKind           kind;
 
     gboolean              confirm;
+    gchar                *title;
     gchar                *description;
+    gchar                *accept_label;
     gchar                *error_message;
     GPasteStorageRemember remember;
 
@@ -54,6 +57,8 @@ passphrase_reply_free (gpointer data)
     g_paste_passphrase_free (reply->passphrase);
     g_free (reply);
 }
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PassphraseReply, passphrase_reply_free)
 
 /* And what a migration prompt came back with. */
 typedef struct
@@ -86,7 +91,9 @@ g_paste_prompt_request_finalize (GObject *object)
 {
     GPastePromptRequest *self = G_PASTE_PROMPT_REQUEST (object);
 
+    g_free (self->title);
     g_free (self->description);
+    g_free (self->accept_label);
     g_free (self->error_message);
     g_free (self->offered);
 
@@ -169,12 +176,29 @@ g_paste_prompt_request_get_confirm (GPastePromptRequest *self)
 }
 
 /**
+ * g_paste_prompt_request_get_title:
+ * @self: a #GPastePromptRequest
+ *
+ * The question a confirmation asks (g_paste_prompt_confirm_async()).
+ *
+ * Returns: (nullable): read-only string, %NULL for any other request
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_title (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    return self->title;
+}
+
+/**
  * g_paste_prompt_request_get_description:
  * @self: a #GPastePromptRequest
  *
  * What to explain in place of the standing description, for a passphrase asked
  * for histories other than the one in use
- * (g_paste_prompt_other_passphrase_async()).
+ * (g_paste_prompt_other_passphrase_async()); what accepting a confirmation
+ * does (g_paste_prompt_confirm_async()).
  *
  * Returns: (nullable): read-only string, or %NULL for the standing description
  */
@@ -184,6 +208,54 @@ g_paste_prompt_request_get_description (GPastePromptRequest *self)
     g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
 
     return self->description;
+}
+
+/**
+ * g_paste_prompt_request_get_shown_description:
+ * @self: a #GPastePromptRequest
+ *
+ * What a passphrase dialog explains under its title: the request's own
+ * description (g_paste_prompt_request_get_description()), else the wording
+ * for choosing a new passphrase or for unlocking, as
+ * g_paste_prompt_request_get_confirm() says. Both dialogs ask here, so that
+ * they cannot come to explain one question differently.
+ *
+ * Returns: read-only string
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_shown_description (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    if (self->description)
+        return self->description;
+
+    return g_paste_prompt_text ((self->confirm) ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_DESCRIPTION
+                                                : G_PASTE_PROMPT_TEXT_PASSPHRASE_DESCRIPTION);
+}
+
+/**
+ * g_paste_prompt_request_get_accept_label:
+ * @self: a #GPastePromptRequest
+ *
+ * The label of the button accepting the passphrase: the one for a new
+ * passphrase or the one for unlocking, as g_paste_prompt_request_get_confirm()
+ * says, worked out here for both dialogs as
+ * g_paste_prompt_request_get_shown_description() is. For a confirmation, the
+ * label its caller gave, which says what goes.
+ *
+ * Returns: read-only string
+ */
+G_PASTE_VISIBLE const gchar *
+g_paste_prompt_request_get_accept_label (GPastePromptRequest *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT_REQUEST (self), NULL);
+
+    if (self->kind == REQUEST_CONFIRM)
+        return self->accept_label;
+
+    return g_paste_prompt_text ((self->confirm) ? G_PASTE_PROMPT_TEXT_PASSPHRASE_CONFIRM_ACCEPT
+                                                : G_PASTE_PROMPT_TEXT_PASSPHRASE_ACCEPT);
 }
 
 /**
@@ -272,7 +344,8 @@ g_paste_prompt_request_get_offered (GPastePromptRequest *self,
  * g_paste_prompt_request_get_current:
  * @self: a #GPastePromptRequest
  *
- * The backend the history currently lives in, which the prompt starts on.
+ * The backend the history currently lives in, which the prompt starts on
+ * when it is on offer (g_paste_prompt_request_can_keep ()).
  *
  * Returns: the current backend
  */
@@ -357,15 +430,16 @@ g_paste_prompt_request_reply_passphrase (GPastePromptRequest  *self,
         return;
     }
 
-    PassphraseReply *reply = g_new0 (PassphraseReply, 1);
+    g_autoptr (PassphraseReply) reply = g_new0 (PassphraseReply, 1);
 
     /* Into secure memory the moment it crosses out of the backend: the entry
-     * widget's own buffer is ordinary heap and beyond our reach, but everything
-     * downstream of here is ours. */
+     * widget's own buffer is the backend's -- secure memory in the libadwaita
+     * prompt's GtkPasswordEntryBuffer, ordinary heap in GNOME Shell's St entry --
+     * and beyond our reach, but everything downstream of here is ours. */
     reply->passphrase = g_paste_passphrase_new (passphrase);
     reply->remember = remember;
 
-    g_task_return_pointer (task, reply, passphrase_reply_free);
+    g_task_return_pointer (task, g_steal_pointer (&reply), passphrase_reply_free);
 }
 
 /**
@@ -416,6 +490,27 @@ g_paste_prompt_request_reply_migration (GPastePromptRequest *self,
 }
 
 /**
+ * g_paste_prompt_request_reply_confirm:
+ * @self: a #GPastePromptRequest
+ *
+ * Answer a confirmation with "go ahead": declining it is dismissing it.
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_request_reply_confirm (GPastePromptRequest *self)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT_REQUEST (self));
+
+    if (!g_paste_prompt_request_answers (self, REQUEST_CONFIRM))
+        return;
+
+    g_autoptr (GTask) task = g_paste_prompt_request_claim (self);
+
+    /* Any pointer but %NULL, which is a dismissal's. */
+    if (task)
+        g_task_return_pointer (task, GINT_TO_POINTER (TRUE), NULL);
+}
+
+/**
  * g_paste_prompt_request_dismiss:
  * @self: a #GPastePromptRequest
  *
@@ -457,6 +552,7 @@ g_paste_prompt_default_init (GPastePromptInterface *iface)
     iface->passphrase = g_paste_prompt_default_prompt;
     iface->migration = g_paste_prompt_default_prompt;
     iface->report = g_paste_prompt_default_report;
+    iface->confirm = g_paste_prompt_default_prompt;
 }
 
 /* @text, nullable, as UTF-8: see g_paste_prompt_report (). */
@@ -492,6 +588,67 @@ g_paste_prompt_report (GPastePrompt *self,
     g_autofree gchar *valid_message = g_utf8_make_valid (message, -1);
 
     G_PASTE_PROMPT_GET_IFACE (self)->report (self, valid_title, valid_message);
+}
+
+/**
+ * g_paste_prompt_confirm_async:
+ * @self: a #GPastePrompt instance
+ * @title: the question, in the user's words
+ * @description: what accepting does, and that it cannot be undone
+ * @accept_label: the label of the button that goes through with it
+ * @callback: (scope async): called once the prompt is answered or dismissed
+ * @user_data: data passed to @callback
+ *
+ * Ask whether to go through with something that cannot be undone. A backend
+ * shows the accepting button as destructive, and dismissing is declining.
+ */
+G_PASTE_VISIBLE void
+g_paste_prompt_confirm_async (GPastePrompt       *self,
+                              const gchar        *title,
+                              const gchar        *description,
+                              const gchar        *accept_label,
+                              GAsyncReadyCallback callback,
+                              gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_PROMPT (self));
+    g_return_if_fail (title && *title);
+    g_return_if_fail (description && *description);
+    g_return_if_fail (accept_label && *accept_label);
+
+    /* As in g_paste_prompt_passphrase_async (). The texts name histories,
+     * whose names need not be UTF-8 (g_paste_prompt_report ()). */
+    g_autoptr (GPastePromptRequest) request = g_paste_prompt_request_new (self, REQUEST_CONFIRM,
+                                                                          g_paste_prompt_confirm_async,
+                                                                          callback, user_data);
+    request->title = g_paste_prompt_valid (title);
+    request->description = g_paste_prompt_valid (description);
+    request->accept_label = g_paste_prompt_valid (accept_label);
+
+    G_PASTE_PROMPT_GET_IFACE (self)->confirm (self, request);
+}
+
+/**
+ * g_paste_prompt_confirm_finish:
+ * @self: a #GPastePrompt instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Collect the answer to g_paste_prompt_confirm_async(). As for
+ * g_paste_prompt_passphrase_finish(), a dismissal is no failure: %FALSE with
+ * @error left unset.
+ *
+ * Returns: whether the user accepted
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_confirm_finish (GPastePrompt *self,
+                               GAsyncResult *result,
+                               GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_PROMPT (self), FALSE);
+    g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_prompt_confirm_async, FALSE);
+
+    return g_task_propagate_pointer (G_TASK (result), error) != NULL;
 }
 
 /**
@@ -568,7 +725,7 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
      * the tag is what keeps a migration result from being read as a passphrase. */
     g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_prompt_passphrase_async, NULL);
 
-    PassphraseReply *reply = g_task_propagate_pointer (G_TASK (result), error);
+    g_autoptr (PassphraseReply) reply = g_task_propagate_pointer (G_TASK (result), error);
 
     if (!reply)
         return NULL;
@@ -576,11 +733,7 @@ g_paste_prompt_passphrase_finish (GPastePrompt          *self,
     if (remember)
         *remember = reply->remember;
 
-    GPastePassphrase *passphrase = g_steal_pointer (&reply->passphrase);
-
-    g_free (reply);
-
-    return passphrase;
+    return g_steal_pointer (&reply->passphrase);
 }
 
 /**
@@ -626,7 +779,8 @@ g_paste_prompt_other_passphrase_async (GPastePrompt       *self,
  * @self: a #GPastePrompt instance
  * @offered: (array length=n_offered): the backends to offer, in display order
  * @n_offered: the number of backends in @offered
- * @current: the backend the history currently lives in, which the prompt starts on
+ * @current: the backend the history currently lives in, which the prompt starts
+ *     on when it is on offer (g_paste_prompt_request_can_keep ())
  * @callback: (scope async): called once the prompt is answered or dismissed
  * @user_data: data passed to @callback
  *
@@ -780,6 +934,23 @@ g_paste_prompt_backend_changes (GPasteStorage current,
 }
 
 /**
+ * g_paste_prompt_cleanup_warns:
+ * @import: whether importing the existing data is ticked
+ * @cleanup: whether deleting the old data is ticked
+ *
+ * Whether the migration dialog warns that the old data is lost: deleting it
+ * without importing it first throws it away.
+ *
+ * Returns: whether to show the warning
+ */
+G_PASTE_VISIBLE gboolean
+g_paste_prompt_cleanup_warns (gboolean import,
+                              gboolean cleanup)
+{
+    return cleanup && !import;
+}
+
+/**
  * g_paste_prompt_keyring_available:
  *
  * Whether this build can remember the passphrase at all, i.e. whether it was
@@ -856,6 +1027,31 @@ g_paste_prompt_remember_state (GPasteStorageRemember requested,
                ? remembered
                : (requested == G_PASTE_STORAGE_REMEMBER_YES);
     *can_forget = remembered;
+}
+
+/**
+ * g_paste_prompt_remember_answer:
+ * @switch_on: whether the "Remember this passphrase" switch is on as the
+ *             passphrase is given, %FALSE where none is offered
+ * @can_forget: what g_paste_prompt_remember_state() answered for it, %FALSE
+ *              where none is offered
+ *
+ * What the switch answers. The choice is reported and nothing more: the keyring
+ * is written by whoever established that the passphrase is the right one,
+ * which a prompt cannot know. On is to remember it; off is to forget the one
+ * remembered only where there is one, finding the switch off and leaving it
+ * there asking nothing.
+ *
+ * Returns: what the passphrase is to be answered with
+ */
+G_PASTE_VISIBLE GPasteStorageRemember
+g_paste_prompt_remember_answer (gboolean switch_on,
+                                gboolean can_forget)
+{
+    if (switch_on)
+        return G_PASTE_STORAGE_REMEMBER_YES;
+
+    return (can_forget) ? G_PASTE_STORAGE_REMEMBER_NO : G_PASTE_STORAGE_REMEMBER_UNCHANGED;
 }
 
 /**
@@ -952,7 +1148,10 @@ G_PASTE_VISIBLE G_DEFINE_ENUM_TYPE (GPastePromptText, g_paste_prompt_text,
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_CANCEL,                          "cancel"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_MIGRATION_DESCRIPTION_UNKEPT,    "migration-description-unkept"),
                                     G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_DESCRIPTION,    "other-passphrase-description"),
-                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"))
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG,          "other-passphrase-wrong"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED,         "rekey-cut-short-changed"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY,       "rekey-cut-short-under-way"),
+                                    G_DEFINE_ENUM_VALUE (G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION,     "rekey-elsewhere-description"))
 
 /**
  * g_paste_prompt_text:
@@ -1040,6 +1239,15 @@ g_paste_prompt_text (GPastePromptText text)
         return _("These histories are encrypted with another passphrase than the history in use: %s. Enter it to encrypt them with the passphrase in use.");
     case G_PASTE_PROMPT_TEXT_OTHER_PASSPHRASE_WRONG:
         return _("This passphrase opens none of them, please try again");
+    case G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_CHANGED:
+        /* Translators: %s is the names of the histories, each quoted, separated by commas. */
+        return _("The change of passphrase was cut short: %s are on the new passphrase.");
+    case G_PASTE_PROMPT_TEXT_REKEY_CUT_SHORT_UNDER_WAY:
+        /* Translators: %s is the quoted name of a history. */
+        return _("%s was being changed, and may be on either passphrase.");
+    case G_PASTE_PROMPT_TEXT_REKEY_ELSEWHERE_DESCRIPTION:
+        /* Translators: the quoted words are a command to type, not to translate. */
+        return _("None of your histories is encrypted with the passphrase in use, so none was changed. Run “gpaste-client doctor” to encrypt them all with it.");
     default:
         return "";
     }

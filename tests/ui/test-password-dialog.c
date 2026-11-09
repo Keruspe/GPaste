@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <gpaste-test-env.h>
+#include <gpaste-test-gtk.h>
 #include <gpaste-3/gpaste-client.h>
 
 typedef struct
@@ -59,45 +60,45 @@ finish_timeout (GPasteClient *client G_GNUC_UNUSED,
     return 42;
 }
 
-static void make_password (GPasteClient       *client,
-                           const gchar        *uuid,
-                           const gchar        *name,
-                           guint               timeout,
-                           GCancellable       *cancellable,
-                           GAsyncReadyCallback callback,
-                           gpointer            data);
+static GPasteTestGtkSave save;
+/* The timeout the last save sent. */
+static guint sent_timeout;
+
+static void
+send_make_password (GPasteClient       *client G_GNUC_UNUSED,
+                    const gchar        *uuid G_GNUC_UNUSED,
+                    const gchar        *name G_GNUC_UNUSED,
+                    guint               timeout,
+                    GCancellable       *cancellable G_GNUC_UNUSED,
+                    GAsyncReadyCallback callback,
+                    gpointer            data)
+{
+    sent_timeout = timeout;
+    g_paste_test_gtk_save_send (&save, callback, data);
+}
+
+static gchar *
+finish_save (GPasteClient *client G_GNUC_UNUSED,
+             GAsyncResult *result G_GNUC_UNUSED,
+             GError      **error)
+{
+    return g_paste_test_gtk_save_finish (&save, error);
+}
 
 /* Keep GTK's real window/dialog lifetime while controlling both reply orders. */
 #define g_paste_client_get_item read_item
 #define g_paste_client_get_password_timeout read_timeout
 #define g_paste_client_get_item_finish finish_item
 #define g_paste_client_get_password_timeout_finish finish_timeout
-#define g_paste_client_make_password make_password
+#define g_paste_client_make_password send_make_password
+#define g_paste_client_make_password_finish finish_save
 #include "../../src/ui/gpaste-ui-password-dialog.c"
+#undef g_paste_client_make_password_finish
 #undef g_paste_client_make_password
 #undef g_paste_client_get_password_timeout_finish
 #undef g_paste_client_get_item_finish
 #undef g_paste_client_get_password_timeout
 #undef g_paste_client_get_item
-
-/* The timeout a confirmed edit sends, G_MAXUINT before one is sent. */
-static guint made_timeout = G_MAXUINT;
-
-static void
-make_password (GPasteClient       *client G_GNUC_UNUSED,
-               const gchar        *uuid G_GNUC_UNUSED,
-               const gchar        *name G_GNUC_UNUSED,
-               guint               timeout,
-               GCancellable       *cancellable G_GNUC_UNUSED,
-               GAsyncReadyCallback callback G_GNUC_UNUSED,
-               gpointer            data)
-{
-    PasswordRequest *request = data;
-
-    made_timeout = timeout;
-    g_weak_ref_clear (&request->dialog);
-    g_free (request);
-}
 
 static void
 reply (GPasteClient *client,
@@ -177,23 +178,6 @@ edit_window_lifetime (gconstpointer user_data)
     }
 }
 
-static AdwSpinRow *
-find_spin_row (GtkWidget *widget)
-{
-    if (ADW_IS_SPIN_ROW (widget))
-        return ADW_SPIN_ROW (widget);
-
-    for (GtkWidget *child = gtk_widget_get_first_child (widget); child; child = gtk_widget_get_next_sibling (child))
-    {
-        AdwSpinRow *row = find_spin_row (child);
-
-        if (row)
-            return row;
-    }
-
-    return NULL;
-}
-
 /* Whether every row under @widget shows its title as written. */
 static gboolean
 rows_plain (GtkWidget *widget)
@@ -210,6 +194,31 @@ rows_plain (GtkWidget *widget)
     return TRUE;
 }
 
+/* The edit dialog put up over @window, both of its reads answered. */
+static AdwDialog *
+edit_dialog (GPasteClient *client,
+             GtkWindow    *window)
+{
+    gtk_window_present (window);
+    g_paste_ui_password_dialog_edit (client, window, "00000000-0000-4000-8000-000000000001");
+    reply (client, 0);
+    reply (client, 1);
+
+    AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
+
+    g_assert_nonnull (dialog);
+    return dialog;
+}
+
+static void
+send_save (AdwDialog *dialog)
+{
+    guint sent = save.sent;
+
+    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    g_assert_cmpuint (save.sent, ==, sent + 1);
+}
+
 /* A timeout field cleared to type another number into, or holding none, keeps
  * the timeout the password had rather than sending 0, which would never take it
  * off the clipboard. */
@@ -224,29 +233,154 @@ timeout_keeps_blank (void)
 
     g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
     GtkWindow *window = GTK_WINDOW (adw_window_new ());
-
-    gtk_window_present (window);
-    g_paste_ui_password_dialog_edit (client, window, "00000000-0000-4000-8000-000000000001");
-    reply (client, 0);
-    reply (client, 1);
-
-    AdwDialog *dialog = adw_window_get_visible_dialog (ADW_WINDOW (window));
-    PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
-    AdwSpinRow *timeout = find_spin_row (GTK_WIDGET (dialog));
+    AdwDialog *dialog = edit_dialog (client, window);
+    AdwSpinRow *timeout = ADW_SPIN_ROW (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_SPIN_ROW));
 
     g_assert_nonnull (timeout);
     /* Its titles being translations, taken as markup they would empty. */
     g_assert_true (rows_plain (GTK_WIDGET (dialog)));
+
+    /* Renamed, so that the save has something to send. */
+    PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
+
+    gtk_editable_set_text (data->name, "renamed");
     for (guint i = 0; i < 2; ++i)
     {
         gtk_editable_set_text (GTK_EDITABLE (timeout), (i) ? "abc" : "");
         adw_spin_row_update (timeout);
-        made_timeout = G_MAXUINT;
-        data->submitted = FALSE;
-        g_signal_emit_by_name (data->confirm, "clicked");
-        g_assert_cmpuint (made_timeout, ==, 42);
+        send_save (dialog);
+        g_assert_cmpuint (sent_timeout, ==, G_PASTE_PASSWORD_TIMEOUT_UNCHANGED);
+        /* Refused, so that the dialog stays up for the next one. */
+        save.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "taken");
+        g_paste_test_gtk_save_answer (&save, client);
     }
 
+    gtk_window_destroy (window);
+}
+
+/* A timeout the user left alone is sent as unchanged, not as the value read
+ * back when the dialog opened: another client may have changed it since. */
+static void
+edit_keeps_timeout (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    AdwDialog *dialog = edit_dialog (client, window);
+    PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
+
+    g_assert_cmpfloat (gtk_adjustment_get_value (data->timeout), ==, 42);
+    gtk_editable_set_text (data->name, "renamed");
+    send_save (dialog);
+    g_assert_cmpuint (sent_timeout, ==, G_PASTE_PASSWORD_TIMEOUT_UNCHANGED);
+
+    /* Refused, so the dialog stays up for a second try, the timeout moved. */
+    save.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "taken");
+    g_paste_test_gtk_save_answer (&save, client);
+    gtk_adjustment_set_value (data->timeout, 43);
+    send_save (dialog);
+    g_assert_cmpuint (sent_timeout, ==, 43);
+    g_paste_test_gtk_save_answer (&save, client);
+    gtk_window_destroy (window);
+}
+
+/* The save refused, its item gone, which is warned about. */
+static void
+answer_gone (GPasteClient *client)
+{
+    save.error = g_error_new_literal (G_PASTE_ERROR, G_PASTE_ERROR_NOT_FOUND, "gone");
+    g_test_expect_message ("GPaste", G_LOG_LEVEL_WARNING, "Could not save the password: gone");
+    g_paste_test_gtk_save_answer (&save, client);
+    g_test_assert_expected_messages ();
+}
+
+/* While the save is out, the dialog cannot be closed: the call would go
+ * through all the same, the user believing it cancelled. A failure is reported
+ * as one to save the password, which it already is. */
+static void
+edit_held_while_saving (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    AdwDialog *dialog = edit_dialog (client, window);
+    PasswordDialogData *data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
+    GtkWidget *cancel = g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Cancel");
+
+    g_assert_nonnull (cancel);
+    g_assert_true (gtk_widget_get_sensitive (cancel));
+    gtk_editable_set_text (data->name, "renamed");
+    send_save (dialog);
+    g_assert_false (gtk_widget_get_sensitive (cancel));
+    adw_dialog_close (dialog);
+    g_assert_true (adw_window_get_visible_dialog (ADW_WINDOW (window)) == dialog);
+    g_assert_true (g_paste_gtk_util_form_dialog_is_held (dialog));
+
+    answer_gone (client);
+    AdwBanner *banner = ADW_BANNER (g_paste_test_gtk_find_widget (GTK_WIDGET (dialog), ADW_TYPE_BANNER));
+
+    g_assert_true (adw_banner_get_revealed (banner));
+    g_assert_cmpstr (adw_banner_get_title (banner), ==, "Could not save the password");
+    g_assert_true (gtk_widget_get_sensitive (GTK_WIDGET (data->group)));
+    g_assert_true (gtk_widget_get_sensitive (cancel));
+
+    /* A window going takes a dialog that is held up with it, and the answer
+     * that comes after touches nothing. */
+    g_autoptr (GtkWindow) retained = g_object_ref (window);
+    gpointer weak_dialog = dialog;
+
+    g_object_add_weak_pointer (G_OBJECT (dialog), &weak_dialog);
+    send_save (dialog);
+    gtk_window_destroy (window);
+    g_clear_object (&retained);
+    g_assert_null (weak_dialog);
+    /* Its failure is still warned about, nobody being left to tell. */
+    answer_gone (client);
+
+    /* Nor when something else still holds the dialog, which is then no longer
+     * presented: there is nobody to close it for. */
+    window = GTK_WINDOW (adw_window_new ());
+    dialog = edit_dialog (client, window);
+    data = g_object_get_data (G_OBJECT (dialog), "password-dialog-data");
+
+    g_autoptr (AdwDialog) held = g_object_ref (dialog);
+
+    gtk_editable_set_text (data->name, "renamed");
+    send_save (dialog);
+    gtk_window_destroy (window);
+    answer_gone (client);
+}
+
+/* An edit that changed neither the name nor the timeout sends nothing and
+ * closes, as Edit Item does: MakePassword would put a new password in the
+ * item's place, the name read back over a rename made elsewhere meanwhile. */
+static void
+edit_unchanged (void)
+{
+    if (!have_display)
+    {
+        g_test_skip ("A private Xvfb display is required");
+        return;
+    }
+
+    g_autoptr (GPasteClient) client = g_object_new (G_PASTE_TYPE_CLIENT, NULL);
+    GtkWindow *window = GTK_WINDOW (adw_window_new ());
+    AdwDialog *dialog = edit_dialog (client, window);
+    guint sent = save.sent;
+
+    g_signal_emit_by_name (g_paste_test_gtk_find_button (GTK_WIDGET (dialog), "Save"), "clicked");
+    g_assert_cmpuint (save.sent, ==, sent);
+    g_paste_test_gtk_wait_dialog_closed (window);
     gtk_window_destroy (window);
 }
 
@@ -264,5 +398,8 @@ main (int argc, char *argv[])
     g_test_add_data_func ("/ui/password/hidden_parent", GUINT_TO_POINTER (3), edit_window_lifetime);
     g_test_add_data_func ("/ui/password/retained_closed_parent", GUINT_TO_POINTER (4), edit_window_lifetime);
     g_test_add_func ("/ui/password/timeout_keeps_blank", timeout_keeps_blank);
+    g_test_add_func ("/ui/password/edit_keeps_timeout", edit_keeps_timeout);
+    g_test_add_func ("/ui/password/edit_held_while_saving", edit_held_while_saving);
+    g_test_add_func ("/ui/password/edit_unchanged", edit_unchanged);
     return g_paste_test_env_run ();
 }

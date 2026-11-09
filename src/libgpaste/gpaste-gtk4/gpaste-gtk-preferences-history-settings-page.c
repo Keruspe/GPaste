@@ -3,6 +3,7 @@
 
 #include <gpaste-gtk4/gpaste-gtk-preferences-pages.h>
 #include <gpaste-gtk4/gpaste-gtk-preferences-group.h>
+#include <gpaste-gtk4/gpaste-gtk-util.h>
 
 typedef struct _DaemonRequest DaemonRequest;
 
@@ -115,12 +116,16 @@ daemon_request_complete (DaemonRequest *self,
     GtkRoot *root = gtk_widget_get_root (GTK_WIDGET (request->row));
 
     /* The dialog needs a window to go on, and the preferences can be closed
-     * while the daemon is still answering -- which is exactly when a request
-     * that failed has nowhere to report itself. The journal is the only record
-     * left then, so the failure is warned about rather than dropped
-     * (/preferences/storage/refused-without-window). Where there is a window
-     * the dialog is the report, and no warning goes out for something the user
-     * was shown. */
+     * while the daemon is still answering. The application's window takes it
+     * then -- the graphical tool's, which the closed preferences were over
+     * (/preferences/storage/refused-after-dialog) -- and with none left the
+     * journal is the only record, so the failure is warned about rather than
+     * dropped (/preferences/storage/refused-without-window). Where there is a
+     * window the dialog is the report, and no warning goes out for something
+     * the user was shown. */
+    if (!root && GTK_IS_APPLICATION (request->application))
+        root = GTK_ROOT (gtk_application_get_active_window (GTK_APPLICATION (request->application)));
+
     if (!root)
     {
         g_warning ("%s: %s", request->failure_log, error->message);
@@ -278,8 +283,7 @@ g_paste_gtk_preferences_history_settings_page_new (GPasteSettings *settings)
     adw_preferences_page_add (self, ADW_PREFERENCES_GROUP (group));
 
     group = g_paste_gtk_preferences_group_new (_("Storage"));
-    adw_preferences_group_set_description (ADW_PREFERENCES_GROUP (group),
-                                           _("Choose how the history is stored on disk (plain or encrypted)."));
+    g_paste_gtk_util_set_group_text (ADW_PREFERENCES_GROUP (group), NULL, _("Choose how the history is stored on disk (plain or encrypted)."));
     g_paste_gtk_preferences_group_add_button (group,
                                               _("Change Storage Backend…"),
                                               G_CALLBACK (on_storage_migration_activated),

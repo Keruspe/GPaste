@@ -45,16 +45,26 @@ _gpaste_client_histories()
     # to be instant because it asks no daemon, and a fork per tab is not that.
     local -A seen=()
 
+    # A name may start with a dot, and a pattern matching nothing is no error
+    # whatever the user set: the options are put back as they were after.
+    local restore
+    restore=$(shopt -p dotglob nullglob failglob)
+    shopt -s dotglob nullglob
+    shopt -u failglob
+
     for f in "${dir}"/*.xml "${dir}"/*.xmls "${dir}"/*.db "${dir}"/*.dbs; do
         [[ -f ${f} ]] || continue
         name=${f##*/}
         name=${name%.*}
+        [[ -n ${name} ]] || continue
         # Through a parameter expansion: bash before 5.2 expands the subscript
         # of [[ -v ]] a second time, running a $(...) a history's name holds.
         [[ -n ${seen[${name}]+set} ]] && continue
         seen[${name}]=1
         printf '%s\0' "${name}"
     done
+
+    eval "${restore}"
 }
 
 # The history names matching the word being completed, into COMPREPLY quoted
@@ -68,18 +78,35 @@ _gpaste_client_histories()
 # word quoting something is matched against the names as %q quotes them.
 _gpaste_client_complete_histories()
 {
-    local name quoted literal=0
+    local name quoted quote= literal=0
 
-    [[ ${cur} != *[\\\'\"\$\`]* ]] && literal=1
+    # A word begun with a quote is completed inside it, readline closing it: a
+    # name goes in as it is, bar one that quote cannot hold.
+    case ${cur} in
+        \'*|\"*)
+            quote=${cur:0:1}
+            ;;
+    esac
+    [[ -z ${quote} && ${cur} != *[\\\'\"\$\`]* ]] && literal=1
 
     while IFS= read -r -d '' name; do
-        printf -v quoted '%q' "${name}"
-        if ((literal)); then
-            [[ ${name} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+        if [[ ${quote} == \' ]]; then
+            [[ ${name} != *\'* && ${name} == "${cur:1}"* ]] && COMPREPLY+=("${name}")
+        elif [[ ${quote} == \" ]]; then
+            [[ ${name} != *[\"\$\`\\!]* && ${name} == "${cur:1}"* ]] && COMPREPLY+=("${name}")
         else
-            [[ ${quoted} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+            printf -v quoted '%q' "${name}"
+            if ((literal)); then
+                [[ ${name} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+            else
+                [[ ${quoted} == "${cur}"* ]] && COMPREPLY+=("${quoted}")
+            fi
         fi
     done < <(_gpaste_client_histories)
+
+    # What bash-completion puts back together across a colon is still inserted
+    # after that colon, where bash broke the word.
+    declare -F __ltrim_colon_completions >/dev/null && __ltrim_colon_completions "${cur}"
 }
 
 # Both of these ask the daemon for the history and keep only its first column.
@@ -137,15 +164,25 @@ _gpaste_client_options()
 _gpaste-client()
 {
     local cur prev verb items
-    local -i i argpos=0 use_index=0
+    local -a words
+    local -i i cword argpos=0 use_index=0
 
-    cur=${COMP_WORDS[COMP_CWORD]}
-    prev=${COMP_WORDS[COMP_CWORD-1]}
+    # Bash breaks a word at a colon (COMP_WORDBREAKS), which a history's name may
+    # hold: bash-completion, which loads this file wherever it is installed,
+    # puts the pieces back together.
+    if declare -F _get_comp_words_by_ref >/dev/null; then
+        _get_comp_words_by_ref -n : cur prev words cword
+    else
+        words=("${COMP_WORDS[@]}")
+        cword=${COMP_CWORD}
+        cur=${words[cword]}
+        prev=${words[cword-1]}
+    fi
     COMPREPLY=()
 
     # Both take a free-form value we have no way to guess -- typed after the
     # option, or after its "=", which bash makes a word of its own.
-    [[ ${prev} == = ]] && prev=${COMP_WORDS[COMP_CWORD-2]}
+    [[ ${prev} == = ]] && prev=${words[cword-2]}
     case ${prev} in
         -d|--decoration|-s|--separator|-t|--timeout)
             return
@@ -155,12 +192,12 @@ _gpaste-client()
     # Options may appear anywhere (getopt_long permutes), so walk the whole line:
     # the first bare word is the verb, the ones after it are its arguments, and
     # @argpos ends up being the index of the argument now being completed.
-    for ((i = 1; i < COMP_CWORD; ++i)); do
-        case ${COMP_WORDS[i]} in
+    for ((i = 1; i < cword; ++i)); do
+        case ${words[i]} in
             --decoration|--separator|--timeout)
                 # Its value: the next word, or the one after an "=".
                 ((++i))
-                [[ ${COMP_WORDS[i]} == = ]] && ((++i))
+                [[ ${words[i]} == = ]] && ((++i))
                 ;;
             --use-index)
                 use_index=1
@@ -171,7 +208,7 @@ _gpaste-client()
                 # Short options, bundled or not: -i among them, and one taking a
                 # value ending the bundle -- with the rest of it, or the next word
                 # when it is last.
-                local flags=${COMP_WORDS[i]#-} j
+                local flags=${words[i]#-} j
 
                 for ((j = 0; j < ${#flags}; ++j)); do
                     case ${flags:j:1} in
@@ -179,7 +216,12 @@ _gpaste-client()
                             use_index=1
                             ;;
                         d|s|t)
-                            ((j == ${#flags} - 1)) && ((++i))
+                            # The word being completed is then that value,
+                            # which nothing here can guess either.
+                            if ((j == ${#flags} - 1)); then
+                                ((++i))
+                                ((i == cword)) && return
+                            fi
                             break
                             ;;
                     esac
@@ -187,7 +229,7 @@ _gpaste-client()
                 ;;
             *)
                 if [[ -z ${verb} ]]; then
-                    verb=${COMP_WORDS[i]}
+                    verb=${words[i]}
                 else
                     ((++argpos))
                 fi
@@ -231,8 +273,13 @@ _gpaste-client()
             ((argpos == 0)) && _gpaste_client_complete_histories
             ;;
         file|f)
-            COMPREPLY=($(compgen -f -- "${cur}"))
-            compopt -o filenames 2>/dev/null
+            # Its one argument, one candidate per line, unsplit and unglobbed: a
+            # path may hold a space or a glob character, and readline quotes it
+            # (-o filenames).
+            if ((argpos == 0)); then
+                mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
+                compopt -o filenames 2>/dev/null
+            fi
             ;;
         get|g|select|set|s|delete|del|d|remove|rm|upload|u|upload-and-copy|uc|replace|strip-rich-text|srt|make-password|mp|favourite|fav|unfavourite|unfav)
             ((argpos == 0)) && COMPREPLY=($(compgen -W "$(${items})" -- "${cur}"))

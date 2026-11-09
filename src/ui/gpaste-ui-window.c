@@ -44,6 +44,9 @@ struct _GPasteUiWindow
     GtkSearchBar           *search_bar;
     GtkSearchEntry         *search_entry;
     GtkBox                 *content_box;
+    /* Borrowed, the content box owning it: the header bar of a window whose
+     * client could not be built, until setup's pages bring their own. */
+    GtkWidget              *daemonless_header;
     AdwToastOverlay        *toast_overlay;
     AdwBanner              *banner;
     /* Weak, the overlay owning it: the offer to restart a daemon older than
@@ -86,8 +89,10 @@ struct _GPasteUiWindow
      * question out to find out: see g_paste_ui_window_probe_legacy (). */
     gboolean                legacy;
     GCancellable           *legacy_probe;
-    /* A restart of that daemon is out: see on_banner_retry (). */
+    /* A restart of that daemon is out, or asked for while that question is:
+     * see on_banner_retry (). */
     gboolean                legacy_restarting;
+    gboolean                legacy_restart_asked;
 };
 
 G_PASTE_DEFINE_TYPE (UiWindow, ui_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -1105,14 +1110,6 @@ g_paste_ui_window_on_daemon_host (GPasteUiWindow *self)
     g_paste_ui_window_update_version_toast (self);
 }
 
-static void
-on_daemon_owner_changed (GPasteClient *client G_GNUC_UNUSED,
-                         GParamSpec   *pspec  G_GNUC_UNUSED,
-                         gpointer      user_data)
-{
-    g_paste_ui_window_on_daemon_host (user_data);
-}
-
 /* The watch is dropped in dispose (), after which no callback runs, so @self
  * is borrowed. */
 static void
@@ -1141,6 +1138,8 @@ on_shell_vanished (GDBusConnection *connection G_GNUC_UNUSED,
     g_paste_ui_window_on_shell_owner (user_data, NULL);
 }
 
+static void g_paste_ui_window_restart_legacy (GPasteUiWindow *self);
+
 static void
 on_legacy_probed (GObject      *source_object G_GNUC_UNUSED,
                   GAsyncResult *res,
@@ -1160,29 +1159,63 @@ on_legacy_probed (GObject      *source_object G_GNUC_UNUSED,
     g_clear_object (&self->legacy_probe);
     self->legacy = legacy;
     g_paste_ui_window_update_banner (self);
+
+    if (self->legacy_restart_asked)
+    {
+        self->legacy_restart_asked = FALSE;
+        if (legacy)
+            g_paste_ui_window_restart_legacy (self);
+    }
 }
 
 /* A GPaste 45 or 50 left running by a package update owns the name and serves
  * none of this interface, so it is never ready for this version: the window
  * would say it is connecting, then offer a retry that waits for it forever.
- * Asked whenever the presence moves while something owns the name, the window
- * held weakly, as the question is one dispose () ends. */
+ * Asked whenever the presence moves, or the name changes hands, while something
+ * owns it, the window held weakly, as the question is one dispose () ends. The
+ * verdict stands until the answer replaces it: dropped while the question is
+ * out, it would have the banner offer a retry, which cannot help such a daemon,
+ * for a round trip on every move (/ui/daemon-presence/legacy-kept), and a
+ * Restart pressed meanwhile waits for the answer (on_banner_retry ()). */
 static void
 g_paste_ui_window_probe_legacy (GPasteUiWindow *self)
 {
     g_paste_clear_cancellable (&self->legacy_probe);
-    self->legacy = FALSE;
 
-    if (g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY)
-        return;
-
-    g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
+    g_autofree gchar *owner = (g_paste_client_get_daemon_presence (self->client) == G_PASTE_DAEMON_PRESENCE_READY) ? NULL : g_dbus_proxy_get_name_owner (G_DBUS_PROXY (self->client));
 
     if (!owner)
+    {
+        self->legacy = FALSE;
+        self->legacy_restart_asked = FALSE;
         return;
+    }
 
     self->legacy_probe = g_cancellable_new ();
     g_paste_util_daemon_is_legacy (self->client, self->legacy_probe, on_legacy_probed, g_paste_weak_ref_new (self));
+}
+
+/* An older daemon re-executing as this version, by a signal of the command
+ * line's or a service restart, hands the name over with the presence still
+ * starting on both sides of it, which nothing then announces: the verdict on
+ * whether an older daemon runs is asked again of whoever owns the name now
+ * (/ui/daemon-presence/legacy-replaced). A daemon arriving as the presence
+ * moves is asked about twice, the presence's handler running first and its
+ * question given up on here: rare enough, and cheap enough, not to keep the
+ * owner a question went out for. */
+static void
+on_daemon_owner_changed (GPasteClient *client G_GNUC_UNUSED,
+                         GParamSpec   *pspec  G_GNUC_UNUSED,
+                         gpointer      user_data)
+{
+    GPasteUiWindow *self = user_data;
+
+    if (self->client)
+    {
+        g_paste_ui_window_probe_legacy (self);
+        g_paste_ui_window_update_banner (self);
+    }
+    g_paste_ui_window_on_daemon_host (self);
 }
 
 /* The list and the sidebar follow the daemon on their own; the window says so
@@ -1252,11 +1285,11 @@ on_legacy_reexecuted (GObject      *source_object G_GNUC_UNUSED,
     if (!restarted)
         g_warning ("Could not restart the older daemon: %s", error->message);
 
-    /* As in on_client_ready (): a window disposed meanwhile has no widgets left
-     * to say anything with. Closing it does not get there, gtk_window_destroy ()
-     * leaving the dispose to the last reference, which this callback holds --
-     * so no test can, short of disposing it by hand. */
-    if (!self->banner)
+    /* As in on_client_ready (): a window closed meanwhile is GTK's no more,
+     * though the reference this callback holds keeps its widgets standing, and
+     * there is nobody left to tell. What it would have said goes on a window
+     * nothing shows any more, which is why no test can see it. */
+    if (!g_paste_ui_window_is_toplevel (self))
         return;
 
     /* What comes back is a daemon starting, until the presence says more. */
@@ -1267,6 +1300,24 @@ on_legacy_reexecuted (GObject      *source_object G_GNUC_UNUSED,
     }
     else
         g_paste_gtk_util_toast (GTK_WIDGET (self), _("Could not restart the older daemon"));
+}
+
+/* Restarted by signal (g_paste_util_reexecute_legacy_daemon ()): what comes
+ * back is this version's daemon, which the presence follows. Once: a second
+ * press would find the new daemon and say the restart failed, or signal the
+ * old one again as it execs, before the new one handles it. */
+static void
+g_paste_ui_window_restart_legacy (GPasteUiWindow *self)
+{
+    if (self->legacy_restarting)
+        return;
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, on_legacy_reexecuted, g_object_ref (self));
+
+    self->legacy_restarting = TRUE;
+
+    g_task_set_task_data (task, g_object_ref (self->client), g_object_unref);
+    g_task_run_in_thread (task, reexecute_legacy_in_thread);
 }
 
 /* The banner's button, an offer only while there is no daemon: ask for one now,
@@ -1282,21 +1333,18 @@ on_banner_retry (AdwBanner *banner G_GNUC_UNUSED,
     if (self->connecting)
         return;
 
-    /* Restarted by signal (g_paste_util_reexecute_legacy_daemon ()): what comes
-     * back is this version's daemon, which the presence follows. Once: a
-     * second press would find the new daemon and say the restart failed, or
-     * signal the old one again as it execs, before the new one handles it. */
+    /* Pressed while the window asks again whether an older daemon runs --
+     * the presence moved, or the name changed hands -- the restart waits for
+     * the answer, carried out once it is in should it still be yes: the
+     * verdict the banner shows stands meanwhile, and may be that of a daemon
+     * that has let the name go to this version's, which a restart could only
+     * fail on. */
     if (self->legacy)
     {
-        if (self->legacy_restarting)
-            return;
-
-        g_autoptr (GTask) task = g_task_new (NULL, NULL, on_legacy_reexecuted, g_object_ref (self));
-
-        self->legacy_restarting = TRUE;
-
-        g_task_set_task_data (task, g_object_ref (self->client), g_object_unref);
-        g_task_run_in_thread (task, reexecute_legacy_in_thread);
+        if (self->legacy_probe)
+            self->legacy_restart_asked = TRUE;
+        else
+            g_paste_ui_window_restart_legacy (self);
         return;
     }
 
@@ -1353,9 +1401,10 @@ on_history_chosen (GPasteUiPanel *panel G_GNUC_UNUSED,
 /* The focus taken off @widget while that still reaches whatever holds it, ahead
  * of @widget going insensitive: GTK drops the focus of an insensitive widget
  * without telling it, and an entry in there -- the sidebar's "Switch or
- * Create", the Merge popover's separator -- would go on believing it has it,
- * its input method never released and a later click never focusing it again.
- * GTK warns about it the next time the entry is shown. */
+ * Create" -- would go on believing it has it, its input method never released
+ * and a later click never focusing it again. GTK warns about it the next time
+ * the entry is shown. The Merge popover's separator needs none of this, the
+ * popover's closing being what releases it (on_selection_changed ()). */
 static void
 g_paste_ui_window_release_focus (GPasteUiWindow *self,
                                  GtkWidget      *widget)
@@ -1433,22 +1482,26 @@ on_selection_changed (GPasteUiHistory *history G_GNUC_UNUSED,
     g_paste_ui_header_set_selection_count (self->header, count);
 
     /* Merging is only meaningful with at least two items. Fewer, and the
-     * popover has nothing left to merge either: closed, and the focus off its
-     * entry before the button goes insensitive (see
-     * g_paste_ui_window_release_focus ()). The picks drop to none with the
-     * daemon going too, the list emptying. */
+     * popover has nothing left to merge either: closed, which takes the focus
+     * off its entry with the focus-out the entry needs, before the button goes
+     * insensitive (g_paste_ui_window_release_focus () says why that matters;
+     * /ui/daemon-presence/merge-entry-focus-released). The picks drop to none
+     * with the daemon going too, the list emptying. */
     if (count < 2)
-    {
         gtk_menu_button_popdown (GTK_MENU_BUTTON (self->merge_button));
-        g_paste_ui_window_release_focus (self, self->merge_button);
-    }
 
     gtk_widget_set_sensitive (self->merge_button, count >= 2);
 }
 
+/* The window is held, and the application with it: closed while the picks
+ * are read, the window stays undisposed, its client with it, and the last
+ * window going ends no main loop the reads still need. The merge asked for
+ * before the close goes out, the flush ending the application sending it
+ * (/ui/daemon-presence/merge-after-close). */
 typedef struct
 {
     GPasteUiWindow *window;
+    GApplication   *application;
     gchar          *separator;
 } MergeData;
 
@@ -1456,6 +1509,7 @@ static void
 merge_data_free (MergeData *data)
 {
     g_clear_object (&data->window);
+    g_clear_pointer (&data->application, g_application_release);
     g_free (data->separator);
     g_free (data);
 }
@@ -1499,7 +1553,11 @@ do_merge (GPasteUiWindow *self,
     MergeData *data = g_new0 (MergeData, 1);
 
     data->window = g_object_ref (self);
+    data->application = G_APPLICATION (gtk_window_get_application (GTK_WINDOW (self)));
     data->separator = g_strdup (separator);
+
+    if (data->application)
+        g_application_hold (data->application);
 
     gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_ancestor (origin, GTK_TYPE_POPOVER)));
     g_paste_ui_history_get_selected_uuids (self->history, on_selection_resolved, data);
@@ -1622,6 +1680,7 @@ g_paste_ui_window_dispose (GObject *object)
     self->search_bar = NULL;
     self->search_entry = NULL;
     self->content_box = NULL;
+    self->daemonless_header = NULL;
     self->toast_overlay = NULL;
     self->banner = NULL;
     self->merge_bar = NULL;
@@ -1674,10 +1733,9 @@ g_paste_ui_window_init (GPasteUiWindow *self)
 
     GtkWidget *banner = adw_banner_new ("");
     self->banner = ADW_BANNER (banner);
-    /* As in g_paste_gtk_util_toast (): what it says is a translation. Said,
-     * though libadwaita 1.10 starts a banner with markup off, against its
-     * property's default of on, which a later release may honour: no case here
-     * can tell the two apart. */
+    /* As in g_paste_gtk_util_toast (): what it says is a translation. Said
+     * for the reason the prompt's warning banner gives
+     * (gpaste-prompt-adw.c). */
     adw_banner_set_use_markup (self->banner, FALSE);
     g_signal_connect_object (banner, "button-clicked", G_CALLBACK (on_banner_retry), self, 0);
     gtk_box_append (GTK_BOX (vbox), banner);
@@ -1821,6 +1879,8 @@ g_paste_ui_window_setup (GPasteUiWindow *self,
     gtk_widget_set_halign (nav_split_view, GTK_ALIGN_FILL);
     gtk_widget_set_valign (nav_split_view, GTK_ALIGN_FILL);
 
+    if (self->daemonless_header)
+        gtk_box_remove (self->content_box, g_steal_pointer (&self->daemonless_header));
     gtk_box_append (self->content_box, nav_split_view);
 
     g_object_bind_property (g_paste_ui_header_get_search_button (self->header), "active",
@@ -1890,8 +1950,7 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
 
     if (error)
     {
-        /* A warning, as in the panel's failed listing. No test builds a client
-         * that fails: the bus the suite runs on is always there. */
+        /* A warning, as in the panel's failed listing. */
         g_warning ("Couldn't connect to GPaste: %s", error->message);
         /* No wait here, unlike a daemon that merely went away: building the
          * proxy is what failed -- the session bus unreachable, or a daemon it
@@ -1902,6 +1961,12 @@ on_client_ready (GObject      *source_object G_GNUC_UNUSED,
         if (self->initialized)
             return;
 
+        /* Every header bar belongs to a page setup builds, so with none the
+         * window would have nothing to close it with or drag it by, the
+         * banner's one button only retrying: this one stands in until a retry
+         * gets as far as setup (/ui/daemon-presence/client-fails). */
+        self->daemonless_header = adw_header_bar_new ();
+        gtk_box_prepend (self->content_box, self->daemonless_header);
         add_daemonless_window_actions (self);
         /* Present anyway: the banner explaining what went wrong is the whole
          * point, and a window that is never shown leaves the application

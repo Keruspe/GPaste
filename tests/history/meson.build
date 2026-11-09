@@ -1,14 +1,24 @@
-test_history = executable(
-  'test-history',
-  sources: [ 'test-history.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, cc.find_library('dl') ],
-)
+# The subprocess traps, the waits on the daemon's methods and on a load, and
+# the whole-file reads and writes that test-history, test-ordering and
+# test-storage-failures share.
+test_history_sources = files('gpaste-test-history.c')
 
-# The encrypted cases derive an Argon2id key (at libsodium's MODERATE limits)
-# several times each, which alone accounts for most of the runtime and brushes
-# meson's 30s default on a slow or loaded machine. Give it real room rather than
-# letting the suite fail intermittently for a reason that is not a bug.
-test('history', test_history, depends: [gpaste_schemas, test_bus_supervisor], timeout: 180)
+# It defines g_paste_settings_reload () beside libgpaste's, which a static
+# library's object defines again (library_static).
+if not library_static
+  test_history = executable(
+    'test-history',
+    sources: [ 'test-history.c' ] + test_history_sources + gpaste_test_pwhash_sources,
+    dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
+  )
+
+  # Its longest waits give a migration a minute
+  # (G_PASTE_TEST_STORAGE_WAIT_SECONDS) and a load thirty seconds
+  # (pump_until_loaded ()) before failing the case waiting on them: room past
+  # those, rather than meson's 30s default killing the binary with no case
+  # named.
+  test('history', test_history, depends: [gpaste_schemas, test_bus_supervisor], timeout: 180)
+endif
 
 test_enums = executable(
   'test-enums',
@@ -20,7 +30,7 @@ test('enums', test_enums, depends: [gpaste_schemas, test_bus_supervisor])
 if library_interposable
   test_ordering = executable(
     'test-ordering',
-    sources: [ 'test-ordering.c' ],
+    sources: [ 'test-ordering.c' ] + test_history_sources,
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
   )
   test('history-ordering', test_ordering, depends: [gpaste_schemas, test_bus_supervisor])
@@ -29,7 +39,7 @@ endif
 test_saver = executable(
   'test-saver',
   sources: [ 'test-saver.c' ],
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_bus_dep, gpaste_test_env_dep ],
 )
 test('saver', test_saver, depends: [gpaste_schemas, test_bus_supervisor])
 
@@ -41,11 +51,13 @@ test('saver', test_saver, depends: [gpaste_schemas, test_bus_supervisor])
 if not library_static
   test_storage_failures = executable(
     'test-storage-failures',
-    sources: [ 'test-storage-failures.c' ],
+    sources: [ 'test-storage-failures.c' ] + test_history_sources,
     c_args: library_own_calls_args,
     dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, cc.find_library('dl') ],
   )
-  # Its pumps and fixed waits add up to several seconds, and the encrypted
-  # cases derive keys: room as for 'history' above.
+  # Its pumps and fixed waits add up to several seconds, on top of the minute
+  # its storage operations are given (G_PASTE_TEST_STORAGE_WAIT_SECONDS) and
+  # the thirty /storage/lock/taken-is-ours gives its child: room past those,
+  # rather than meson's 30s default killing the binary with no case named.
   test('storage-failures', test_storage_failures, depends: [gpaste_schemas, test_bus_supervisor], timeout: 120)
 endif

@@ -5,8 +5,8 @@
 // toggle asks of the daemon and what the switch shows once it has answered,
 // not Shell rendering.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {Signals, loadShipped} = require('./suite.cjs');
 
 const errors = [];
 
@@ -14,18 +14,10 @@ const errors = [];
 // toggle(), which flips the switch, and setToggleState() sets it; 'toggled'
 // comes from the switch's notify::state, which a state left as it was does not
 // raise. A destroyed actor takes no state at all.
-class PopupSwitchMenuItem {
+class PopupSwitchMenuItem extends Signals {
     constructor(_text, active) {
+        super();
         this._state = active;
-        this._handlers = [];
-    }
-
-    connect(signal, handler) { this._handlers.push({signal, handler}); }
-    emit(signal, ...args) {
-        for (const {signal: name, handler} of this._handlers) {
-            if (name === signal)
-                handler(this, ...args);
-        }
     }
 
     get state() { return this._state; }
@@ -52,9 +44,7 @@ const context = vm.createContext({
     GObject: {registerClass: (...args) => args.at(-1)},
     PopupSwitchMenuItem,
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-vm.runInContext(`${source}\nthis.StateSwitch = GPasteStateSwitch;`, context);
+loadShipped(context, {StateSwitch: 'GPasteStateSwitch'});
 
 // The daemon side of SetActive: it answers once the test says so, refusing
 // when its track-changes setting cannot be written. A call made without a

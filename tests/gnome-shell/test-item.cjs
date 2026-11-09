@@ -6,27 +6,11 @@
 // where the menu key reaches it, and what a failed read leaves in the journal.
 // Not Shell rendering.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const vm = require('node:vm');
+const {Signals, loadShipped, runShipped, runSuite, settle} = require('./suite.cjs');
 
 const errors = [];
 const debugged = [];
-
-// Signals as the shell's actors carry them, enough to emit one by hand.
-class Signals {
-    connect(signal, handler) {
-        (this._handlers ??= []).push({signal, handler});
-        return this._handlers.length;
-    }
-
-    emit(signal, ...args) {
-        for (const {signal: name, handler} of this._handlers ?? []) {
-            if (name === signal)
-                handler(this, ...args);
-        }
-    }
-}
 
 class Text {
     set_text(text) { this.text = text; }
@@ -38,10 +22,20 @@ class PopupMenuItem extends Signals {
     constructor() {
         super();
         this.label = {clutter_text: new Text(), set_x_expand() {}, set_style() {}, get_preferred_height: () => [0, 16]};
+        this.layout_manager = {spacing: 6};
+        this._children = [];
     }
 
+    // A box layout's: the label's 500 pixels, and every child shown after it.
+    vfunc_get_preferred_width(forHeight) {
+        const shown = this._children.filter(child => child.visible);
+
+        return [30, shown.reduce((width, child) => width + child.get_preferred_width(forHeight)[1] + this.layout_manager.spacing, 500)];
+    }
+
+    queue_relayout() {}
     insert_child_below() {}
-    add_child() {}
+    add_child(child) { this._children.push(child); }
     add_action() {}
     remove_child() {}
     show() { this.visible = true; }
@@ -53,7 +47,8 @@ class PopupMenuItem extends Signals {
 
 class Button extends Signals {
     setUuid(uuid) { this.uuid = uuid; }
-    setFavourite() {}
+    setFavourite(favourite) { this.favourite = favourite; }
+    get_preferred_width() { return [16, 16]; }
 }
 
 const context = vm.createContext({
@@ -70,8 +65,7 @@ const context = vm.createContext({
     Gio: {BytesIcon: {new: () => null}},
     GPaste: {
         ItemKind: {TEXT: 0, IMAGE: 1, COLOR: 2},
-        util_one_line: text => text,
-        util_display_string: value => value,
+        UTIL_SHOWN_CHARS: 1000,
     },
     global: {stage: {connect: () => 1, disconnect() {}, get_key_focus: () => null}},
     GPasteDeleteButton: Button,
@@ -87,12 +81,27 @@ const context = vm.createContext({
     logFailure: finish => ({finish}),
     debugFailure: e => debugged.push(e.message),
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Item = GPasteItem;`, context);
+// The shipped helper the row asks its width of.
+runShipped(context, 'dependencies.js', 'widthWithoutRevealed');
+loadShipped(context, {Item: 'GPasteItem'});
 
-function item(uuid, value) {
-    return {get_uuid: () => uuid, get_value: () => value, is_favourite: () => false, get_kind: () => 0};
+// How many times a row read an item's whole value, which a text's row has no
+// need of: it is drawn from the line libgpaste cuts.
+let valuesRead = 0;
+
+function item(uuid, value, kind = 0, favourite = false) {
+    return {
+        get_uuid: () => uuid,
+        get_value: () => { ++valuesRead; return value; },
+        // libgpaste's cut, by characters (/util/display-line): what the row
+        // asks of it is what is checked here.
+        get_display_line: size => {
+            const chars = [...value];
+            return size > 0 && chars.length > size ? `${chars.slice(0, size).join('')}…` : value;
+        },
+        is_favourite: () => favourite,
+        get_kind: () => kind,
+    };
 }
 
 // A client whose items the test hands out, and which records what is sent.
@@ -113,37 +122,70 @@ function client() {
     };
 }
 
-async function filled(row, bus, uuid, value) {
-    bus.pending.resolve(item(uuid, value));
-    await new Promise(resolve => setImmediate(resolve));
+async function filled(row, bus, uuid, value, kind = 0, favourite = false) {
+    bus.pending.resolve(item(uuid, value, kind, favourite));
+    await settle();
 }
 
-(async () => {
+runSuite('Item', async () => {
     // Text past element-size is cut with an ellipsis, and a larger size shows
-    // more of it again; 0 shows all of it, up to what a row could show.
+    // more of it again, without the item being read again; 0 shows all of it, up to what a row could show.
     {
         const bus = client();
         const row = new context.Item(bus, 5, 1, 1);
 
         await filled(row, bus, 'a', 'abcdefghij');
         assert.equal(row.label.clutter_text.text, 'abcde…');
+        assert.equal(valuesRead, 0);
         row.setTextSize(8);
         assert.equal(row.label.clutter_text.text, 'abcdefgh…');
         row.setTextSize(0);
         assert.equal(row.label.clutter_text.text, 'abcdefghij');
         row.setTextSize(20);
         assert.equal(row.label.clutter_text.text, 'abcdefghij');
-        // Characters, not UTF-16 units: no surrogate pair is cut in two.
-        row.setTextSize(2);
-        row.refresh();
-        await filled(row, bus, 'a', '😀😀😀');
-        assert.equal(row.label.clutter_text.text, '😀😀…');
         // All of it, but no more than a row could ever show: the label lays
         // the whole of what it is handed out, on GNOME Shell's main thread.
         row.setTextSize(0);
         row.refresh();
         await filled(row, bus, 'a', 'x'.repeat(100000));
         assert.equal(row.label.clutter_text.text, `${'x'.repeat(1000)}…`);
+    }
+
+    // The pin and the bin a look at the row shows take the label's room, not
+    // the menu's, which is as wide as its widest row: the row asks for the
+    // width it asked for without them. A pinned item's star, a badge either
+    // way, counts in both.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+        const looked = () => {
+            row.hover = true;
+            row.emit('notify::hover');
+            assert.equal(row._deleteItem.visible, true);
+            assert.equal(row._favouriteItem.visible, true);
+        };
+        const unlooked = () => {
+            row.hover = false;
+            row.emit('notify::hover');
+            assert.equal(row._deleteItem.visible, false);
+        };
+        // Copied out of the context the row runs in, whose arrays are not this
+        // one's.
+        const width = () => [...row.vfunc_get_preferred_width(-1)];
+
+        await filled(row, bus, 'a', 'abc');
+        assert.deepEqual(width(), [30, 500]);
+        looked();
+        assert.deepEqual(width(), [30, 500]);
+        unlooked();
+
+        row.refresh();
+        await filled(row, bus, 'a', 'abc', 0, true);
+        assert.equal(row._favouriteItem.visible, true);
+        assert.deepEqual(width(), [30, 522]);
+        looked();
+        assert.deepEqual(width(), [30, 522]);
+        unlooked();
     }
 
     // Rebound to another uuid, the row selects and deletes nothing until that
@@ -170,8 +212,8 @@ async function filled(row, bus, uuid, value) {
 
     // Rebound to a position, as the history list rebinds its rows, it acts on
     // nothing until the item there is what it shows; a reply a newer binding
-    // overtook paints nothing; and destroyed, the read it has out is
-    // cancelled.
+    // overtook paints nothing, whether that binding is to a position or to a
+    // uuid; and destroyed, the read it has out is cancelled.
     {
         const bus = client();
         const row = new context.Item(bus, 50, 1, -1, 'first');
@@ -182,17 +224,42 @@ async function filled(row, bus, uuid, value) {
         row._delete();
         assert.deepEqual(bus.sent, []);
 
+        const overtaken = bus.pending;
+
+        row.setIndex(3);
+        overtaken.resolve(item('older', 'stale'));
+        await settle();
+        assert.notEqual(row.label.clutter_text.text, 'stale');
+        assert.equal(row.uuid, null);
+
         row.setUuid('older');
 
         const stale = bus.pending;
 
         row.setUuid('newer');
         stale.resolve(item('older', 'stale'));
-        await new Promise(resolve => setImmediate(resolve));
+        await settle();
         assert.notEqual(row.label.clutter_text.text, 'stale');
 
         row.destroy();
         assert.equal(bus.cancellable.is_cancelled(), true);
+    }
+
+    // Rebound, a row stops showing the pin of the item it held, as it stops
+    // answering for it: the star a look keeps revealed meanwhile is an empty
+    // one.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+
+        await filled(row, bus, 'pinned', 'pinned', 0, true);
+        row.hover = true;
+        row.emit('notify::hover');
+        assert.equal(row._favouriteItem.favourite, true);
+        row.setIndex(2);
+        assert.equal(row._favouriteItem.visible, true);
+        assert.equal(row._favouriteItem.uuid, null);
+        assert.equal(row._favouriteItem.favourite, false);
     }
 
     // The menu key on the row's star or bin, which St emits popup-menu on,
@@ -209,13 +276,27 @@ async function filled(row, bus, uuid, value) {
         assert.deepEqual(asked, [['text', true], ['text', true]]);
     }
 
+    // Only a text row has actions to offer: one of another kind opens nothing
+    // rather than a row of buttons that cannot act on it.
+    {
+        const bus = client();
+        const row = new context.Item(bus, 50, 1, 1);
+        const asked = [];
+
+        row.connect('actions', (actor, uuid, fromKeyboard) => asked.push([uuid, fromKeyboard]));
+        await filled(row, bus, 'colour', '#336699', 2);
+        row.emit('popup-menu');
+        row._favouriteItem.emit('popup-menu');
+        assert.deepEqual(asked, []);
+    }
+
     // A read failing for a row is said at debug level, not as an error.
     {
         const bus = client();
         const row = new context.Item(bus, 50, 1, 1);
 
         bus.pending.reject(new Error('INVALID_INDEX'));
-        await new Promise(resolve => setImmediate(resolve));
+        await settle();
         assert.deepEqual(errors, []);
         assert.deepEqual(debugged, ['INVALID_INDEX']);
         assert.ok(row);
@@ -234,10 +315,7 @@ async function filled(row, bus, uuid, value) {
             },
             logFailure: finish => ({finish}),
         });
-        const starSource = fs.readFileSync(path.join(path.dirname(process.argv[2]), 'favouriteButton.js'), 'utf8')
-            .replace(/^import [^;]*;\n/gm, '').replace('export const ', 'const ');
-
-        vm.runInContext(`${starSource}\nthis.Star = GPasteFavouriteButton;`, starContext);
+        loadShipped(starContext, {Star: 'GPasteFavouriteButton'}, 'favouriteButton.js');
 
         const star = new starContext.Star({set_favourite: (uuid, favourite, cancellable, callback) => sent.push([uuid, favourite, callback.finish])}, 'pinned');
 
@@ -248,7 +326,4 @@ async function filled(row, bus, uuid, value) {
     }
 
     console.log('Item: text bound, what the row acts on, the menu key and quiet failures passed');
-})().catch(e => {
-    console.log(e);
-    process.exit(1);
 });

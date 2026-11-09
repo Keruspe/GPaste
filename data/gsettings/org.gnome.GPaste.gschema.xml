@@ -14,7 +14,7 @@
       <default>80</default>
       <summary>Max size of an element when displaying it</summary>
       <description>
-        Anything past that length is replaced by "…" when an element is shown in the history, and newlines and tabs are shown as spaces. 0 disables the limit.
+        How many characters of an element a history shows: GNOME Shell’s menu cuts what is past them with "…", and the graphical tool sizes its rows for them, showing more in a window wide enough. Newlines and tabs are shown as spaces. 0 sets no limit.
       </description>
     </key>
 
@@ -261,7 +261,7 @@
     </key>
 
     <key name="upload-command" type="s">
-      <default>'curl -sS --data-binary @- https://paste.rs'</default>
+      <default>'curl -sS --data-binary @- https://paste.c-net.org/'</default>
       <summary>The command uploading an item to a pastebin service</summary>
       <description>
         The item is written to the command’s standard input, and the command must

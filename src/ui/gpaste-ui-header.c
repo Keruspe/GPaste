@@ -63,6 +63,17 @@ header_toggle_new (const gchar *icon_name,
     return button;
 }
 
+/* Drawn as the rows' stars are: empty while the filter is off, full while it
+ * shows only the pinned items. */
+static void
+on_favourites_toggled (GtkToggleButton *button,
+                       gpointer         user_data G_GNUC_UNUSED)
+{
+    GtkImage *star = GTK_IMAGE (gtk_button_get_child (GTK_BUTTON (button)));
+
+    gtk_image_set_from_icon_name (star, (gtk_toggle_button_get_active (button)) ? "starred-symbolic" : "non-starred-symbolic");
+}
+
 /* The two kinds of item the window can be asked to compose. A split button
  * rather than two buttons or a plain menu: adding text is what this is for
  * nearly every time, so it keeps its single click and its accelerator, and the
@@ -300,7 +311,7 @@ g_paste_ui_header_new (void)
 
     GtkWidget *new_item = header_new_item_new ();
     GtkWidget *search = header_toggle_new ("edit-find-symbolic", _("Search"));
-    GtkWidget *favourites = header_toggle_new ("starred-symbolic", _("Show Only Pinned Items"));
+    GtkWidget *favourites = header_toggle_new ("non-starred-symbolic", _("Show Only Pinned Items"));
     GtkWidget *merge = header_button_new ("edit-select-all-symbolic", _("Select Items to Merge"), NULL);
     GtkWidget *menu = header_menu_new ();
     GtkWidget *title = adw_window_title_new (PACKAGE_NAME, NULL);
@@ -319,6 +330,7 @@ g_paste_ui_header_new (void)
     data->cancel = cancel;
 
     g_object_set_data_full (G_OBJECT (self), "header-data", data, g_free);
+    g_signal_connect (favourites, "toggled", G_CALLBACK (on_favourites_toggled), NULL);
 
     adw_header_bar_set_title_widget (bar, title);
     adw_header_bar_pack_start (bar, new_item);

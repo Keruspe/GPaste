@@ -84,7 +84,7 @@ g_paste_clipboard_provider_is_clipboard (GPasteClipboardProvider *self)
 {
     g_return_val_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self), FALSE);
 
-    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->is_clipboard (self);
+    return G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->is_clipboard (self);
 }
 
 /**
@@ -174,7 +174,20 @@ g_paste_clipboard_provider_update_full (GPasteClipboardProvider              *se
                                         GPasteClipboardProviderUpdateCallback callback,
                                         gpointer                              user_data)
 {
-    g_return_if_fail (G_PASTE_IS_CLIPBOARD_PROVIDER (self));
+    /* Hand-rolled, as in g_paste_clipboard_provider_sync_text (): @callback is
+     * the one release of @user_data, so a bare return would leak it and what it
+     * holds -- a manager's update data holds the manager. Answered as a read
+     * whose provider is gone, the shape that asks of the callback nothing but
+     * the release. */
+    if (!G_PASTE_IS_CLIPBOARD_PROVIDER (self))
+    {
+        g_critical ("%s: assertion failed: G_PASTE_IS_CLIPBOARD_PROVIDER (self)", G_STRFUNC);
+
+        if (callback)
+            callback (NULL, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, user_data);
+
+        return;
+    }
 
     G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->update (self, record, callback, user_data);
 }
@@ -234,7 +247,7 @@ g_paste_clipboard_provider_sync_text (GPasteClipboardProvider    *self,
         return;
     }
 
-    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE ((GPasteClipboardProvider *) self)->sync_text (self, other, callback, user_data, destroy);
+    G_PASTE_CLIPBOARD_PROVIDER_GET_IFACE (self)->sync_text (self, other, callback, user_data, destroy);
 }
 
 G_PASTE_VISIBLE GPasteClipboardPublication
@@ -266,7 +279,11 @@ g_paste_clipboard_provider_select_item_full (GPasteClipboardProvider *self,
  * otherwise only the ordinary selection path does.
  *
  * Returns: (transfer none) (nullable): the #GPasteItem this put on the selection,
- *          or %NULL when it left the selection as it found it
+ *          or %NULL when it put nothing there itself: the selection carried
+ *          something, the history had nothing to give, its head was a
+ *          password, or the head was one no selection can carry -- removed
+ *          from the history then, whose next head the removal publishes on
+ *          every selection, this one included, before this returns
  */
 G_PASTE_VISIBLE GPasteItem *
 g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
@@ -327,7 +344,9 @@ g_paste_clipboard_provider_ensure_not_empty (GPasteClipboardProvider *self,
  * g_paste_clipboard_provider_store:
  * @self: a #GPasteClipboardProvider instance
  *
- * Store the contents of the selection before exiting
+ * Ask a clipboard manager to take over what the selection carries. This only
+ * starts the hand-off: the manager converts the contents from this process, so
+ * it has to keep running, and answering, until that is done.
  */
 G_PASTE_VISIBLE void
 g_paste_clipboard_provider_store (GPasteClipboardProvider *self)

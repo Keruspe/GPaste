@@ -233,18 +233,6 @@ g_paste_util_history_is_stored (const gchar  *name,
     return g_file_test (path, G_FILE_TEST_EXISTS);
 }
 
-G_PASTE_VISIBLE gboolean
-g_paste_util_history_is_stored_anywhere (const gchar *name)
-{
-    for (GPasteStorage storage = 0; storage < G_PASTE_N_STORAGE; ++storage)
-    {
-        if (storage != G_PASTE_STORAGE_NOOP && g_paste_util_history_is_stored (name, storage))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
 /**
  * g_paste_util_ensure_history_dir_exists:
  *
@@ -433,4 +421,10 @@ g_paste_util_list_directory (GFile       *dir,
     }
 
     return g_strv_builder_end (names);
+}
+
+guint64
+g_paste_util_max_memory (GPasteSettings *settings)
+{
+    return g_paste_settings_get_max_memory_usage (settings) * 1024 * 1024;
 }

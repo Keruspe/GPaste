@@ -17,7 +17,7 @@ gi.require('St', Config.LIBMUTTER_API_VERSION);
 Gio._promisify(GPaste.Client.prototype, 'get_favourites', 'get_favourites_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_history_size', 'get_history_size_finish');
 Gio._promisify(GPaste.Client.prototype, 'list_histories', 'list_histories_finish');
-Gio._promisify(GPaste.Client.prototype, 'search', 'search_finish');
+Gio._promisify(GPaste.Client.prototype, 'search_text', 'search_text_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item_at_index', 'get_item_at_index_finish');
 Gio._promisify(GPaste.Client.prototype, 'get_item', 'get_item_finish');
 // What an item's kind promises but its value does not carry: the image bytes,
@@ -128,4 +128,31 @@ export async function awaitReply(cancellable, call) {
     }
 
     return [!cancellable.is_cancelled(), value];
+}
+
+/**
+ * The width a row asks for without the @revealed buttons it shows only while
+ * it is looked at -- under the pointer, or the keyboard on it -- for the row's
+ * vfunc_get_preferred_width (): a menu is as wide as its widest row, so a
+ * button appearing would otherwise widen the whole menu, where it is meant to
+ * take its room from the row's expanding label. Measured while they show
+ * rather than reserved while they do not, a button St has not styled yet
+ * measuring nothing.
+ *
+ * @param {St.BoxLayout} row - the row, laid out by its box layout
+ * @param {number[]} width - the minimum and natural widths its class asks for
+ * @param {St.Widget[]} revealed - the buttons a look at the row shows
+ * @param {number} forHeight - the height the width is asked for
+ * @returns {number[]} the minimum and natural widths to ask for
+ */
+export function widthWithoutRevealed(row, [min, natural], revealed, forHeight) {
+    const spacing = row.layout_manager.spacing;
+    let shown = 0;
+
+    for (const button of revealed) {
+        if (button.visible)
+            shown += button.get_preferred_width(forHeight)[1] + spacing;
+    }
+
+    return [min, Math.max(min, natural - shown)];
 }

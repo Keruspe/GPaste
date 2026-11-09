@@ -10,7 +10,7 @@ import GPaste from 'gi://GPaste?version=3';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {awaitReply, debugFailure, logFailure, replaceCancellable} from './dependencies.js';
+import {awaitReply, debugFailure, logFailure, replaceCancellable, widthWithoutRevealed} from './dependencies.js';
 import {GPasteDeleteButton} from './deleteButton.js';
 import {GPasteFavouriteButton} from './favouriteButton.js';
 
@@ -22,38 +22,6 @@ import {GPasteFavouriteButton} from './favouriteButton.js';
 // theme's foreground because it has to hold up against both, and a swatch is
 // drawn before the actor has a theme node to ask.
 const SWATCH_BORDER = 'rgba(128, 128, 128, 0.5)';
-
-// The most of an item's text a row lays out, element-size 0 included: the
-// label shapes the whole of what it is handed to ellipsize it, on GNOME Shell's
-// main thread, and no menu is wide enough to show more -- the graphical tool's
-// rows stop at the same (G_PASTE_UI_ITEM_MAX_SHOWN_CHARS).
-const MAX_SHOWN_CHARS = 1000;
-
-/**
- * The first @size characters of @text and an ellipsis when there are more, as
- * element-size promises -- or, for a @size of 0, its "no limit", as many as a
- * row ever shows (MAX_SHOWN_CHARS). Characters rather than UTF-16 units, so
- * nothing is cut through a surrogate pair, and counted only as far as @size, an
- * item running to a megabyte.
- *
- * @param {string} text - the one-lined text of an item
- * @param {number} size - the most characters to show
- * @returns {string} what the row shows
- */
-function shownText(text, size) {
-    if (size <= 0)
-        size = MAX_SHOWN_CHARS;
-
-    let count = 0;
-
-    for (let i = 0; i < text.length; ++count) {
-        if (count === size)
-            return `${text.slice(0, i)}…`;
-        i += text.codePointAt(i) > 0xffff ? 2 : 1;
-    }
-
-    return text;
-}
 
 // One stage listener for every row, and not one per row. Where the keyboard is
 // has to be asked of the stage (see the constructor), but a focus move anywhere
@@ -183,6 +151,7 @@ export class GPasteItem extends PopupMenuItem {
 
         // What the row last displayed, so a settings change knows whether it has
         // anything to redo.
+        this._item = null;
         this._kind = null;
         this._imagesPreview = false;
         this._imagesPreviewSize = 0;
@@ -215,7 +184,8 @@ export class GPasteItem extends PopupMenuItem {
         //
         // Hidden outright rather than faded out: a line of text is taller than a
         // symbolic icon, so the row's height is the label's either way, and
-        // hiding them gives their width back to it.
+        // hiding them gives their width back to it. Shown, they take it from
+        // the label and not from the menu (vfunc_get_preferred_width ()).
         //
         // The buttons themselves are the third thing that counts as asked for:
         // they are built with can_focus set, and tabbing into one is the
@@ -239,10 +209,8 @@ export class GPasteItem extends PopupMenuItem {
         this.connect('notify::active', () => this._updateActionsVisibility());
         this._updateActionsVisibility();
 
-        // Recognised on press, as the shell's own right clicks are. A gesture
-        // that recognises cancels the others on the same points, so the row's
-        // own click gesture -- which takes any button -- never gets to the
-        // release it would select on.
+        // As the history switcher's rows recognise theirs, on press: the row's
+        // own click gesture never gets to the release it would select on.
         const rightClick = new Clutter.ClickGesture({
             required_button: Clutter.BUTTON_SECONDARY,
             recognize_on_press: true,
@@ -250,7 +218,7 @@ export class GPasteItem extends PopupMenuItem {
         rightClick.connect('recognize', () => this._askActions(false));
         this.add_action(rightClick);
 
-        // What St emits for the menu key and Shift+F10.
+        // As on the history switcher's rows: the menu key and Shift+F10.
         this.connect('popup-menu', () => this._askActions(true));
 
         this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -309,7 +277,7 @@ export class GPasteItem extends PopupMenuItem {
         this._index = index;
 
         if (index === -1) {
-            this._setValue(null);
+            this._setItem(null);
         } else {
             // A recycled row goes on showing the item it held until the fetch
             // lands, but it is no longer that item, so it stops answering for
@@ -327,7 +295,7 @@ export class GPasteItem extends PopupMenuItem {
                 return;
 
             this._uuid = item.get_uuid();
-            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
+            this._setItem(item);
         }
     }
 
@@ -340,40 +308,42 @@ export class GPasteItem extends PopupMenuItem {
         this._disarmActions();
 
         if (uuid == null) {
-            this._setValue(null);
+            this._setItem(null);
         } else {
             const [wanted, item] = await awaitReply(cancellable, this._client.get_item(uuid, cancellable));
 
             if (!wanted)
                 return;
 
-            this._setValue(item.get_value(), item.is_favourite(), item.get_kind());
+            this._setItem(item);
         }
     }
 
     // The star is addressed by uuid, and with none it is inert. It is more than
     // inert: it is a badge on a pinned row, so a row that has stopped answering
-    // for its old item must stop showing that item's pin state too, or it
-    // claims one that belongs to something else. The bin goes through
+    // for its old item must stop showing that item's pin state too -- in the
+    // star's icon and name, which a look keeps revealed, as in the badge -- or
+    // it claims one that belongs to something else. The bin goes through
     // _delete (), which reads _shownUuid, so disarming it is clearing that.
     _disarmActions() {
         this._favouriteItem.setUuid(null);
+        this._favouriteItem.setFavourite(false);
         this._shownUuid = null;
-        this._favourited = false;
-        this._updateActionsVisibility();
+        this._setFavourited(false);
     }
 
-    _setValue(value, favourite = false, kind = null) {
+    _setItem(item) {
+        const favourite = item?.is_favourite() ?? false;
+
         this.label.set_style(this._index === 0 ? 'font-weight: bold;' : null);
 
-        // The undecorated value: what the swatch needs, and what the label is
-        // drawn *from* rather than what it shows.
-        this._value = value;
-        this._kind = kind;
+        // The item, which the label is drawn from (_renderText ()).
+        this._item = item;
+        this._kind = item?.get_kind() ?? null;
 
         if (this._index === -1) {
             this._uuid = null;
-            this._displayedText = value || '';
+            this._displayedText = '';
             this.label.clutter_text.set_text(this._displayedText);
             this.hide();
         } else {
@@ -387,7 +357,18 @@ export class GPasteItem extends PopupMenuItem {
         this._favouriteItem.setFavourite(favourite);
         this._shownUuid = this._uuid;
 
-        this._favourited = favourite;
+        this._setFavourited(favourite);
+    }
+
+    // Pinning can leave the star shown, a badge where it was a button: the
+    // width the row asks for changes with nothing shown or hidden, which is
+    // otherwise what queues the relayout.
+    _setFavourited(favourited) {
+        if (favourited !== this._favourited) {
+            this._favourited = favourited;
+            this.queue_relayout();
+        }
+
         this._updateActionsVisibility();
     }
 
@@ -395,13 +376,17 @@ export class GPasteItem extends PopupMenuItem {
     // a second time here: it translates the bare words through the GPaste
     // domain -- the very domain this extension declares -- and it runs in this
     // process, so they come out in the shell's own locale rather than the
-    // daemon's. A row still waiting for its item has neither a value nor a kind
-    // to hand it, and ItemKind has no introspected member for "none" to pass in
-    // place of the one it lacks.
+    // daemon's. Cut to element-size there too, as the graphical tool's rows
+    // are cut, by characters, and composed in C only as far as that shows, so
+    // that nothing more of an item running to a megabyte crosses into
+    // JavaScript (GPaste.ClientItem.get_display_line ()) -- and with
+    // element-size 0, "no limit", to as much as those rows show
+    // (G_PASTE_UTIL_SHOWN_CHARS): the label lays out the whole of what it is
+    // handed on GNOME Shell's main thread, and no menu is wide enough to show
+    // more.
     _renderText() {
-        const text = this._value == null
-            ? ''
-            : shownText(GPaste.util_one_line(GPaste.util_display_string(this._value, this._kind)), this._size);
+        const size = this._size > 0 ? this._size : GPaste.UTIL_SHOWN_CHARS;
+        const text = this._item == null ? '' : this._item.get_display_line(size);
 
         if (text !== this._displayedText) {
             this._displayedText = text;
@@ -415,6 +400,14 @@ export class GPasteItem extends PopupMenuItem {
 
         this._deleteItem.visible = revealed;
         this._favouriteItem.visible = revealed || this._favourited;
+    }
+
+    // The star counts among the buttons a look reveals only while it is one: a
+    // pinned item's badge shows either way.
+    vfunc_get_preferred_width(forHeight) {
+        const revealed = this._favourited ? [this._deleteItem] : [this._deleteItem, this._favouriteItem];
+
+        return widthWithoutRevealed(this, super.vfunc_get_preferred_width(forHeight), revealed, forHeight);
     }
 
     // Not ClutterText's max_length, which drops what is past it from the
@@ -499,13 +492,15 @@ export class GPasteItem extends PopupMenuItem {
     }
 
     _showColor() {
-        const color = this._value;
+        const color = this._item.get_value();
 
-        // The item's value is its colour: no round trip to make. It reached a
-        // colour item only because gdk_rgba_parse() accepted it, so it is a
-        // colour and not arbitrary text; this checks the shape all the same,
-        // because what it goes into is a stylesheet and a value off the
-        // clipboard has no business ending a declaration early.
+        // The item's value is its colour: no round trip to make. Read here
+        // alone, a text's whole value having no business on the JavaScript
+        // heap for a line of it to show. It reached a colour item only because
+        // gdk_rgba_parse() accepted it, so it is a colour and not arbitrary
+        // text; this checks the shape all the same, because what it goes into
+        // is a stylesheet and a value off the clipboard has no business ending
+        // a declaration early.
         if (!color || !/^[a-zA-Z0-9#(),.%\s]+$/.test(color))
             return;
 

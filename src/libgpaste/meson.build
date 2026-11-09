@@ -1,5 +1,5 @@
-libgpaste_soversion = '2.1.0'
-libgpaste_gtk4_soversion = '2.2.0'
+libgpaste_soversion = '2.2.0'
+libgpaste_gtk4_soversion = '3.0.0'
 
 pkg = import('pkgconfig')
 
@@ -106,8 +106,10 @@ libgpaste_gtk4_internal_sources = [
 
 libgpaste_gtk4_sources = libgpaste_gtk4_public_sources + libgpaste_gtk4_internal_sources
 
-# Installed and introspected: the whole story a consumer gets is "open the
-# preferences" -- as a dialog, or as the widget the extension's prefs.js embeds.
+# Installed and introspected: the preferences -- as a dialog, a widget, or the
+# pages the extension's prefs.js adds to its own window -- and the helpers
+# gpaste-gtk-util.h declares, every one marked G_PASTE_VISIBLE there a published
+# interface too.
 libgpaste_gtk4_headers = [
   'gpaste-gtk4/gpaste-gtk-macros.h',
   'gpaste-gtk4/gpaste-gtk-preferences-dialog.h',
@@ -160,6 +162,18 @@ pkg.generate(
 )
 
 if get_option('introspection')
+  # The scanner links the library it describes into a program of its own, and
+  # names that library's external dependencies to it but not the libraries of
+  # this tree it calls into: libgpaste-gtk4 and libgpaste-daemon call into
+  # libgpaste, which a shared library carries a reference to, with its own
+  # dependencies, and a static archive does not.
+  gir_libgpaste_args = []
+  gir_libgpaste_deps = []
+  if get_option('default_library') == 'static'
+    gir_libgpaste_args = [ '-L' + meson.current_build_dir(), '--extra-library=' + 'gpaste-' + apiversion ]
+    gir_libgpaste_deps = libgpaste_lib_deps
+  endif
+
   libgpaste_gir = gnome.generate_gir(
     libgpaste,
     sources: [ libgpaste_sources, libgpaste_headers ],
@@ -175,7 +189,8 @@ if get_option('introspection')
     libgpaste_gtk4,
     sources: [ libgpaste_gtk4_public_sources, libgpaste_gtk4_headers ],
     includes: [ libgpaste_gir[0], 'Adw-1', 'Gtk-4.0', 'Gdk-4.0' ],
-    dependencies: libgpaste_gtk4_deps,
+    dependencies: [ libgpaste_gtk4_deps, gir_libgpaste_deps ],
+    extra_args: gir_libgpaste_args,
     header: 'gpaste-gtk4.h',
     namespace: 'GPasteGtk',
     nsversion: '4',
@@ -205,12 +220,15 @@ endif
 # release shipping such a change bumps the soversion. Its one consumer outside
 # this tree, the extension, resolves names through the typelib and sees none of
 # it.
-libgpaste_daemon_soversion = '3.0.0'
+libgpaste_daemon_soversion = '4.0.0'
 
 # What this library promises to the outside world. The gnome-shell extension is
 # its only external consumer and reaches it through the GPasteDaemon-1 typelib:
 # it drives GPasteBus, GPasteDaemon, GPasteSearchProvider, GPastePrompt (which
-# prompt.js implements) and GPasteStorageBackend's static passphrase helpers.
+# prompt.js implements), GPasteStorageBackend's static passphrase helpers and
+# gpaste-storage-migration.h's functions, which daemon.js calls directly:
+# whether the store is busy or needs a migration or a decryption, and running
+# those, a passphrase change and a check of the store.
 #
 # The rest of this list is what those headers drag in, not a separate promise:
 # gpaste-daemon.h declares g_paste_daemon_new(), hence the clipboard provider,
@@ -283,9 +301,12 @@ gpaste_daemon_internal_headers = [
   'gpaste-daemon/gpaste-clipboards-manager.h',
   'gpaste-daemon/gpaste-color-item.h',
   'gpaste-daemon/gpaste-daemon-methods.h',
+  'gpaste-daemon/gpaste-daemon-private.h',
   'gpaste-daemon/gpaste-file-backend.h',
   'gpaste-daemon/gpaste-global-shortcut-client.h',
   'gpaste-daemon/gpaste-history-private.h',
+  'gpaste-daemon/gpaste-image-item-private.h',
+  'gpaste-daemon/gpaste-password-item-private.h',
   'gpaste-daemon/gpaste-history-saver.h',
   'gpaste-daemon/gpaste-image-item.h',
   'gpaste-daemon/gpaste-keybinder.h',
@@ -404,7 +425,8 @@ if get_option('introspection')
     libgpaste_daemon,
     sources: [ gpaste_daemon_gir_sources, gpaste_daemon_gir_headers ],
     includes: [ libgpaste_gir[0], 'Gtk-4.0', 'Gdk-4.0', 'Gio-2.0', 'GLib-2.0', 'GObject-2.0' ],
-    dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep ],
+    dependencies: [ gpaste_daemon_deps, gpaste_daemon_internal_dep, gir_libgpaste_deps ],
+    extra_args: gir_libgpaste_args,
     header: 'gpaste-daemon.h',
     namespace: 'GPasteDaemon',
     nsversion: '1',

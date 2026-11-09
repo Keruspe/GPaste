@@ -40,6 +40,12 @@ ENGLISH = {
 
 def main():
     source = CLIENT.read_text(encoding='utf-8')
+
+    # A client whose messages this reads none of -- built some way it does not
+    # know -- would pass for having none bare.
+    if not re.search(r'\b(?:g_set_error(?:_literal)?|g_prefix_error|fprintf|g_printerr|g_print|printf|fputs|puts)\s*\(', source):
+        sys.exit(f'read no message of {CLIENT.name}: the check no longer knows how it says anything')
+
     failures = [match['text'] for match in BARE.finditer(source)
                 if re.search('[A-Za-z]', NOT_TEXT.sub('', match['text'])) and match['text'] not in ENGLISH]
 

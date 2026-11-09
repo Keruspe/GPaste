@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-global-shortcut-client.h>
 #include <gpaste-daemon/gpaste-screensaver-client.h>
+#include <gpaste-daemon/gpaste-storage-backend.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -110,6 +111,16 @@ on_counted_expiry (GObject      *source_object,
     expiry->callback (source_object, result, expiry->user_data);
 }
 
+/* Whether a storage worker is rewriting the store, as a case has it, and
+ * whether one starts while a re-exec's expiry runs. */
+static gboolean storage_busy;
+static gboolean busy_during_expiry;
+
+/* Likewise for the host holding re-execs back (GPasteDaemon::reexecute-held),
+ * for a case reading it through hold_reexecute (). */
+static gboolean host_holds;
+static gboolean holds_during_expiry;
+
 /* Every expiry a re-exec asks for, before handing it on. */
 static void
 counting_expiry (GPasteClipboardsManager *self,
@@ -120,11 +131,12 @@ counting_expiry (GPasteClipboardsManager *self,
 
     *expiry = (Expiry) { callback, user_data };
     ++expiries;
+    if (busy_during_expiry)
+        storage_busy = TRUE;
+    if (holds_during_expiry)
+        host_holds = TRUE;
     g_paste_clipboards_manager_expire_password_async (self, on_counted_expiry, expiry);
 }
-
-/* Whether a storage worker is rewriting the store, as a case has it. */
-static gboolean storage_busy;
 
 static gboolean
 test_storage_is_busy (void)
@@ -132,11 +144,24 @@ test_storage_is_busy (void)
     return storage_busy;
 }
 
+/* A storage this build opens, hidden from the daemon as one it lacks, so that
+ * the refusal of a store it cannot open is checked in a build opening every
+ * one; -1 hides none. */
+static gint hidden_storage = -1;
+
+static gboolean
+test_storage_is_supported (GPasteStorage storage)
+{
+    return (gint) storage != hidden_storage && g_paste_storage_is_supported (storage);
+}
+
 #define g_paste_global_shortcut_client_new no_portal
 #define g_paste_screensaver_client_new counted_screensaver_client
 #define g_paste_clipboards_manager_expire_password_async counting_expiry
 #define g_paste_storage_is_busy test_storage_is_busy
+#define g_paste_storage_is_supported test_storage_is_supported
 #include <gpaste-daemon/gpaste-daemon.c>
+#undef g_paste_storage_is_supported
 #undef g_paste_storage_is_busy
 #undef g_paste_clipboards_manager_expire_password_async
 #undef g_paste_screensaver_client_new
@@ -150,8 +175,12 @@ typedef struct
     GPasteDaemon    *daemon;
     GDBusConnection *connection;
     guint            reexecutions;
-    guint            stored_at_reexecution;
     guint            expired_at_reexecution;
+    /* An upload's result, when a case has one out, whether it was in by the
+     * time the host was told to exec, and once the host would have exec'd. */
+    GAsyncResult   **uploaded;
+    gboolean         uploaded_at_reexecution;
+    gboolean         uploaded_at_exec;
 } Fixture;
 
 static gboolean
@@ -209,11 +238,24 @@ test_shortcuts_handed_over (Fixture      *fixture,
 
     g_paste_history_add (history, g_paste_text_item_new ("kept"));
     g_paste_history_flush (history);
-    keybinding_pop (NULL, history);
-    keybinding_make_password (NULL, fixture->daemon);
+    keybinding_pop (NULL, NULL, history);
+    keybinding_make_password (NULL, NULL, fixture->daemon);
     g_assert_cmpuint (g_paste_history_get_length (history), ==, 1);
     g_assert_true (G_PASTE_IS_TEXT_ITEM (g_paste_history_get (history, 0)));
     g_paste_history_resume (history);
+}
+
+/* A history nobody has named yet has no store to have handed over: a shortcut
+ * changes it, as the methods do, rather than ask a store it has none of. */
+static void
+test_shortcuts_unnamed_history (void)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPasteHistory) history = g_paste_history_new (settings);
+
+    g_paste_history_add (history, g_paste_text_item_new ("popped"));
+    keybinding_pop (NULL, NULL, history);
+    g_assert_cmpuint (g_paste_history_get_length (history), ==, 0);
 }
 
 /* Exported again, as GPasteBus does when it owns the name anew, the daemon
@@ -367,6 +409,33 @@ test_startup_update (Fixture      *fixture,
     g_dbus_connection_signal_unsubscribe (listener, subscription);
 }
 
+/* Exported again, the daemon announces its properties again, as it did the
+ * first time: a client that saw it go asks the new export for them before it is
+ * there, and has only the announcement to learn them from. */
+static void
+test_reexport_announces (Fixture      *fixture,
+                         gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GDBusConnection) listener = g_paste_test_bus_connect (g_getenv ("DBUS_SESSION_BUS_ADDRESS"));
+    guint changes = 0;
+
+    /* Whatever the first export announced has arrived before this listens. */
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+
+    guint subscription = g_dbus_connection_signal_subscribe (listener, NULL, "org.freedesktop.DBus.Properties", "PropertiesChanged",
+                                                             G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME,
+                                                             G_DBUS_SIGNAL_FLAGS_NONE, on_update, &changes, NULL);
+
+    /* And the subscription is in place on the bus before anything is sent. */
+    g_paste_test_bus_round_trip (listener, fixture->connection);
+    g_assert_cmpuint (changes, ==, 0);
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_assert_true (g_paste_bus_object_register_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon), fixture->connection, NULL));
+    g_paste_test_bus_wait_for_count (&changes, 1);
+    g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
+    g_dbus_connection_signal_unsubscribe (listener, subscription);
+}
+
 /* A reload of the storage tells whoever lists the histories that their set
  * has changed: onto another flavour, it is another set, with other counts. */
 static void
@@ -386,24 +455,31 @@ test_reload_announces_histories (Fixture      *fixture,
     g_dbus_connection_signal_unsubscribe (listener, subscription);
 }
 
+/* The host, which execs nothing in gnome-shell, and otherwise ends the uploads
+ * out where its exec can no longer be put off, as the standalone host does
+ * (reexec () in src/daemon/gpaste-daemon.c): unless it holds the re-exec back
+ * or a storage worker runs, owing it. */
 static gboolean
-on_reexecute_self (GPasteDaemon *daemon G_GNUC_UNUSED,
+on_reexecute_self (GPasteDaemon *daemon,
                    gpointer      user_data)
 {
     Fixture *fixture = user_data;
 
-    fixture->stored_at_reexecution = fixture->clipboard->stores + fixture->primary->stores;
     fixture->expired_at_reexecution = expired;
+    fixture->uploaded_at_reexecution = fixture->uploaded && *fixture->uploaded;
+    if (!daemon->in_process && !host_holds && !storage_busy)
+        g_paste_daemon_cancel_uploads (daemon);
+    fixture->uploaded_at_exec = fixture->uploaded && *fixture->uploaded;
     ++fixture->reexecutions;
     return TRUE;
 }
 
-/* A re-exec has the passwords taken off and both selections stored before the
- * host is told to go: the expiry has answered by then, not merely been asked
- * for. */
+/* A re-exec has the passwords taken off before the host is told to go -- the
+ * expiry has answered by then, not merely been asked for -- and hands neither
+ * selection to a clipboard manager (see g_paste_daemon_reexecute_now ()). */
 static void
-test_reexecute_stores_first (Fixture      *fixture,
-                             gconstpointer user_data G_GNUC_UNUSED)
+test_reexecute_expires_first (Fixture      *fixture,
+                              gconstpointer user_data G_GNUC_UNUSED)
 {
     expiries = 0;
     expired = 0;
@@ -411,9 +487,8 @@ test_reexecute_stores_first (Fixture      *fixture,
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
     g_assert_cmpuint (expiries, ==, 1);
-    g_assert_cmpuint (fixture->clipboard->stores, ==, 1);
-    g_assert_cmpuint (fixture->primary->stores, ==, 1);
-    g_assert_cmpuint (fixture->stored_at_reexecution, ==, 2);
+    g_assert_cmpuint (fixture->clipboard->stores, ==, 0);
+    g_assert_cmpuint (fixture->primary->stores, ==, 0);
     g_assert_cmpuint (fixture->expired_at_reexecution, ==, 1);
 }
 
@@ -431,14 +506,6 @@ test_reexecute_in_process (Fixture      *fixture,
     g_assert_cmpuint (expiries, ==, 0);
 }
 
-static void
-on_uploaded (GObject      *source_object G_GNUC_UNUSED,
-             GAsyncResult *result,
-             gpointer      user_data)
-{
-    *(GAsyncResult **) user_data = g_object_ref (result);
-}
-
 /* @uuid uploaded through @command, waited for: the url, or %NULL and @error. */
 static gchar *
 run_upload (Fixture     *fixture,
@@ -449,9 +516,8 @@ run_upload (Fixture     *fixture,
     g_autoptr (GAsyncResult) result = NULL;
 
     g_paste_settings_set_upload_command (fixture->settings, command);
-    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_daemon_upload (fixture->daemon, uuid, g_paste_test_env_keep_result, &result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
     return g_paste_daemon_upload_finish (fixture->daemon, result, error);
 }
@@ -545,18 +611,19 @@ test_change_passphrase_holds_store (Fixture      *fixture,
 }
 
 /* A store this build cannot open has no passphrase it could change: refused,
- * the host never asked to flush and reload around a re-key it would refuse. */
+ * the host never asked to flush and reload around a re-key it would refuse.
+ * One it opens is hidden from the daemon as one it lacks; a build opening
+ * neither encrypted flavour lacks one for real. */
 static void
 test_change_passphrase_unopenable (Fixture      *fixture,
                                    gconstpointer user_data G_GNUC_UNUSED)
 {
-    GPasteStorage storage = encrypted_flavour (FALSE);
+    GPasteStorage storage = encrypted_flavour (TRUE);
 
-    if (storage == G_PASTE_STORAGE_NOOP)
-    {
-        g_test_skip ("This build opens every encrypted storage");
-        return;
-    }
+    if (storage != G_PASTE_STORAGE_NOOP)
+        hidden_storage = storage;
+    else
+        storage = encrypted_flavour (FALSE);
 
     g_autoptr (GError) error = NULL;
     guint asked = 0;
@@ -564,8 +631,31 @@ test_change_passphrase_unopenable (Fixture      *fixture,
     g_paste_settings_set_storage_backend (fixture->settings, storage);
     g_signal_connect_swapped (fixture->daemon, "change-passphrase", G_CALLBACK (g_paste_test_bus_count_emission), &asked);
     g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    hidden_storage = -1;
     g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
     g_assert_cmpuint (asked, ==, 0);
+}
+
+/* With nothing hosting the daemon to prompt for it, a change of passphrase is
+ * refused, as a check of the store is: a caller told it began would wait for a
+ * prompt that never comes. */
+static void
+test_change_passphrase_unhosted (Fixture      *fixture,
+                                 gconstpointer user_data G_GNUC_UNUSED)
+{
+    GPasteStorage storage = encrypted_flavour (TRUE);
+
+    if (storage == G_PASTE_STORAGE_NOOP)
+    {
+        g_test_skip ("This build opens no encrypted storage");
+        return;
+    }
+
+    g_autoptr (GError) error = NULL;
+
+    g_paste_settings_set_storage_backend (fixture->settings, storage);
+    g_paste_daemon_change_passphrase (fixture->daemon, &error);
+    g_assert_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
 }
 
 /* A command that does not stop writing is cut off once it has written more
@@ -614,10 +704,9 @@ test_upload_does_not_block (Fixture      *fixture,
 
     gint64 start = g_get_monotonic_time ();
 
-    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    g_paste_daemon_upload (fixture->daemon, uuid, g_paste_test_env_keep_result, &result);
     g_assert_cmpint (g_get_monotonic_time () - start, <, G_USEC_PER_SEC);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
     g_autofree gchar *url = g_paste_daemon_upload_finish (fixture->daemon, result, &error);
 
@@ -649,9 +738,30 @@ test_upload_answer_is_one_url (Fixture      *fixture,
     }
 }
 
+/* An answer ending with NULs, as termbin's does, is the url before them; a NUL
+ * before anything else still fails the upload. */
+static void
+test_upload_answer_ending_with_nul (Fixture      *fixture,
+                                    gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *uuid = add_text (fixture, "uploaded");
+    g_autoptr (GError) error = NULL;
+    g_autofree gchar *url = run_upload (fixture, uuid, "printf 'https://example.com/a\\n\\0'", &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpstr (url, ==, "https://example.com/a");
+
+    g_autofree gchar *other = add_text (fixture, "uploaded again");
+    g_autoptr (GError) refused = NULL;
+    g_autofree gchar *none = run_upload (fixture, other, "printf 'https://example.com/a\\0b\\n'", &refused);
+
+    g_assert_null (none);
+    g_assert_error (refused, G_PASTE_ERROR, G_PASTE_ERROR_FAILED);
+}
+
 /* An upload out when the daemon leaves the bus is given up on there, its
  * command killed: answered as cancelled at once rather than at the deadline,
- * it lets the daemon go with it. */
+ * it lets the daemon go with it once the killed command's parts are back. */
 static void
 test_upload_ends_with_export (Fixture      *fixture,
                               gconstpointer user_data G_GNUC_UNUSED)
@@ -662,10 +772,9 @@ test_upload_ends_with_export (Fixture      *fixture,
     GPasteDaemon *daemon = fixture->daemon;
 
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
-    g_paste_daemon_upload (daemon, uuid, on_uploaded, &result);
+    g_paste_daemon_upload (daemon, uuid, g_paste_test_env_keep_result, &result);
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (daemon));
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
 
     g_autofree gchar *url = g_paste_daemon_upload_finish (daemon, result, &error);
 
@@ -675,14 +784,8 @@ test_upload_ends_with_export (Fixture      *fixture,
     g_clear_object (&result);
     g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
     g_clear_object (&fixture->daemon);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &daemon, NULL);
     g_assert_null (daemon);
-}
-
-static gboolean
-is_cleared (gconstpointer pointer,
-            gconstpointer arg G_GNUC_UNUSED)
-{
-    return !*((gconstpointer const *) pointer);
 }
 
 /* The shortcut's upload, given up on as the daemon leaves the bus, is no
@@ -695,19 +798,26 @@ test_upload_shortcut_ends_quietly (Fixture      *fixture,
     GPasteDaemon *daemon = fixture->daemon;
 
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
-    keybinding_upload (NULL, daemon);
+    keybinding_upload (NULL, NULL, daemon);
     g_assert_nonnull (daemon->uploads);
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (daemon));
 
     /* The upload's task holds the daemon until its callback has run. */
     g_object_add_weak_pointer (G_OBJECT (daemon), (gpointer *) &daemon);
     g_clear_object (&fixture->daemon);
-    g_paste_test_bus_wait_until (is_cleared, &daemon, NULL);
+    g_paste_test_bus_wait_until (g_paste_test_bus_is_unset, &daemon, NULL);
     g_assert_null (daemon);
 }
 
-/* A re-exec replaces the process, so the uploads out end before it, as cancelled;
- * the daemon gnome-shell hosts carries on through one, its uploads with it. */
+/* Long enough for a cancelled upload to have come back. Waited out rather than
+ * drained behind the idles: what would answer one early may be a timer, or a
+ * thread. */
+#define UPLOAD_CANCEL_MS 500
+
+/* A re-exec replaces the process, so the uploads out end before it, as
+ * cancelled: left running by the daemon, ended by the host, and answered there
+ * and then, the exec leaving no turn for it after. The daemon gnome-shell
+ * hosts carries on through one, its uploads with it. */
 static void
 upload_through_reexec (Fixture *fixture,
                        gboolean in_process)
@@ -719,20 +829,22 @@ upload_through_reexec (Fixture *fixture,
     fixture->daemon->in_process = in_process;
     g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
-    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &result);
+    g_paste_daemon_upload (fixture->daemon, uuid, g_paste_test_env_keep_result, &result);
+    fixture->uploaded = &result;
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    fixture->uploaded = NULL;
+    g_assert_false (fixture->uploaded_at_reexecution);
+    g_assert_true (fixture->uploaded_at_exec == !in_process);
 
     if (in_process)
     {
-        /* Long enough for a cancelled upload to have come back. */
-        g_paste_test_bus_pump (500);
+        g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
         g_assert_null (result);
         g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
     }
 
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &result, NULL);
-    g_assert_nonnull (result);
+    g_paste_test_env_wait_result_within (&result, G_PASTE_TEST_BUS_WAIT_SECONDS);
     g_assert_null (g_paste_daemon_upload_finish (fixture->daemon, result, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
 }
@@ -751,12 +863,19 @@ test_upload_survives_in_process_reexec (Fixture      *fixture,
     upload_through_reexec (fixture, TRUE);
 }
 
-static void
-on_reexecute_answered (GObject      *source_object G_GNUC_UNUSED,
-                       GAsyncResult *result,
-                       gpointer      user_data)
+/* Reexecute, called on the daemon over the private bus: its answer. */
+static GVariant *
+call_reexecute (Fixture *fixture,
+                GError **error)
 {
-    *(GAsyncResult **) user_data = g_object_ref (result);
+    g_autoptr (GAsyncResult) answered = NULL;
+
+    g_dbus_connection_call (fixture->connection, g_dbus_connection_get_unique_name (fixture->connection),
+                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Reexecute",
+                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, g_paste_test_env_keep_result, &answered);
+    g_paste_test_env_wait_result_within (&answered, G_PASTE_TEST_BUS_WAIT_SECONDS);
+
+    return g_dbus_connection_call_finish (fixture->connection, answered, error);
 }
 
 /* A re-exec asked over the bus while a storage worker rewrites the store is
@@ -770,35 +889,49 @@ test_reexecute_store_busy (Fixture      *fixture,
 {
     g_autofree gchar *uuid = add_text (fixture, "uploaded");
     g_autoptr (GAsyncResult) uploaded = NULL;
-    g_autoptr (GAsyncResult) answered = NULL;
     g_autoptr (GError) error = NULL;
 
     expiries = 0;
     storage_busy = TRUE;
     g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
     g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
-    g_paste_daemon_upload (fixture->daemon, uuid, on_uploaded, &uploaded);
+    g_paste_daemon_upload (fixture->daemon, uuid, g_paste_test_env_keep_result, &uploaded);
 
-    g_dbus_connection_call (fixture->connection, g_dbus_connection_get_unique_name (fixture->connection),
-                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Reexecute",
-                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, on_reexecute_answered, &answered);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &answered, NULL);
-    g_assert_nonnull (answered);
-    g_assert_null (g_dbus_connection_call_finish (fixture->connection, answered, &error));
+    g_assert_null (call_reexecute (fixture, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
     g_assert_cmpuint (expiries, ==, 0);
     g_assert_cmpuint (fixture->reexecutions, ==, 0);
 
     g_paste_daemon_reexecute (fixture->daemon);
     g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
-    /* Long enough for a cancelled upload to have come back. */
-    g_paste_test_bus_pump (500);
+    g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
     g_assert_null (uploaded);
 
     storage_busy = FALSE;
     g_paste_bus_object_unregister_on_connection (G_PASTE_BUS_OBJECT (fixture->daemon));
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &uploaded, NULL);
-    g_assert_nonnull (uploaded);
+    g_paste_test_env_wait_result_within (&uploaded, G_PASTE_TEST_BUS_WAIT_SECONDS);
+}
+
+/* A storage worker starting while a re-exec's expiry runs defers the exec, the
+ * host carrying it out once the worker is done, rather than refuse it with the
+ * passwords already taken off for it. */
+static void
+test_reexecute_busy_after_expiry (Fixture      *fixture,
+                                  gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+
+    expiries = 0;
+    busy_during_expiry = TRUE;
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+    g_autoptr (GVariant) reply = call_reexecute (fixture, &error);
+
+    busy_during_expiry = FALSE;
+    storage_busy = FALSE;
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (expiries, ==, 1);
+    g_assert_cmpuint (fixture->reexecutions, ==, 1);
 }
 
 /* Under track-extension-state, the extension going pauses the tracking and its
@@ -886,6 +1019,7 @@ test_extension_pause_carried_over (void)
         /* Its screensaver client built before it goes, as fixture_set_up ()
          * has its own. */
         g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &first->screensaver, NULL);
+        g_assert_nonnull (first->screensaver);
 
         if (left_on)
         {
@@ -896,6 +1030,7 @@ test_extension_pause_carried_over (void)
             g_autoptr (GPasteDaemon) second = g_paste_daemon_new (settings, G_PASTE_CLIPBOARD_PROVIDER (clipboard), G_PASTE_CLIPBOARD_PROVIDER (primary));
 
             g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &second->screensaver, NULL);
+            g_assert_nonnull (second->screensaver);
             g_paste_daemon_extension_state_changed (second, TRUE);
             g_assert_false (g_paste_settings_get_track_changes (settings));
             g_object_run_dispose (G_OBJECT (second));
@@ -942,11 +1077,11 @@ test_extension_paused_written_when_set (Fixture      *fixture,
     g_paste_settings_reset (settings, G_PASTE_EXTENSION_PAUSED_SETTING);
 }
 
-/* A re-exec while a change of passphrase or a check of the store holds the
- * history handed over at its prompt is refused, as one while a worker rewrites
- * the store is: the exec would take the prompt with it, and what was copied
- * meanwhile, which only the reload ending the handover records. Over the bus
- * with that BUSY, from SIGUSR1 with a warning. */
+/* A re-exec while the history is handed over with nothing holding re-execs
+ * back -- a host deferring none -- is refused, as one while a worker rewrites
+ * the store is: the exec would drop what was copied meanwhile, which only the
+ * reload ending the handover records. Over the bus with that BUSY, from
+ * SIGUSR1 with a warning. */
 static void
 test_reexecute_handed_over (void)
 {
@@ -963,7 +1098,6 @@ test_reexecute_handed_over (void)
     g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
 
     Fixture fixture = { 0 };
-    g_autoptr (GAsyncResult) answered = NULL;
     g_autoptr (GError) error = NULL;
 
     fixture_set_up (&fixture, NULL);
@@ -971,11 +1105,7 @@ test_reexecute_handed_over (void)
     g_paste_daemon_flush (fixture.daemon);
     g_paste_history_add (fixture.daemon->history, g_paste_text_item_new ("copied at the prompt"));
 
-    g_dbus_connection_call (fixture.connection, g_dbus_connection_get_unique_name (fixture.connection),
-                            G_PASTE_DAEMON_OBJECT_PATH, G_PASTE_DAEMON_INTERFACE_NAME, "Reexecute",
-                            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, on_reexecute_answered, &answered);
-    g_paste_test_bus_wait_until (g_paste_test_bus_is_set, &answered, NULL);
-    g_assert_null (g_dbus_connection_call_finish (fixture.connection, answered, &error));
+    g_assert_null (call_reexecute (&fixture, &error));
     g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
 
     g_paste_daemon_reexecute (fixture.daemon);
@@ -1136,6 +1266,92 @@ test_doctor_holds_store (Fixture      *fixture,
     g_clear_pointer (&call.value, g_variant_unref);
 }
 
+static gboolean
+hold_reexecute (GPasteDaemon *daemon G_GNUC_UNUSED,
+                gpointer      user_data)
+{
+    return *((gboolean *) user_data);
+}
+
+/* A re-exec asked for over the bus while the host holds it back -- a check of
+ * the store or a change of passphrase under way -- is refused before the
+ * passwords come off, the history not handed over yet; SIGUSR1, with nobody
+ * to answer, goes through to the host, which defers it. */
+static void
+test_reexecute_held (Fixture      *fixture,
+                     gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GError) error = NULL;
+    gboolean held = TRUE;
+
+    g_signal_connect (fixture->daemon, "reexecute-held", G_CALLBACK (hold_reexecute), &held);
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+
+    expiries = 0;
+    g_assert_null (call_reexecute (fixture, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_BUSY);
+    g_assert_nonnull (strstr (error->message, "changing its passphrase"));
+    g_assert_cmpuint (expiries, ==, 0);
+    g_assert_cmpuint (fixture->reexecutions, ==, 0);
+
+    g_paste_daemon_reexecute (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+
+    held = FALSE;
+    g_clear_error (&error);
+
+    g_autoptr (GVariant) reply = call_reexecute (fixture, &error);
+
+    g_assert_no_error (error);
+    g_assert_cmpuint (fixture->reexecutions, ==, 2);
+}
+
+/* A re-exec the host holds back is one it puts off, and the upload out goes on
+ * until the exec it owes -- for SIGUSR1 while it holds them, and for a request
+ * over the bus something started holding while its passwords came off, both
+ * accepted -- ending as cancelled then, as the host execs, the daemon leaving
+ * it to the host whether held or not. */
+static void
+test_upload_survives_held_reexec (Fixture      *fixture,
+                                  gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autofree gchar *uuid = add_text (fixture, "uploaded");
+    g_autoptr (GAsyncResult) uploaded = NULL;
+    g_autoptr (GError) error = NULL;
+
+    g_signal_connect (fixture->daemon, "reexecute-held", G_CALLBACK (hold_reexecute), &host_holds);
+    g_signal_connect (fixture->daemon, "reexecute-self", G_CALLBACK (on_reexecute_self), fixture);
+    g_paste_settings_set_upload_command (fixture->settings, "sleep 60");
+    g_paste_daemon_upload (fixture->daemon, uuid, g_paste_test_env_keep_result, &uploaded);
+    fixture->uploaded = &uploaded;
+
+    host_holds = TRUE;
+    g_paste_daemon_reexecute (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&fixture->reexecutions, 1);
+    g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
+    g_assert_null (uploaded);
+
+    host_holds = FALSE;
+    holds_during_expiry = TRUE;
+
+    g_autoptr (GVariant) reply = call_reexecute (fixture, &error);
+
+    holds_during_expiry = FALSE;
+    g_assert_no_error (error);
+    g_assert_cmpuint (fixture->reexecutions, ==, 2);
+    g_paste_test_bus_pump (UPLOAD_CANCEL_MS);
+    g_assert_null (uploaded);
+
+    host_holds = FALSE;
+    g_paste_daemon_reexecute (fixture->daemon);
+    g_paste_test_bus_wait_for_count (&fixture->reexecutions, 3);
+    fixture->uploaded = NULL;
+    g_assert_false (fixture->uploaded_at_reexecution);
+    g_assert_true (fixture->uploaded_at_exec);
+    g_assert_null (g_paste_daemon_upload_finish (fixture->daemon, uploaded, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
+}
+
 /* Calls made while the host checks the store ask it once, and are answered
  * together with what it hands back. */
 static void
@@ -1201,11 +1417,31 @@ struct _TestBusObject
 {
     GPasteBusObject parent_instance;
 
-    gboolean refuse;
-    guint    registrations;
+    gboolean   refuse;
+    guint      registrations;
+    /* The bus to unown the name of once this refuses, from an idle of a
+     * priority above the one the bus tells "export-failed" from, so that it
+     * runs first -- and the times it did. The case holds the bus for as long
+     * as this. */
+    GPasteBus *unown_bus;
+    guint      unowned;
 };
 
 G_DEFINE_TYPE (TestBusObject, test_bus_object, G_PASTE_TYPE_BUS_OBJECT)
+
+static gboolean
+test_bus_object_unown (gpointer user_data)
+{
+    g_autoptr (TestBusObject) self = g_weak_ref_get (user_data);
+
+    if (self)
+    {
+        g_paste_bus_unown_name (self->unown_bus);
+        ++self->unowned;
+    }
+
+    return G_SOURCE_REMOVE;
+}
 
 static gboolean
 test_bus_object_register (GPasteBusObject *object,
@@ -1217,6 +1453,13 @@ test_bus_object_register (GPasteBusObject *object,
     ++self->registrations;
     if (!self->refuse)
         return TRUE;
+
+    if (self->unown_bus)
+    {
+        guint id = g_idle_add_full (G_PRIORITY_DEFAULT, test_bus_object_unown, g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+
+        g_source_set_name_by_id (id, "[GPaste] test unown on refusal");
+    }
 
     g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_EXISTS, "refused");
     return FALSE;
@@ -1282,6 +1525,40 @@ test_bus_export_failed_told_once (void)
     g_assert_cmpuint (next->registrations, ==, 1);
 }
 
+/* An export failure is this ownership's: the name unowned before the idle
+ * telling it runs is not told about it, its listener otherwise standing down
+ * a second time -- or standing down the ownership that came after. */
+static void
+test_bus_export_failed_unowned (void)
+{
+    if (!g_test_subprocess ())
+    {
+        g_test_trap_subprocess (NULL, 0, G_TEST_SUBPROCESS_DEFAULT);
+        g_test_trap_assert_passed ();
+        g_test_trap_assert_stderr ("*Failed to export an object on the bus: refused*");
+        return;
+    }
+
+    /* As in test_bus_export_failed_told_once (). */
+    g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
+
+    g_autoptr (GPasteBus) bus = g_paste_bus_new ();
+    g_autoptr (TestBusObject) refused = g_object_new (TEST_TYPE_BUS_OBJECT, NULL);
+    guint failures = 0;
+
+    refused->refuse = TRUE;
+    refused->unown_bus = bus;
+    g_paste_bus_add_object (bus, G_PASTE_BUS_OBJECT (refused));
+    g_signal_connect (bus, "export-failed", G_CALLBACK (stand_down), &failures);
+    g_paste_bus_own_name_full (bus, FALSE);
+    g_paste_test_bus_wait_for_count (&refused->unowned, 1);
+
+    /* Every idle the bus queued dispatched, its own included. */
+    g_paste_test_bus_drain ();
+
+    g_assert_cmpuint (failures, ==, 0);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -1291,16 +1568,20 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/teardown/dispose-twice", Fixture, NULL, fixture_set_up, test_dispose_twice, fixture_tear_down);
     g_test_add ("/daemon/teardown/dispose-ends-manager", Fixture, NULL, fixture_set_up, test_dispose_ends_manager, fixture_tear_down);
     g_test_add ("/daemon/shortcuts/handed-over", Fixture, NULL, fixture_set_up, test_shortcuts_handed_over, fixture_tear_down);
+    g_test_add_func ("/daemon/shortcuts/unnamed-history", test_shortcuts_unnamed_history);
     g_test_add_func ("/daemon/methods/extension-pause-carried-over", test_extension_pause_carried_over);
     g_test_add_func ("/daemon/teardown/dispose-before-clients", test_dispose_before_clients);
     g_test_add ("/daemon/teardown/unregister-cancels-startup", Fixture, NULL, fixture_set_up, test_unregister_cancels_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/release-pending-startup", Fixture, NULL, fixture_set_up, test_release_pending_startup, fixture_tear_down);
     g_test_add ("/daemon/teardown/startup-update", Fixture, NULL, fixture_set_up, test_startup_update, fixture_tear_down);
     g_test_add ("/daemon/teardown/reload-announces-histories", Fixture, NULL, fixture_set_up, test_reload_announces_histories, fixture_tear_down);
-    g_test_add ("/daemon/reexecute/stores-first", Fixture, NULL, fixture_set_up, test_reexecute_stores_first, fixture_tear_down);
+    g_test_add ("/daemon/teardown/reexport-announces", Fixture, NULL, fixture_set_up, test_reexport_announces, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/expires-first", Fixture, NULL, fixture_set_up, test_reexecute_expires_first, fixture_tear_down);
     g_test_add ("/daemon/reexecute/in-process", Fixture, NULL, fixture_set_up, test_reexecute_in_process, fixture_tear_down);
     g_test_add ("/daemon/reexecute/store-busy", Fixture, NULL, fixture_set_up, test_reexecute_store_busy, fixture_tear_down);
+    g_test_add ("/daemon/reexecute/busy-after-expiry", Fixture, NULL, fixture_set_up, test_reexecute_busy_after_expiry, fixture_tear_down);
     g_test_add_func ("/daemon/reexecute/handed-over", test_reexecute_handed_over);
+    g_test_add ("/daemon/reexecute/held", Fixture, NULL, fixture_set_up, test_reexecute_held, fixture_tear_down);
     g_test_add ("/daemon/reexport-follows-screensaver", Fixture, NULL, fixture_set_up, test_reexport_follows_screensaver, fixture_tear_down);
     g_test_add ("/daemon/methods/every-method-handled", Fixture, NULL, fixture_set_up, test_every_method_handled, fixture_tear_down);
     g_test_add ("/daemon/doctor/unhosted", Fixture, NULL, fixture_set_up, test_doctor_unhosted, fixture_tear_down);
@@ -1310,17 +1591,21 @@ main (int argc, char *argv[])
     g_test_add ("/daemon/methods/extension-state", Fixture, NULL, fixture_set_up, test_extension_state, fixture_tear_down);
     g_test_add ("/daemon/methods/extension-paused-written-when-set", Fixture, NULL, fixture_set_up, test_extension_paused_written_when_set, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/holds-store", Fixture, NULL, fixture_set_up, test_change_passphrase_holds_store, fixture_tear_down);
+    g_test_add ("/daemon/change-passphrase/unhosted", Fixture, NULL, fixture_set_up, test_change_passphrase_unhosted, fixture_tear_down);
     g_test_add ("/daemon/change-passphrase/unopenable", Fixture, NULL, fixture_set_up, test_change_passphrase_unopenable, fixture_tear_down);
     g_test_add_func ("/daemon/bus/export-failed-told-once", test_bus_export_failed_told_once);
+    g_test_add_func ("/daemon/bus/export-failed-unowned", test_bus_export_failed_unowned);
     g_test_add ("/daemon/upload/refuses-password", Fixture, NULL, fixture_set_up, test_upload_refuses_password, fixture_tear_down);
     g_test_add ("/daemon/upload/bounds-answer", Fixture, NULL, fixture_set_up, test_upload_bounds_answer, fixture_tear_down);
     g_test_add ("/daemon/upload/unread-input", Fixture, NULL, fixture_set_up, test_upload_unread_input, fixture_tear_down);
     g_test_add ("/daemon/upload/does-not-block", Fixture, NULL, fixture_set_up, test_upload_does_not_block, fixture_tear_down);
     g_test_add ("/daemon/upload/answer-is-one-url", Fixture, NULL, fixture_set_up, test_upload_answer_is_one_url, fixture_tear_down);
+    g_test_add ("/daemon/upload/answer-ending-with-nul", Fixture, NULL, fixture_set_up, test_upload_answer_ending_with_nul, fixture_tear_down);
     g_test_add ("/daemon/upload/ends-with-export", Fixture, NULL, fixture_set_up, test_upload_ends_with_export, fixture_tear_down);
     g_test_add ("/daemon/upload/shortcut-ends-quietly", Fixture, NULL, fixture_set_up, test_upload_shortcut_ends_quietly, fixture_tear_down);
     g_test_add ("/daemon/upload/ends-with-reexec", Fixture, NULL, fixture_set_up, test_upload_ends_with_reexec, fixture_tear_down);
     g_test_add ("/daemon/upload/survives-in-process-reexec", Fixture, NULL, fixture_set_up, test_upload_survives_in_process_reexec, fixture_tear_down);
+    g_test_add ("/daemon/upload/survives-held-reexec", Fixture, NULL, fixture_set_up, test_upload_survives_held_reexec, fixture_tear_down);
     g_test_add_func ("/daemon/history-property/seed", test_history_property_seed);
 
     return g_paste_test_env_run ();

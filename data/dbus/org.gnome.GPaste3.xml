@@ -23,10 +23,11 @@
 
     THE CURRENT HISTORY IS WHAT EVERY ITEM CALL ACTS ON. Reading items
     (GetHistory, GetItem, GetItemAtIndex, GetItems, GetFavourites, GetImage,
-    GetUris, Search, GetHistorySize) and changing them (the Add* calls, Merge,
-    Replace, MakePassword, Select, SetFavourite, DeleteItem, DeletePassword)
-    never name a history: they are about the one in use, which the History
-    property carries.
+    GetUris, GetPasswordTimeout, Search, GetHistorySize, and Upload and
+    UploadAndCopy, which read the item they upload) and changing them (the Add*
+    calls, Merge, Replace, MakePassword, Select, SetFavourite, StripRichText,
+    DeleteItem, DeletePassword) never name a history: they are about the one in
+    use, which the History property carries.
     The calls that name a history are the ones that treat histories as objects
     rather than as a place to put items: ListHistories, BackupHistory,
     EmptyHistory, DeleteHistory and SwitchHistory. Inspecting another history
@@ -100,13 +101,24 @@
 
       @path is read by the daemon, so it must be one the daemon can reach; a
       client resolves a relative one against its own directory first. A file that
-      is not valid UTF-8 is tried as an image. A path naming no regular file (a
+      is not valid UTF-8 is tried as an image, one no loader reads failing with
+      org.gnome.GPaste.Error.WrongItemKind; with "images-support" off, such a
+      file is refused with org.gnome.GPaste.Error.Rejected without being
+      decoded, whether it is an image or not. A path naming no regular file (a
       FIFO, a device) fails with org.gnome.GPaste.Error.InvalidArgument, and a
       file larger than "max-memory-usage" with org.gnome.GPaste.Error.Rejected,
       neither being read. A file reporting a smaller size than it holds, as
       procfs ones do, is read to its end, and refused the same way once past
       "max-memory-usage". With "trim-items" off, so does a file larger than
       "max-text-item-size" whose first bytes begin a text, read no further.
+
+      A file the daemon cannot look up, open or read, missing or out of its
+      reach, fails with the GLib file error saying why (G_FILE_ERROR_NOENT,
+      G_FILE_ERROR_ACCES, ...), its lookup's included. Its text is then added
+      as AddText adds one: an empty file is .Error.InvalidArgument, and a text
+      shorter than "min-text-item-size", longer than "max-text-item-size" or
+      blank once trimmed .Error.Rejected; and what the clipboard refuses to
+      carry, the history head it matches included, .Error.Failed.
     -->
     <method name="AddFile">
       <arg type="s" direction="in"  name="path"/>
@@ -117,11 +129,12 @@
       Add a password item to the history.
 
       An existing name fails with org.gnome.GPaste.Error.AlreadyExists without
-      changing the history or clipboard. The nameless placeholder "******"
-      may be shared by multiple passwords. A name is checked against every
-      password the current history holds, which it knows once it has loaded:
-      until then, a name other than the placeholder is refused with the same
-      G_IO_ERROR_BUSY as a storage handover (see above).
+      changing the history or clipboard. The nameless placeholder "******" is
+      no name to give one, and fails with org.gnome.GPaste.Error.InvalidArgument:
+      nameless passwords are told apart by their values alone, which adding one
+      would answer for. A name is checked against every password the current
+      history holds, which it knows once it has loaded: until then, it is
+      refused with the same G_IO_ERROR_BUSY as a storage handover (see above).
 
       @timeout is as in MakePassword: seconds, 0 for none, 0xffffffff for the
       "password-timeout" default.
@@ -146,8 +159,10 @@
       called @backup, or the one a backup still being written is to be: a backup
       silently destroying an older one of the same name is a loss noticed far
       too late. A @history no store holds is .Error.NotFound, there being
-      nothing to back up. A @backup too long a name for the storage in use is
-      .Error.InvalidArgument, as in SwitchHistory.
+      nothing to back up; one only a store the storage in use cannot reach holds
+      (none in use, an encrypted store left locked) is .Error.Failed. A @backup
+      too long a name for the storage in use is .Error.InvalidArgument, as in
+      SwitchHistory.
 
       The backup holds every change the daemon has accepted for @history, those
       still on their way to the disk included. The current history cannot be
@@ -169,7 +184,8 @@
       Re-encrypt the history with a new passphrase, prompted for by the daemon.
 
       A history that is not encrypted is .Error.NotEncrypted, and one in an
-      encrypted storage this build cannot open .Error.Failed. Every store of
+      encrypted storage this build cannot open .Error.Failed, as is a change
+      nothing hosting the daemon can prompt for. Every store of
       the history is rewritten, so this is refused with the same
       G_IO_ERROR_BUSY as BackupHistory while a daemon this one took over from
       may still be writing them (see above).
@@ -184,7 +200,9 @@
       saved yet. With no storage in use, a history another storage still keeps
       (an encrypted store left locked, or what a migration kept) is out of its
       reach: .Error.Failed, the store and the history in use left as they were.
-      So is one a storage this build cannot open keeps, whatever is in use.
+      So is one a storage this build cannot open keeps, whatever is in use. A
+      history whose store goes but whose images cannot all be removed is
+      deleted, and announced so, the failure to remove them being the reply.
     -->
     <method name="DeleteHistory">
       <arg type="s" direction="in" name="name"/>
@@ -196,9 +214,12 @@
     </method>
 
     <!--
-      Delete a password item, by name. Refused with the same G_IO_ERROR_BUSY as
-      a storage handover (see above) while the current history is loading: the
-      passwords it holds are not known until then.
+      Delete a password item, by name. The nameless placeholder "******" is no
+      name to delete one by, and fails with org.gnome.GPaste.Error.InvalidArgument:
+      it stands for every nameless password, and deleting the first it matched
+      would delete a secret nobody named. Refused with the same G_IO_ERROR_BUSY
+      as a storage handover (see above) while the current history is loading:
+      the passwords it holds are not known until then.
     -->
     <method name="DeletePassword">
       <arg type="s" direction="in" name="name"/>
@@ -262,8 +283,13 @@
       How many items the current history holds.
 
       The sizes of the *other* histories come from ListHistories, which answers
-      all of them at once: asking here for one history at a time is what used to
-      make a sidebar listing every history cost the daemon one full load each.
+      all of them at once: asking here for one history at a time would make a
+      sidebar listing every history cost the daemon one full load each.
+
+      While the current history loads, at startup or after a switch, this is
+      what it holds so far: the store is the load's to read until then. The
+      Update naming the whole history that the load raises once it is in is the
+      cue to ask again.
     -->
     <method name="GetHistorySize">
       <arg type="t" direction="out" name="size"/>
@@ -298,7 +324,12 @@
       <arg type="(ssubas)" direction="out" name="item"/>
     </method>
 
-    <!-- The items for the given uuids -->
+    <!--
+      The items for the given uuids. A uuid asked for again is answered again,
+      and the values repeated that way past "max-memory-usage" fail with
+      org.gnome.GPaste.Error.InvalidArgument; distinct items are answered
+      whatever they weigh.
+    -->
     <method name="GetItems">
       <arg type="as"        direction="in"  name="uuids"/>
       <arg type="a(ssubas)" direction="out" name="items"/>
@@ -345,9 +376,13 @@
       Every known history, each with how many items it holds.
 
       The size rides along because everything that lists histories draws their
-      sizes beside them, and asking per history meant one full load of one
+      sizes beside them, and asking per history would mean one full load of one
       history apiece, inside the daemon's main loop. The order is the storage
-      backend's, which is the order such a listing is drawn in.
+      backend's, which is the order such a listing is drawn in. The current
+      history is listed whether or not anything of it is stored yet, last when
+      it is not, and its size is GetHistorySize's, loading or not, read as the
+      answer goes out: a GetHistorySize asked after this call and answered
+      before it says nothing newer.
     -->
     <method name="ListHistories">
       <arg type="a(st)" direction="out" name="histories"/>
@@ -403,7 +438,10 @@
       value, and the only string an item travels with here is the one a user is
       shown. @decoration wraps each item, @separator goes between them. An image
       or a password has no text to join, and fails with
-      org.gnome.GPaste.Error.WrongItemKind, the history left as it was.
+      org.gnome.GPaste.Error.WrongItemKind, the history left as it was. The
+      merged text is measured before it is joined, one longer than
+      "max-text-item-size" failing with org.gnome.GPaste.Error.Rejected as an
+      added text would.
     -->
     <method name="Merge">
       <arg type="s"  direction="in"  name="decoration"/>
@@ -419,7 +457,9 @@
       while a change of passphrase, a check of the store or a migration's
       import is rewriting the store, which the exec would have to wait for, and
       while a change of passphrase or a check of the store waits on its prompt,
-      which the exec would take with it: try again once it is done.
+      which the exec would take with it: try again once it is done. A rewrite
+      starting only once the passwords have been taken off for the exec defers
+      it instead, until the rewrite is done, the call answered as accepted.
     -->
     <method name="Reexecute"/>
 
@@ -459,9 +499,10 @@
 
       @query is a Perl-compatible regular expression, matched whatever the
       case; a front end searching for what a user typed escapes it first
-      (g_regex_escape_string ()), the way the graphical tool, the GNOME Shell
-      menu and the overview do. A password is matched by its name, its value
-      being what nobody knows it by, and an image by what its row shows, its
+      (g_regex_escape_string ()), as g_paste_client_search_text () does for the
+      graphical tool, the GNOME Shell menu and the overview. A password is matched by its name, its value
+      being what nobody knows it by (a nameless one has none, the "******" it
+      reads as matching nothing), and an image by what its row shows, its
       size and when it was taken, rather than by its value, which is the
       checksum naming its file. A file list is matched by its uris and by the
       paths its row shows, decoded and with the home directory written "~". A
@@ -474,7 +515,13 @@
       <arg type="a(ssubas)" direction="out" name="results"/>
     </method>
 
-    <!-- Make one item the current selection -->
+    <!--
+      Make one item the current selection.
+
+      An item no selection takes, such as an image that cannot be loaded any
+      more, is dropped from the history as a copy of it would be, and the call
+      fails with org.gnome.GPaste.Error.Failed.
+    -->
     <method name="Select">
       <arg type="s" direction="in" name="uuid"/>
     </method>

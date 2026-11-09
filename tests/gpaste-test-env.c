@@ -42,7 +42,11 @@ start_supervisor (gboolean with_bus)
     if (with_bus)
     {
         config_path = g_build_filename (runtime_dir, "bus.conf", NULL);
-        g_autofree gchar *escaped = g_markup_escape_text (runtime_dir, -1);
+        /* A D-Bus address value first, dbus-daemon refusing a '~' or a space
+         * there unescaped, then markup. Only a TMPDIR holding one gets here,
+         * which no build of the suite is run under, so no test shows it. */
+        g_autofree gchar *address_value = g_dbus_address_escape_value (runtime_dir);
+        g_autofree gchar *escaped = g_markup_escape_text (address_value, -1);
         g_autofree gchar *config = g_strdup_printf ("<busconfig><type>session</type>"
                                                     "<listen>unix:tmpdir=%s</listen>"
                                                     "<policy context=\"default\"><allow send_destination=\"*\"/>"
@@ -136,6 +140,9 @@ g_paste_test_env_setup (GPasteTestEnvFlags flags)
     const gchar *session[] = {
         "DISPLAY", "WAYLAND_DISPLAY", "WAYLAND_SOCKET", "XAUTHORITY", "AT_SPI_BUS_ADDRESS",
         "DBUS_SESSION_BUS_ADDRESS", "DBUS_SYSTEM_BUS_ADDRESS", "DBUS_STARTER_ADDRESS", "DBUS_STARTER_BUS_TYPE",
+        /* What a launcher hands the program it starts, which a test reading
+         * an activation's platform data would otherwise find there. */
+        "XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID",
     };
     for (guint i = 0; i < G_N_ELEMENTS (session); ++i)
         g_unsetenv (session[i]);
@@ -233,25 +240,81 @@ g_paste_test_env_keep_result (GObject      *source_object G_GNUC_UNUSED,
     *kept = g_object_ref (result);
 }
 
+static gboolean
+on_wait_deadline (gpointer user_data)
+{
+    gboolean *expired = user_data;
+
+    *expired = TRUE;
+
+    return G_SOURCE_REMOVE;
+}
+
+/**
+ * g_paste_test_env_wait_until:
+ * @done: whether what is waited for has happened
+ * @data: what @done is asked about
+ * @arg: a second argument for @done
+ * @seconds: how long to wait at most
+ *
+ * Iterate the default main context until @done says so, or until @seconds
+ * have gone by: the caller asserts what it waited for, which says what timed
+ * out. Each iteration blocks: what is waited for comes with a dispatch of
+ * that context, which wakes it.
+ */
+void
+g_paste_test_env_wait_until (GPasteTestEnvDone done,
+                             gconstpointer     data,
+                             gconstpointer     arg,
+                             guint             seconds)
+{
+    gboolean expired = FALSE;
+    guint deadline = g_timeout_add_seconds (seconds, on_wait_deadline, &expired);
+
+    g_source_set_name_by_id (deadline, "[GPaste] test wait deadline");
+
+    while (!done (data, arg) && !expired)
+        g_main_context_iteration (NULL, TRUE);
+
+    if (!expired)
+        g_source_remove (deadline);
+}
+
+static gboolean
+result_kept (gconstpointer result,
+             gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(GAsyncResult * const *) result != NULL;
+}
+
+/**
+ * g_paste_test_env_wait_result_within:
+ * @result: where g_paste_test_env_keep_result () keeps the answer
+ * @seconds: how long the call may take
+ *
+ * Wait for the call to answer, failing the case if it has not within
+ * @seconds: a call that never answers then fails its case, rather than leave
+ * the binary to meson's timeout.
+ */
+void
+g_paste_test_env_wait_result_within (GAsyncResult **result,
+                                     guint          seconds)
+{
+    g_paste_test_env_wait_until (result_kept, result, NULL, seconds);
+    g_assert_nonnull (*result);
+}
+
 /**
  * g_paste_test_env_wait_result:
  * @result: where g_paste_test_env_keep_result () keeps the answer
  *
- * Iterate the default main context until the call has answered, failing the
- * case if it has not within five seconds.
+ * g_paste_test_env_wait_result_within () for a call taking at most five
+ * seconds.
  */
 void
 g_paste_test_env_wait_result (GAsyncResult **result)
 {
-    gint64 deadline = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
-
-    while (!*result && g_get_monotonic_time () < deadline)
-    {
-        if (!g_main_context_iteration (NULL, FALSE))
-            g_usleep (1000);
-    }
-
-    g_assert_nonnull (*result);
+    g_paste_test_env_wait_result_within (result, 5);
 }
 
 /**
@@ -285,4 +348,27 @@ g_paste_test_env_run (void)
     g_clear_pointer (&tmp_dir, g_free);
 
     return result;
+}
+
+/**
+ * g_paste_test_env_reset_settings:
+ * @schema_id: the schema whose keys go back to their defaults
+ *
+ * Start a case from the schema's defaults: the memory backend
+ * g_paste_test_env_setup() puts the settings on is shared by the whole binary,
+ * so a key one case sets would otherwise reach every case after it, and a case
+ * run alone with -p would see different settings.
+ */
+void
+g_paste_test_env_reset_settings (const gchar *schema_id)
+{
+    g_autoptr (GSettings) raw = g_settings_new (schema_id);
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    g_object_get (raw, "settings-schema", &schema, NULL);
+
+    g_auto (GStrv) keys = g_settings_schema_list_keys (schema);
+
+    for (GStrv key = keys; *key; ++key)
+        g_settings_reset (raw, *key);
 }

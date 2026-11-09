@@ -45,7 +45,11 @@ static GPastePassphrase *g_paste_storage_passphrase = NULL;
 G_PASTE_VISIBLE void
 g_paste_storage_backend_set_passphrase (const gchar *passphrase)
 {
-    g_paste_passphrase_free (g_paste_storage_passphrase);
+    /* Copied before the one it replaces goes: @passphrase may be that one's
+     * own cleartext, which g_paste_storage_backend_get_passphrase () hands
+     * out, and freeing it wipes it. */
+    g_autoptr (GPastePassphrase) replaced = g_steal_pointer (&g_paste_storage_passphrase);
+
     g_paste_storage_passphrase = g_paste_passphrase_new (passphrase);
 }
 
@@ -144,15 +148,20 @@ g_paste_storage_backend_lock_since (guint         releases,
     {
         g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
+        /* Held, but maybe by a wait begun after this process let go of the
+         * one this wait was counted from: that release ends this wait all the
+         * same, whoever has taken the lock since. */
         if (g_paste_storage_lock_fd >= 0)
-            return TRUE;
+            return g_paste_storage_backend_get_releases () == releases;
     }
 
     gint fd = g_paste_storage_backend_open_lock_file ();
 
-    /* open_lock_file () says why it failed, and why that refuses nothing. */
+    /* open_lock_file () says why it failed, and why that refuses nothing. A
+     * release since the count ends the wait all the same, as everywhere
+     * below. */
     if (fd < 0)
-        return TRUE;
+        return g_paste_storage_backend_get_releases () == releases;
 
     gint64 start = g_get_monotonic_time ();
     gboolean logged = FALSE;
@@ -174,11 +183,12 @@ g_paste_storage_backend_lock_since (guint         releases,
             g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&g_paste_storage_lock_mutex);
 
             /* Another wait of this process's got it, and a lock of this
-             * process's is one flock () refuses this wait's own file. */
+             * process's is one flock () refuses this wait's own file. As
+             * above, a release since the count this wait was given ends it. */
             if (g_paste_storage_lock_fd >= 0)
             {
                 close (fd);
-                return TRUE;
+                return g_paste_storage_backend_get_releases () == releases;
             }
 
             if (flock (fd, LOCK_EX | LOCK_NB) == 0)
@@ -204,7 +214,7 @@ g_paste_storage_backend_lock_since (guint         releases,
         {
             g_warning ("Failed to lock the history: %s", g_strerror (refused));
             close (fd);
-            return TRUE;
+            return g_paste_storage_backend_get_releases () == releases;
         }
 
         /* A brief handover is normal; only warn if the previous daemon really is
@@ -299,6 +309,21 @@ typedef struct
 {
     GPasteSettings *settings;
     gboolean        read_whole;
+    gboolean        unverifiable;
+
+    /* The histories a write failed for since the last full write or emptying
+     * of them that landed, for a backend with no has_diverged of its own: the
+     * full writes g_paste_storage_backend_write_history () sees, and those an
+     * incremental backend records itself (g_paste_storage_backend_diverge ()).
+     * And the items, by uuid, a write left out of the store as too large for
+     * it (g_paste_storage_backend_leave_out ()). Guarded by @records_lock rather
+     * than by a backend's own lock, which a load may hold for as long as its
+     * read takes: the writes record into them on storage workers, a backend's
+     * lock held, and the main thread asks after every write. Nothing else is
+     * ever taken under @records_lock. */
+    GHashTable     *diverged;
+    GHashTable     *left_out;
+    GMutex          records_lock;
 } GPasteStorageBackendPrivate;
 
 G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE (StorageBackend, storage_backend, G_TYPE_OBJECT)
@@ -404,7 +429,7 @@ g_paste_storage_backend_get_history_file_path (GPasteStorageBackend *self,
 
 /**
  * g_paste_storage_backend_read_history:
- * @self: a #GPasteItem instance
+ * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to load
  * @cancellable: (nullable): a #GCancellable to give the read up on
  * @history: (out) (element-type GPasteItem): the history we just read
@@ -441,12 +466,16 @@ g_paste_storage_backend_read_history (GPasteStorageBackend *self,
 
 /**
  * g_paste_storage_backend_write_history:
- * @self: a #GPasteItem instance
+ * @self: a #GPasteStorageBackend instance
  * @name: the name of the history to save
  * @history: (element-type GPasteItem): the history to write
  *
  * Save the history by writing it to our storage backend. A write that fails
- * leaves the store of @name as it was, and leaves none where there was none.
+ * leaves the store of @name as it was, and leaves none where there was none --
+ * bar a file flavour's write over a history already there that could not
+ * write one of its images: the rest goes in without it, the saver's next
+ * write trying it again, where a history one image kept failing would
+ * otherwise never be written again.
  *
  * Returns: whether the store of @name holds @history now
  */
@@ -458,7 +487,18 @@ g_paste_storage_backend_write_history (GPasteStorageBackend *self,
     g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
     g_return_val_if_fail (name, FALSE);
 
-    return G_PASTE_STORAGE_BACKEND_GET_CLASS (self)->write_history_file (self, name, history);
+    const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
+    gboolean written = klass->write_history_file (self, name, history);
+
+    if (!klass->has_diverged)
+    {
+        if (written)
+            g_paste_storage_backend_converge (self, name);
+        else
+            g_paste_storage_backend_diverge (self, name);
+    }
+
+    return written;
 }
 
 /* Whether a file flavour still keeps a history under @name. The images/<name>/
@@ -495,6 +535,9 @@ _g_paste_storage_backend_history_still_stored (const gchar *name)
  * Keyed by name alone, no backend instance being needed to find them, so a
  * caller holding only the name of a history that is not the current one can
  * sweep it too.
+ *
+ * Fails with a %G_IO_ERROR when the images cannot be listed or one of them,
+ * or their directory, cannot be deleted.
  *
  * Returns: %FALSE, with @error set to the first thing that went wrong, when
  *          anything the sweep should have removed is still on disk. The rest is
@@ -554,9 +597,98 @@ g_paste_storage_backend_delete_history_images (const gchar *name,
     return FALSE;
 }
 
+/* What g_paste_storage_delete_history () does per flavour, through
+ * storage_flavours[] below. A history of the no-storage flavour has nothing on
+ * the disk to delete. */
+static void
+delete_nothing (GPasteStorage storage_kind G_GNUC_UNUSED,
+                const gchar  *name         G_GNUC_UNUSED,
+                GError      **error        G_GNUC_UNUSED)
+{
+}
+
+static void
+delete_file_history (GPasteStorage storage_kind,
+                     const gchar  *name,
+                     GError      **error)
+{
+    g_paste_file_backend_delete_files (name, storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE, error);
+}
+
+#ifdef G_PASTE_ENABLE_SQLITE
+static void
+delete_database_history (GPasteStorage storage_kind,
+                         const gchar  *name,
+                         GError      **error)
+{
+    g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage_kind));
+
+    g_paste_sqlite_backend_delete_database (path, error);
+}
+#endif
+
+#ifdef G_PASTE_ENABLE_ENCRYPTION
+#define WITH_ENCRYPTION(constructor) constructor
+#else
+#define WITH_ENCRYPTION(constructor) NULL
+#endif
+
+#ifdef G_PASTE_ENABLE_SQLITE
+#define WITH_SQLITE(constructor) constructor
+#else
+#define WITH_SQLITE(constructor) NULL
+#endif
+
+/* Every storage flavour, indexed by its kind: what it is called on disk, what
+ * the longest file it keeps for a history adds after the history's name, and
+ * how this build constructs it -- a plain one through its class, an encrypted
+ * one through a constructor keying it -- a flavour whose feature is not built
+ * naming neither; how a history of it is deleted with no backend open on it,
+ * and, for an encrypted one, which of its files hold what a wrong passphrase
+ * is refused over (g_paste_storage_passphrase_verifiable ()), NULL again for
+ * what this build cannot do. Adding a flavour is one row plus its enum value,
+ * every lookup of a kind going through here, g_paste_storage_is_supported ()
+ * included; a reader wanting several flavours names the ones it wants, in its
+ * own order (detect_current_backend (),
+ * _g_paste_storage_backend_history_still_stored ()).
+ *
+ * @get_type for an encrypted flavour is the no-storage backend on purpose:
+ * anything reaching it has already failed to key one. Keeping the history in
+ * memory is the only safe answer -- never plaintext on disk. */
+static const struct
+{
+    const gchar          *extension;
+    const gchar          *longest_suffix;
+    GType                 (*get_type)       (void);
+    GPasteStorageBackend *(*new_encrypted)  (GPasteSettings *settings,
+                                             const gchar    *passphrase);
+    void                  (*delete_history) (GPasteStorage storage_kind,
+                                             const gchar  *name,
+                                             GError      **error);
+    gboolean              (*holds_data)     (const gchar *path);
+} storage_flavours[G_PASTE_N_STORAGE] = {
+    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                      g_paste_noop_backend_get_type,   NULL,                                                                 delete_nothing,                        NULL },
+    /* The temporary a save is written to before its move into place. */
+    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, g_paste_file_backend_get_type,   NULL,                                                                 delete_file_history,                   NULL },
+    /* The original a change of passphrase keeps aside. */
+    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD,  g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted),                 delete_file_history,                   WITH_ENCRYPTION (g_paste_secret_stream_file_has_frame) },
+    /* The rollback journal SQLite opens beside a new database to turn it to
+     * write-ahead logging, longer than the log and its index. */
+#ifdef G_PASTE_ENABLE_SQLITE
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                           g_paste_sqlite_backend_get_type, NULL,                                                                 delete_database_history,               NULL },
+#else
+    /* Not built in: the kind degrades to the file flavour
+     * (_g_paste_storage_backend_get_type ()), which then keeps the history as
+     * its own. */
+    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml" G_PASTE_FILE_BACKEND_TEMP_SUFFIX, NULL,                            NULL,                                                                 NULL,                                  NULL },
+#endif
+    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                          g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)), WITH_SQLITE (delete_database_history), WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_database_has_items)) },
+};
+
 /* What follows a delete of the history called @name, whatever deleted it: its
- * images directory, once no flavour stores the name. @error keeps the store's
- * own failure over this one. */
+ * images directory, once no file flavour stores the name, the database ones
+ * keeping their images in the store. @error keeps the store's own failure over
+ * this one. */
 static void
 _g_paste_storage_delete_history_images (const gchar *name,
                                         GError     **error)
@@ -568,7 +700,11 @@ _g_paste_storage_delete_history_images (const gchar *name,
 
     /* Never over the store's own failure: the first thing that went wrong is
      * what says why, and a caller that asked for no error still has to hear
-     * about images left on disk. */
+     * about images left on disk. A store that was not there is no failure:
+     * a caller takes it for a history deleted all the same
+     * (g_paste_history_delete_full ()), which with its images left it is not. */
+    if (error && g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (error);
     if (error && !*error)
         g_propagate_error (error, g_steal_pointer (&images_error));
     else
@@ -580,26 +716,15 @@ g_paste_storage_delete_history (GPasteStorage storage_kind,
                                 const gchar  *name,
                                 GError      **error)
 {
-    switch (storage_kind)
+    /* Refused rather than skipped: a caller taking back what an import left
+     * would otherwise read the copies as gone. */
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].delete_history)
     {
-    case G_PASTE_STORAGE_FILE:
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        g_paste_file_backend_delete_files (name, storage_kind == G_PASTE_STORAGE_ENCRYPTED_FILE, error);
-        break;
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_SQLITE:
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-    {
-        g_autofree gchar *path = g_paste_util_get_history_file_path (name, g_paste_storage_get_extension (storage_kind));
-
-        g_paste_sqlite_backend_delete_database (path, error);
-        break;
-    }
-#endif
-    default:
+        g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED, "This build cannot delete a history stored as “%s”", g_paste_storage_get_extension (storage_kind));
         return;
     }
 
+    storage_flavours[storage_kind].delete_history (storage_kind, name, error);
     _g_paste_storage_delete_history_images (name, error);
 }
 
@@ -630,7 +755,9 @@ g_paste_storage_backend_reaches_history (GPasteStorageBackend *self,
  * that follows propagates its own, so errors land in %G_IO_ERROR or
  * %G_FILE_ERROR. The sweep is reported because those files are the clipboard's
  * screenshots in the plain flavours: "the history is gone" must not be answered
- * while they are still there.
+ * while they are still there. A history kept by a storage @self cannot reach --
+ * a flavour this build cannot open, or any while @self stores nothing -- is
+ * refused with %G_PASTE_ERROR_FAILED, nothing deleted.
  */
 G_PASTE_VISIBLE void
 g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
@@ -643,7 +770,7 @@ g_paste_storage_backend_delete_history (GPasteStorageBackend *self,
     if (!g_paste_storage_backend_reaches_history (self, name))
     {
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                     "“%s” is kept by a storage not in use, which a deletion cannot reach", name);
+                     "“%s” is kept by a storage this one cannot reach", name);
         return;
     }
 
@@ -697,7 +824,12 @@ _g_paste_storage_list_histories (const gchar *extension,
 
         name[strlen (name) - suffix_len] = '\0';
         /* A stray file -- ".xml", or one an older GPaste wrote for an empty name
-         * -- names nothing a history could be read, counted or deleted under. */
+         * -- names nothing a history could be read, counted or deleted under.
+         * So do the "." and ".." and the names past this storage's length GPaste
+         * 50 took as well, whose histories stay on the disk, unlisted, after an
+         * upgrade: accepted, the name naming images/<name>/ here too, where no
+         * such name has a place, and a rename path being more than so rare a
+         * history is worth. */
         if (g_paste_util_history_name_is_valid (name))
             g_strv_builder_take (history_names, g_steal_pointer (&name));
     }
@@ -942,9 +1074,9 @@ g_paste_storage_backend_is_incremental (GPasteStorageBackend *self)
  * @self: a #GPasteStorageBackend instance
  * @name: the name of a history
  *
- * Whether a write of @name failed since the last full write of it that landed,
- * the store holding what the history no longer does, or missing what it does,
- * until one lands. Never waits on a read or a write in flight.
+ * Whether a write of @name failed since the last full write or emptying of it
+ * that landed, the store holding what the history no longer does, or missing
+ * what it does, until one lands. Never waits on a read or a write in flight.
  *
  * Returns: whether the next write of @name has to be a full one
  */
@@ -957,7 +1089,83 @@ g_paste_storage_backend_has_diverged (GPasteStorageBackend *self,
 
     const GPasteStorageBackendClass *klass = G_PASTE_STORAGE_BACKEND_GET_CLASS (self);
 
-    return klass->has_diverged && klass->has_diverged (self, name);
+    if (klass->has_diverged)
+        return klass->has_diverged (self, name);
+
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    return g_hash_table_contains (priv->diverged, name);
+}
+
+void
+g_paste_storage_backend_diverge (GPasteStorageBackend *self,
+                                 const gchar          *name)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_add (priv->diverged, g_strdup (name));
+}
+
+void
+g_paste_storage_backend_converge (GPasteStorageBackend *self,
+                                  const gchar          *name)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_remove (priv->diverged, name);
+}
+
+void
+g_paste_storage_backend_leave_out (GPasteStorageBackend *self,
+                                   GPasteItem           *item)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    g_hash_table_add (priv->left_out, g_strdup (g_paste_item_get_uuid (item)));
+}
+
+/* What g_paste_storage_backend_left_out () answers, @records_lock held. */
+static gboolean
+g_paste_storage_backend_left_out_locked (GPasteStorageBackend        *self,
+                                         GPasteStorageBackendPrivate *priv,
+                                         GPasteItem                  *item)
+{
+    return !g_paste_storage_backend_stores_item (self, item) ||
+           g_hash_table_contains (priv->left_out, g_paste_item_get_uuid (item));
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_storage_backend_left_out (GPasteStorageBackend *self,
+                                  GPasteItem           *item)
+{
+    g_return_val_if_fail (G_PASTE_IS_STORAGE_BACKEND (self), FALSE);
+    g_return_val_if_fail (G_PASTE_IS_ITEM (item), FALSE);
+
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+
+    return g_paste_storage_backend_left_out_locked (self, priv, item);
+}
+
+gint64
+g_paste_storage_backend_count_kept (GPasteStorageBackend *self,
+                                    const GList          *history)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+    g_autoptr (GMutexLocker) locker = g_mutex_locker_new (&priv->records_lock);
+    gint64 kept = 0;
+
+    for (const GList *h = history; h; h = g_list_next (h))
+    {
+        if (!g_paste_storage_backend_left_out_locked (self, priv, h->data))
+            ++kept;
+    }
+
+    return kept;
 }
 
 static void
@@ -970,12 +1178,43 @@ g_paste_storage_backend_dispose (GObject *object)
     G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->dispose (object);
 }
 
+/* The records go with the mutex guarding them, which only finalize () may
+ * clear: a write still out on a backend disposed early, with
+ * g_object_run_dispose (), records into them as it lands. */
+static void
+g_paste_storage_backend_finalize (GObject *object)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (G_PASTE_STORAGE_BACKEND (object));
+
+    g_hash_table_unref (priv->diverged);
+    g_hash_table_unref (priv->left_out);
+    g_mutex_clear (&priv->records_lock);
+
+    G_OBJECT_CLASS (g_paste_storage_backend_parent_class)->finalize (object);
+}
+
 G_PASTE_VISIBLE void
 g_paste_storage_backend_read_whole (GPasteStorageBackend *self)
 {
     GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
 
     priv->read_whole = TRUE;
+}
+
+void
+g_paste_storage_backend_set_unverifiable (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    priv->unverifiable = TRUE;
+}
+
+gboolean
+g_paste_storage_backend_is_unverifiable (GPasteStorageBackend *self)
+{
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    return priv->unverifiable;
 }
 
 guint64
@@ -1016,77 +1255,21 @@ g_paste_storage_backend_get_settings (GPasteStorageBackend *self)
 static void
 g_paste_storage_backend_class_init (GPasteStorageBackendClass *klass)
 {
-    klass->read_history_file = NULL;
-    klass->write_history_file = NULL;
-    klass->get_kind = NULL;
-    klass->delete_history = NULL;
-    klass->list_histories = NULL;
-    klass->count_history = NULL;
-    klass->rekey = NULL;
-    klass->history_refutes_passphrase = NULL;
-
-    klass->add_item = NULL;
-    klass->remove_item = NULL;
-    klass->replace_item = NULL;
-    klass->clear_history = NULL;
-
+    /* Every vfunc starts NULL, GType zeroing the class: the header says which
+     * a subclass has to fill and what one left NULL means. */
     G_OBJECT_CLASS (klass)->dispose = g_paste_storage_backend_dispose;
+    G_OBJECT_CLASS (klass)->finalize = g_paste_storage_backend_finalize;
 }
 
 static void
-g_paste_storage_backend_init (GPasteStorageBackend *self G_GNUC_UNUSED)
+g_paste_storage_backend_init (GPasteStorageBackend *self)
 {
+    GPasteStorageBackendPrivate *priv = g_paste_storage_backend_get_instance_private (self);
+
+    priv->diverged = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    priv->left_out = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+    g_mutex_init (&priv->records_lock);
 }
-
-#ifdef G_PASTE_ENABLE_ENCRYPTION
-#define WITH_ENCRYPTION(constructor) constructor
-#else
-#define WITH_ENCRYPTION(constructor) NULL
-#endif
-
-#ifdef G_PASTE_ENABLE_SQLITE
-#define WITH_SQLITE(constructor) constructor
-#else
-#define WITH_SQLITE(constructor) NULL
-#endif
-
-/* Every storage flavour, indexed by its kind: what it is called on disk, what
- * the longest file it keeps for a history adds after the history's name, and
- * how this build constructs it -- a plain one through its class, an encrypted
- * one through a constructor keying it -- a flavour whose feature is not built
- * naming neither. Adding a flavour is one row plus its enum value, every lookup
- * of a kind going through here, g_paste_storage_is_supported () included; a
- * reader wanting several flavours names the ones it wants, in its own order
- * (detect_current_backend (), _g_paste_storage_backend_history_still_stored ()).
- *
- * @get_type for an encrypted flavour is the no-storage backend on purpose:
- * anything reaching it has already failed to key one. Keeping the history in
- * memory is the only safe answer -- never plaintext on disk. */
-static const struct
-{
-    const gchar          *extension;
-    const gchar          *longest_suffix;
-    GType                 (*get_type)      (void);
-    GPasteStorageBackend *(*new_encrypted) (GPasteSettings *settings,
-                                            const gchar    *passphrase);
-} storage_flavours[G_PASTE_N_STORAGE] = {
-    [G_PASTE_STORAGE_NOOP]             = { "noop", "",                                  g_paste_noop_backend_get_type,   NULL },
-    /* The temporary a save is written to before its move into place. */
-    [G_PASTE_STORAGE_FILE]             = { "xml",  ".xml.tmp",                          g_paste_file_backend_get_type,   NULL },
-    /* The original a change of passphrase keeps aside. */
-    [G_PASTE_STORAGE_ENCRYPTED_FILE]   = { "xmls", ".xmls" G_PASTE_FILE_BACKEND_REKEY_OLD, g_paste_noop_backend_get_type,   WITH_ENCRYPTION (g_paste_file_backend_new_encrypted) },
-    /* The rollback journal SQLite opens beside a new database to turn it to
-     * write-ahead logging, longer than the log and its index. */
-#ifdef G_PASTE_ENABLE_SQLITE
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".db-journal",                       g_paste_sqlite_backend_get_type, NULL },
-#else
-    /* Not built in: the kind degrades to the file flavour
-     * (_g_paste_storage_backend_get_type ()), which then keeps the history as
-     * its own. */
-    [G_PASTE_STORAGE_SQLITE]           = { "db",   ".xml.tmp",                          NULL,                            NULL },
-#endif
-    [G_PASTE_STORAGE_ENCRYPTED_SQLITE] = { "dbs",  ".dbs-journal",                      g_paste_noop_backend_get_type,   WITH_SQLITE (WITH_ENCRYPTION (g_paste_sqlite_backend_new_encrypted)) },
-};
 
 /* A plain kind this build lacks degrades to another plain kind. */
 static GType
@@ -1130,15 +1313,45 @@ g_paste_storage_get_extension (GPasteStorage storage_kind)
     return storage_flavours[storage_kind].extension;
 }
 
+/* The longest file name the history directory takes, as pathconf () says --
+ * of the nearest folder above it while it is not made yet: 143 bytes on
+ * eCryptfs with encrypted names, where most filesystems take 255. 255 when
+ * nothing says, which g_paste_util_history_name_is_valid () bounds every name
+ * by anyway. */
+static gsize
+g_paste_storage_name_max (void)
+{
+    g_autofree gchar *dir = g_paste_util_get_history_dir_path ();
+
+    for (;;)
+    {
+        errno = 0;
+
+        glong max = pathconf (dir, _PC_NAME_MAX);
+
+        if (max > 0)
+            return MIN ((gsize) max, 255);
+        if (errno != ENOENT)
+            return 255;
+
+        g_autofree gchar *parent = g_path_get_dirname (dir);
+
+        if (g_paste_str_equal (parent, dir))
+            return 255;
+        g_set_str_take (&dir, g_steal_pointer (&parent));
+    }
+}
+
 /**
  * g_paste_storage_name_fits:
  * @storage_kind: a #GPasteStorage kind
  * @name: a name g_paste_util_history_name_is_valid() accepts
  *
  * Whether a history created under @name could have every file the
- * @storage_kind flavour keeps for it named after it. Asked before creating
- * one: a history already there is one a save landed for, and stays readable
- * whatever this says.
+ * @storage_kind flavour keeps for it named after it, in the history directory
+ * as its filesystem bounds a file name. Asked before creating one: a history
+ * already there is one a save landed for, and stays readable whatever this
+ * says.
  *
  * A question about the flavour, not about a backend: answered the same while
  * an encrypted store is locked, and the daemon runs on the "no storage"
@@ -1155,7 +1368,7 @@ g_paste_storage_name_fits (GPasteStorage storage_kind,
     if (storage_kind >= G_PASTE_N_STORAGE)
         storage_kind = G_PASTE_STORAGE_NOOP;
 
-    return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= 255;
+    return strlen (name) + strlen (storage_flavours[storage_kind].longest_suffix) <= g_paste_storage_name_max ();
 }
 
 /**
@@ -1197,8 +1410,10 @@ g_paste_storage_is_supported (GPasteStorage storage_kind)
  *
  * Returns: %FALSE when the active history holds data @passphrase does not
  *          unlock, or holds none and another history refutes it while none
- *          opens with it; and when the histories could not be listed at all --
- *          an unverifiable passphrase is refused rather than assumed good
+ *          opens with it; and when the histories could not be listed at all,
+ *          or one could not be checked -- its key not derived, as a memory
+ *          limit refuses it -- while none opens with @passphrase: an
+ *          unverifiable passphrase is refused rather than assumed good
  */
 G_PASTE_VISIBLE gboolean
 g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
@@ -1245,6 +1460,11 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
         return FALSE;
     if (klass->history_confirms_passphrase (backend, active))
         return TRUE;
+    /* A check that could not be made says no more than the store that could
+     * not be listed above: none of the others could be checked either, their
+     * keys derived as this one's is. */
+    if (g_paste_storage_backend_is_unverifiable (backend))
+        return FALSE;
 
     /* Otherwise the others: with nothing to go by in the active one -- absent,
      * never written -- a passphrase none of them opens and some refute is a
@@ -1258,13 +1478,17 @@ g_paste_storage_passphrase_can_decrypt (GPasteStorage   storage_kind,
 
     for (GStrv name = names; name && *name; ++name)
     {
+        /* Asked above, and answered neither: a document of ours damaged past
+         * its header pays a key derivation for each ask. */
+        if (g_paste_str_equal (*name, active))
+            continue;
         if (klass->history_refutes_passphrase (backend, *name))
             refuted = TRUE;
         else if (klass->history_confirms_passphrase (backend, *name))
             return TRUE;
     }
 
-    return !refuted;
+    return !refuted && !g_paste_storage_backend_is_unverifiable (backend);
 }
 
 /**
@@ -1289,21 +1513,10 @@ g_paste_storage_passphrase_verifiable (GPasteStorage   storage_kind,
 
     /* Asked of the files, by name: no key could be checked without the
      * passphrase this is about. */
-    gboolean (*refutable) (const gchar *path);
-
-    switch (storage_kind)
-    {
-    case G_PASTE_STORAGE_ENCRYPTED_FILE:
-        refutable = g_paste_secret_stream_file_has_frame;
-        break;
-#ifdef G_PASTE_ENABLE_SQLITE
-    case G_PASTE_STORAGE_ENCRYPTED_SQLITE:
-        refutable = g_paste_sqlite_backend_database_has_items;
-        break;
-#endif
-    default:
+    if (storage_kind >= G_PASTE_N_STORAGE || !storage_flavours[storage_kind].holds_data)
         return FALSE;
-    }
+
+    gboolean (*refutable) (const gchar *path) = storage_flavours[storage_kind].holds_data;
 
     const gchar *extension = g_paste_storage_get_extension (storage_kind);
     g_auto (GStrv) names = _g_paste_storage_list_histories (extension, NULL);
@@ -1403,7 +1616,11 @@ g_paste_storage_backend_new (GPasteStorage   storage_kind,
     const gchar *passphrase = NULL;
 
 #ifdef G_PASTE_ENABLE_ENCRYPTION
-    passphrase = g_paste_storage_backend_get_passphrase ();
+    /* Asked for an encrypted kind alone: the encrypted constructors build
+     * their plain kind through here, a storage worker among their callers,
+     * and the main thread may be setting the process passphrase meanwhile. */
+    if (g_paste_storage_is_encrypted (storage_kind))
+        passphrase = g_paste_storage_backend_get_passphrase ();
 
 #ifdef G_PASTE_ENABLE_LIBSECRET
     /* No passphrase set in this process yet (e.g. the in-process daemon in

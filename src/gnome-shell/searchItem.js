@@ -44,17 +44,21 @@ export const GPasteSearchItem = GObject.registerClass({
         // Set while reset() drops both filters at once, so neither asks the
         // caller for a reload of its own: it makes the one reload both need.
         this._silent = false;
+        // Drawn as the rows' stars are: empty while the filter is off, full
+        // while it shows only the pinned items.
+        this._favouritesIcon = new St.Icon({
+            icon_name: 'non-starred-symbolic',
+            style_class: 'popup-menu-icon',
+        });
         this._favouritesButton = new St.Button({
-            child: new St.Icon({
-                icon_name: 'starred-symbolic',
-                style_class: 'popup-menu-icon',
-            }),
+            child: this._favouritesIcon,
             toggle_mode: true,
             can_focus: true,
             accessible_name: _('Show Only Pinned Items'),
         });
         this._favouritesButton.connect('notify::checked', () => {
             this._favourites = this._favouritesButton.checked;
+            this._favouritesIcon.icon_name = this._favourites ? 'starred-symbolic' : 'non-starred-symbolic';
             if (!this._silent)
                 this.emit('favourites-changed');
         });

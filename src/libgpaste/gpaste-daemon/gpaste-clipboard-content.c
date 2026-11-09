@@ -6,6 +6,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-provider-private.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -23,7 +24,14 @@ g_paste_clipboard_content_clear (GPasteClipboardContent *content)
 {
     switch (content->kind)
     {
+    /* Wiped: the text a selection carries is a password's cleartext as
+     * readily as anything -- a hinted copy, the password a selection was
+     * given -- whose item keeps its own copy in secure memory. Counted among
+     * a published password's wipes (/meta/publish/wipes-password,
+     * /gdk/publish/wipes-password). */
     case CLIPBOARD_CONTENT_TEXT:
+        g_clear_pointer (&content->str, g_paste_util_free_cleartext);
+        break;
     case CLIPBOARD_CONTENT_IMAGE:
         g_clear_pointer (&content->str, g_free);
         break;
@@ -357,7 +365,9 @@ g_paste_clipboard_file_list_equal (GdkFileList *a,
         return FALSE;
 
     /* gdk_file_list_get_files is (transfer container): it hands back a fresh
-     * GSList whose GFiles stay owned by the list, hence g_autoptr (GSList). */
+     * GSList whose GFiles stay owned by the list, hence g_autoptr (GSList). The
+     * other sites taking one say so in a line of their own, the trap being one
+     * each of them can fall into. */
     g_autoptr (GSList) files_a = gdk_file_list_get_files (a);
     g_autoptr (GSList) files_b = gdk_file_list_get_files (b);
     const GSList *fa = files_a;
@@ -405,7 +415,7 @@ g_paste_clipboard_file_list_new (const gchar * const *uris)
  * any of it is decoded.
  *
  * Returns: (transfer full) (nullable): the #GdkFileList @bytes lists, or %NULL
- *          for one listing too many files
+ *          for one listing too many files, or none
  */
 G_PASTE_VISIBLE GdkFileList *
 g_paste_clipboard_file_list_from_bytes (GBytes *bytes)
@@ -414,6 +424,11 @@ g_paste_clipboard_file_list_from_bytes (GBytes *bytes)
 
     gsize size = 0;
     const gchar *data = g_bytes_get_data (bytes, &size);
+
+    /* No list at all, its data perhaps no pointer. */
+    if (!size)
+        return NULL;
+
     const gchar *end = data + size;
     guint newlines = 0;
 
@@ -883,8 +898,15 @@ g_paste_clipboard_mime_results_store_special (GPasteClipboardMimeResults *result
     if (!bytes || !g_bytes_get_size (bytes))
         return;
 
+    gsize size = 0;
+    gconstpointer data = g_bytes_get_data (bytes, &size);
+
+    /* A copy of its size: a transfer's bytes are its stream's buffer, grown by
+     * doubling, which an item kept in the history would otherwise hold whole
+     * while only its size counts against max-memory-usage. No test sees what a
+     * GBytes was allocated with. */
     g_clear_object (&results->special_mime[mime]);
-    results->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_ref (bytes));
+    results->special_mime[mime] = g_paste_binary_data_new (mime, g_bytes_new (data, size));
 }
 
 /**
@@ -996,9 +1018,10 @@ g_paste_clipboard_content_to_item (GPasteSettings            *settings,
  * update outliving its own conclusion may be left holding: cancelling cannot
  * fail the reads still out (see the backends), so nothing bounds how long they
  * keep the struct alive, and what waits on them is a counter where this is a
- * whole texture, a settings ref and the provider's only one -- and that ref is
- * what keeps a backend's requestor window and its interned properties on the X
- * server for the rest of the session.
+ * whole texture, a settings ref and a provider ref. Each read holds the
+ * provider itself for as long as it is out, so this ref adds nothing while they
+ * are; it is a read that never lands that would otherwise keep all of it for
+ * the rest of the session.
  *
  * Called again from the teardown, for whatever a read landing afterwards stored
  * on its way in: every release here clears what it released, so the second pass
@@ -1017,8 +1040,9 @@ g_paste_clipboard_update_release_content (GPasteClipboardUpdate *update)
      * read that writes here is that kind's. */
     switch (update->content_kind)
     {
+    /* As g_paste_clipboard_content_clear () frees a text. */
     case CLIPBOARD_CONTENT_TEXT:
-        g_clear_pointer (&update->text, g_free);
+        g_clear_pointer (&update->text, g_paste_util_free_cleartext);
         break;
     case CLIPBOARD_CONTENT_IMAGE:
         g_clear_object (&update->texture);
@@ -1035,6 +1059,123 @@ g_paste_clipboard_update_release_content (GPasteClipboardUpdate *update)
     }
 
     g_clear_object (&update->settings);
+}
+
+/* What g_paste_clipboard_update_then () chains onto an update. */
+typedef struct
+{
+    GPasteClipboardUpdateThenFunc func;
+    gpointer                      data;
+} GPasteClipboardUpdateThen;
+
+/* The text the copy being handed over found on the selection, for the length
+ * of that callback alone: see g_paste_clipboard_update_overtaken_text (). Put
+ * back after it rather than cleared, a callback being free to conclude another
+ * update on its way.
+ *
+ * Here rather than an argument of the callback, whose type
+ * (#GPasteClipboardProviderUpdateCallback) is in GPasteDaemon-1's GIR for
+ * whatever implements a provider. And needed at all because a released copy
+ * cannot be concluded ahead of what overtakes it, against the live cache and
+ * records: that is a change, under the backend's own change emission --
+ * mutter's owner-changed among them -- or a publication the clipboards manager
+ * is in the middle of -- a Select's loop, a sync, an expiry, a strip or
+ * ensure_not_empty () inside another read's callback, a handler of the
+ * history's own signals -- and a conclusion there re-enters the manager and
+ * the history mid-operation and publishes under that emission, which
+ * g_paste_clipboard_update_supersede () exists not to do. Concluded first, the
+ * copy would still have to act on nothing, the selection being what overtook
+ * it: decisions without their actions, which is what the manager makes of the
+ * records it froze at the release (judge_overtaken ()). */
+static const gchar *overtaken_text;
+
+/**
+ * g_paste_clipboard_update_overtaken_text:
+ *
+ * Returns: (nullable): while an update's callback is handed a copy its owner
+ *          served whole before leaving and that something overtook before it
+ *          concluded (g_paste_clipboard_update_owner_gone ()), the text that
+ *          read found on the selection, as the provider's cache takes it from a
+ *          read that concludes first -- the selection's own bytes where the
+ *          hint never answered -- and %NULL otherwise
+ *
+ * What such a copy is judged by, the cache answering for whatever overtook it.
+ */
+const gchar *
+g_paste_clipboard_update_overtaken_text (void)
+{
+    return overtaken_text;
+}
+
+/* Hand @item (transfer full, nullable) to whoever asked for @update, and run
+ * what was chained onto it (g_paste_clipboard_update_then ()). @seen is the text
+ * an overtaken copy found on the selection, %NULL for any other.
+ *
+ * Everything this conclusion has of its own is done with before any call below,
+ * every one of which can end up back here: publishing drops the previous owner,
+ * which can fail a transfer this very update is still waiting on --
+ * synchronously, on the mutter backend -- the callback reaches the history,
+ * which publishes too, and what was chained onto the update reaches the
+ * manager the same way. A read failing counts itself out, and the last one to
+ * do so frees the update, so anything read off it afterwards is read off freed
+ * memory -- the provider included, whose only ref is the update's, hence the
+ * one taken over below. */
+static void
+g_paste_clipboard_update_answer (GPasteClipboardUpdate *update,
+                                 GPasteItem            *item,
+                                 const gchar           *seen)
+{
+    g_autoptr (GPasteItem) owned = item;
+    gboolean superseded = update->superseded;
+    gboolean reselect = update->reselect;
+    /* Read before the release below, not after: that includes the mime results
+     * @sensitive lives in, and a *_clear () completed to zero the struct it
+     * owns -- the natural reading of its name -- would silently land every
+     * marked password as ordinary text. An overtaken update answers %UNKNOWN,
+     * as g_paste_clipboard_update_conclude () says, bar a copy its owner served
+     * whole before leaving: what its hint said before the owner left, if it
+     * did, is what that copy is judged by
+     * (/clipboard/released_copy/answered_no). */
+    GPasteClipboardSecret secret = (superseded && !update->released) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN
+                                                                       : g_paste_clipboard_mime_results_get_secret (&update->mimes);
+
+    g_paste_clipboard_update_release_content (update);
+    g_paste_clipboard_read_guard_disarm (&update->guard);
+
+    /* Taken over rather than ref'd alongside: this is where the update stops
+     * holding the provider up, and a conclusion the reads outlive would
+     * otherwise hold it for as long as they do. */
+    g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
+    GPasteClipboardProviderUpdateCallback callback = update->callback;
+    gpointer user_data = update->user_data;
+    GSList *thens = g_steal_pointer (&update->thens);
+
+    /* Re-own trimmed text only after its reads are complete, so replacing the
+     * owner cannot abort the remaining MIME transfers. Publishing the item also
+     * preserves a password's sensitive hint. */
+    if (reselect && owned)
+        g_paste_clipboard_provider_select_item_full (provider, owned, FALSE);
+
+    /* (transfer full) to the callback, and ours to release when there is none:
+     * an update fired with no callback is part of the contract -- what a
+     * backend's update () itself checks on every early return -- and what the
+     * item holds can be a password's cleartext. */
+    if (callback)
+    {
+        const gchar *outer = overtaken_text;
+
+        overtaken_text = seen;
+        callback (provider, g_steal_pointer (&owned), superseded, secret, user_data);
+        overtaken_text = outer;
+    }
+
+    for (GSList *l = thens; l; l = l->next)
+    {
+        GPasteClipboardUpdateThen *then = l->data;
+
+        then->func (provider, superseded, then->data);
+    }
+    g_slist_free_full (thens, g_free);
 }
 
 /* Build what the update read and hand it to whoever asked for it.
@@ -1057,20 +1198,15 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
         *update->slot = NULL;
 
     /* Overtaken while it was reading (see @superseded): nothing to build an item
-     * from, and no selection to re-own. What is left to answer is the secret,
-     * and %UNKNOWN is the only thing this update can say: what it read is what
-     * that selection carried, the update that overtook it answers for what sits
-     * there now, and a record already kept has no grounds to be retired here. */
-    if (update->superseded)
+     * from -- bar a copy its owner served whole before leaving (@released),
+     * which goes on below -- and no selection to re-own. What is left to answer
+     * is the secret, and %UNKNOWN is the only thing this update can say: what it
+     * read is what that selection carried, the update that overtook it answers
+     * for what sits there now, and a record already kept has no grounds to be
+     * retired here. */
+    if (update->superseded && !update->released)
     {
-        g_paste_clipboard_update_release_content (update);
-        g_paste_clipboard_read_guard_disarm (&update->guard);
-
-        g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
-
-        if (update->callback)
-            update->callback (provider, NULL, TRUE, G_PASTE_CLIPBOARD_SECRET_UNKNOWN, update->user_data);
-
+        g_paste_clipboard_update_answer (update, NULL, NULL);
         return;
     }
 
@@ -1096,7 +1232,7 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
      * selection's text can be megabytes, which is the same reason
      * classify_text () hands back %NULL for a text it leaves as it is. */
     gboolean unidentified = update->produced && update->content_kind == CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive_unknown;
-    g_autofree gchar *unidentified_text = NULL;
+    g_autoptr (GPasteCleartext) unidentified_text = NULL;
     /* See the DROP case below. */
     gboolean empty_text = FALSE;
 
@@ -1104,8 +1240,10 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
     {
         g_autofree gchar *value = NULL;
         /* GPaste rewrites nothing it is not recording: not while paused, nor
-         * for a read only identifying the selection. */
-        gboolean may_reselect = (g_paste_clipboard_provider_is_clipboard (update->provider) &&
+         * for a read only identifying the selection -- nor for a copy that
+         * selection has moved on from. */
+        gboolean may_reselect = (!update->superseded &&
+                                 g_paste_clipboard_provider_is_clipboard (update->provider) &&
                                  !update->mimes.sensitive_unknown &&
                                  update->record &&
                                  g_paste_settings_get_track_changes (update->settings));
@@ -1146,11 +1284,14 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
              * /clipboard/empty_text_retires_record tests). The mutter
              * backend hands an empty transfer over as that empty
              * string too (g_paste_clipboard_meta_update_on_text ()).
-             * A text over the size limits -- never a secret, which
-             * they do not apply to -- is still held as unidentified:
-             * its bytes are what the cache must not hold. */
+             * A text over max-text-item-size -- never a secret, which
+             * the limits do not apply to -- is what the cache must not hold.
+             * One under min-text-item-size is a few bytes, kept as any text
+             * a read could not identify is, so that a standing record is
+             * matched against what sits there rather than left unconfirmed
+             * (/clipboard/unknown_hint/short). */
             empty_text = !*update->text;
-            unidentified = FALSE;
+            unidentified = unidentified && !empty_text && strlen (update->text) <= g_paste_settings_get_max_text_item_size (update->settings);
             break;
         case G_PASTE_CLIPBOARD_TEXT_RESELECT:
             update->reselect = TRUE;
@@ -1179,91 +1320,64 @@ g_paste_clipboard_update_conclude (GPasteClipboardUpdate *update)
                                                                      update->mimes.sensitive,
                                                                      update->mimes.special_mime);
 
+    /* The text the cache takes from this read, where it takes one: for a read
+     * whose hint never answered, whichever of the two is the selection's own --
+     * the one taken aside above when trimming replaced it, and update->text
+     * itself otherwise, which the item, when there is one, was built from by
+     * copy -- and for a text item otherwise, the item's value, this very string.
+     * Taken rather than copied: the release below would free it. */
+    g_autoptr (GPasteCleartext) text = NULL;
+
+    if (unidentified)
+        text = (unidentified_text) ? g_steal_pointer (&unidentified_text) : g_steal_pointer (&update->text);
+    else if (item && kind == CLIPBOARD_CONTENT_TEXT)
+        text = g_steal_pointer (&update->text);
+
     /* Deduplication only remembers content whose update survived. Publishing a
      * cache entry while MIME reads are pending would let a superseded update
-     * suppress its successor without either producing a history item. */
-    if (unidentified)
+     * suppress its successor without either producing a history item. A copy
+     * overtaken once its owner left fills nothing either: the cache answers for
+     * what overtook it, and the text it would have taken is what the copy is
+     * judged by instead (g_paste_clipboard_update_overtaken_text ()). */
+    if (!update->superseded)
     {
-        /* Whichever of the two is the selection's own text: the one taken aside
-         * above when trimming replaced it, and update->text itself otherwise --
-         * which the item, when there is one, was built from by copy. */
-        g_paste_clipboard_content_set_text_take (update->cache,
-                                                 (unidentified_text) ? g_steal_pointer (&unidentified_text)
-                                                                     : g_steal_pointer (&update->text));
-    }
-    else if (item)
-    {
-        switch (kind)
+        if (text)
+            g_paste_clipboard_content_set_text_take (update->cache, g_steal_pointer (&text));
+        else if (item)
         {
-        case CLIPBOARD_CONTENT_TEXT:
-            /* The item's value is this very string, which the release below
-             * would free: taken rather than copied. */
-            g_paste_clipboard_content_set_text_take (update->cache, g_steal_pointer (&update->text));
-            break;
-        case CLIPBOARD_CONTENT_IMAGE:
-            g_paste_clipboard_content_set_image_checksum (update->cache, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)));
-            break;
-        case CLIPBOARD_CONTENT_FILE_LIST:
-            g_paste_clipboard_content_set_file_list (update->cache, update->file_list);
-            break;
-        case CLIPBOARD_CONTENT_COLOR:
-            g_paste_clipboard_content_set_color (update->cache, &update->rgba);
-            break;
-        case CLIPBOARD_CONTENT_NONE:
-        case CLIPBOARD_CONTENT_IGNORED:
-        case CLIPBOARD_CONTENT_WITHHELD:
-            g_assert_not_reached ();
+            switch (kind)
+            {
+            case CLIPBOARD_CONTENT_IMAGE:
+                g_paste_clipboard_content_set_image_checksum (update->cache, g_paste_image_item_get_checksum (G_PASTE_IMAGE_ITEM (item)));
+                break;
+            case CLIPBOARD_CONTENT_FILE_LIST:
+                g_paste_clipboard_content_set_file_list (update->cache, update->file_list);
+                break;
+            case CLIPBOARD_CONTENT_COLOR:
+                g_paste_clipboard_content_set_color (update->cache, &update->rgba);
+                break;
+            case CLIPBOARD_CONTENT_TEXT:
+            case CLIPBOARD_CONTENT_NONE:
+            case CLIPBOARD_CONTENT_IGNORED:
+            case CLIPBOARD_CONTENT_WITHHELD:
+                g_assert_not_reached ();
+            }
         }
+        else if (empty_text)
+            g_paste_clipboard_content_set_text (update->cache, "");
+        /* A secret that is not a text is read for what it is, and kept as
+         * nothing: the selection is identified all the same, and no password is
+         * on it (g_paste_clipboards_manager_confirm_password ()). */
+        else if (kind != CLIPBOARD_CONTENT_NONE && kind != CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive)
+            g_paste_clipboard_content_set_withheld (update->cache);
+        /* Rejection and read failure establish no match with the previous
+         * owner. Keep an unidentified selection non-empty so it cannot be
+         * restored over. */
+        else if (!update->unchanged)
+            g_paste_clipboard_content_set_ignored (update->cache);
     }
-    else if (empty_text)
-        g_paste_clipboard_content_set_text (update->cache, "");
-    /* A secret that is not a text is read for what it is, and kept as nothing:
-     * the selection is identified all the same, and no password is on it
-     * (g_paste_clipboards_manager_confirm_password ()). */
-    else if (kind != CLIPBOARD_CONTENT_NONE && kind != CLIPBOARD_CONTENT_TEXT && update->mimes.sensitive)
-        g_paste_clipboard_content_set_withheld (update->cache);
-    /* Rejection and read failure establish no match with the previous owner.
-     * Keep an unidentified selection non-empty so it cannot be restored over. */
-    else if (!update->unchanged)
-        g_paste_clipboard_content_set_ignored (update->cache);
 
-    /* Read off the update before the release below, not after it: what that
-     * releases includes the mime results @sensitive lives in, and a *_clear ()
-     * completed to zero the struct it owns -- the natural reading of its name --
-     * would silently land every marked password as ordinary text. */
-    gboolean reselect = update->reselect;
-    GPasteClipboardSecret secret = g_paste_clipboard_mime_results_get_secret (&update->mimes);
-
-    /* Everything this conclusion has of its own is done with before either call
-     * below, both of which can end up back here: publishing drops the previous
-     * owner, which can fail a transfer this very update is still waiting on --
-     * synchronously, on the mutter backend -- and the callback reaches the
-     * history, which publishes too. A read failing counts itself out, and the
-     * last one to do so frees the update, so anything read off it afterwards is
-     * read off freed memory -- the provider included, whose only ref is the
-     * update's, hence the one taken over below. */
-    g_paste_clipboard_update_release_content (update);
-    g_paste_clipboard_read_guard_disarm (&update->guard);
-
-    /* Taken over rather than ref'd alongside: this is where the update stops
-     * holding the provider up, and a conclusion the reads outlive would
-     * otherwise hold it for as long as they do. */
-    g_autoptr (GPasteClipboardProvider) provider = g_steal_pointer (&update->provider);
-    GPasteClipboardProviderUpdateCallback callback = update->callback;
-    gpointer user_data = update->user_data;
-
-    /* Re-own trimmed text only after its reads are complete, so replacing the
-     * owner cannot abort the remaining MIME transfers. Publishing the item also
-     * preserves a password's sensitive hint. */
-    if (reselect && item)
-        g_paste_clipboard_provider_select_item_full (provider, item, FALSE);
-
-    /* (transfer full) to the callback, and ours to release when there is none:
-     * an update fired with no callback is part of the contract -- what a
-     * backend's update () itself checks on every early return -- and what the
-     * item holds can be a password's cleartext. */
-    if (callback)
-        callback (provider, g_steal_pointer (&item), FALSE, secret, user_data);
+    g_paste_clipboard_update_answer (update, g_steal_pointer (&item), (update->superseded) ? text : NULL);
 }
 
 /* The guard ran out: conclude the update with what did arrive. Why it concludes
@@ -1299,7 +1413,10 @@ g_paste_clipboard_update_timed_out (gpointer user_data)
  * Everything of any size goes now rather than at that update's own conclusion,
  * which a read that never lands leaves a whole %G_PASTE_CLIPBOARD_READ_TIMEOUT
  * away: a superseded texture is one nothing will ever be built from, and a
- * superseded text can be a password's cleartext.
+ * superseded text can be a password's cleartext. The one exception is a copy its
+ * owner served whole before leaving, which is still recorded
+ * (g_paste_clipboard_update_owner_gone ()) and keeps what it is built from until
+ * its conclusion, already brought forward to the next turn.
  *
  * Called for its own sake by the paths that answer a change without starting an
  * update -- a selection released, an owner offering only types this build does
@@ -1318,7 +1435,8 @@ g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
     GPasteClipboardUpdate *previous = g_steal_pointer (slot);
 
     previous->superseded = TRUE;
-    g_paste_clipboard_update_release_content (previous);
+    if (!previous->released)
+        g_paste_clipboard_update_release_content (previous);
 
     /* And concluded on the next turn of the main loop rather than at its own
      * deadline: the callers that supersede without starting a successor leave
@@ -1344,28 +1462,87 @@ g_paste_clipboard_update_supersede (GPasteClipboardUpdate **slot)
  * once it served the content does exactly this, a paste helper set to exit
  * after so many requests among them.
  *
+ * It stays in @slot until then, and whatever reaches that selection first -- a
+ * new owner, or a publication -- supersedes it there. Its copy is recorded all
+ * the same, being complete -- nothing still out will ever answer -- as is any
+ * copy whose reads all came back before the change: it fills no cache and
+ * re-owns nothing, those being the change's to answer for, and goes to the
+ * callback as a superseded update's item for the history alone.
+ *
  * An update whose content has not landed has nothing to build an item from,
  * and is superseded (g_paste_clipboard_update_supersede ()).
+ *
+ * Returns: (transfer none) (nullable): the update left to conclude, which the
+ *          answer to the release is chained onto
+ *          (g_paste_clipboard_update_then ()), or %NULL when there is none
  */
-G_PASTE_VISIBLE void
+G_PASTE_VISIBLE GPasteClipboardUpdate *
 g_paste_clipboard_update_owner_gone (GPasteClipboardUpdate **slot)
 {
-    g_return_if_fail (slot);
+    g_return_val_if_fail (slot, NULL);
 
     if (!*slot)
-        return;
+        return NULL;
 
+    /* Content whose bytes are in but still being decoded counts as not landed,
+     * and is lost the same way: the one decode run off the read's own callback
+     * is the mutter backend's gdk_content_deserialize_async (), reached only in
+     * a host that initialised GTK, which gnome-shell never is. */
     if (!(*slot)->produced)
     {
         g_paste_clipboard_update_supersede (slot);
-        return;
+        return NULL;
     }
 
-    /* Out of @slot as a superseded one is: the next change starting an update
-     * would supersede it there, and drop the content it read. */
-    GPasteClipboardUpdate *previous = g_steal_pointer (slot);
+    /* Left in @slot, so that whatever comes next for the selection supersedes
+     * it, however soon. What that puts there is newer than the copy, and a
+     * conclusion landing after it would fill the cache, re-own the selection
+     * with a trimmed text and answer the manager for a selection that has moved
+     * on: a password published there meanwhile would be taken for gone, its
+     * countdown with it (/meta/release/publish-before-conclusion,
+     * /gdk/formats/release-publish). Superseded, it is recorded and does none
+     * of those (/meta/release/trimmed-before-publication); the price is that it
+     * lands at the head of the history, above whatever that change put there. */
+    GPasteClipboardUpdate *previous = *slot;
 
+    previous->released = TRUE;
     g_paste_clipboard_read_guard_expire_soon (&previous->guard);
+
+    return previous;
+}
+
+/**
+ * g_paste_clipboard_update_then:
+ * @update: the #GPasteClipboardUpdate to chain onto, not concluded yet
+ * @then: (scope async): what to run once it has concluded
+ * @data: what to run it with
+ *
+ * Have @update run @then once it has concluded and its callback has returned,
+ * superseded or not: what a backend answers a release with when the update it
+ * ended has a copy to hand over first (g_paste_clipboard_update_owner_gone ()),
+ * the copy reaching the history and the other selection before the release
+ * clears the cache it fills.
+ *
+ * @then is told whether @update was superseded, and is the last thing the
+ * conclusion does; @data is the backend's to release from it. Every one chained
+ * runs, in the order chained: a selection released twice before the update
+ * the first release ended has concluded hands that same update back twice, and
+ * both releases are owed their answer (/meta/release/twice).
+ */
+G_PASTE_VISIBLE void
+g_paste_clipboard_update_then (GPasteClipboardUpdate        *update,
+                               GPasteClipboardUpdateThenFunc then,
+                               gpointer                      data)
+{
+    g_return_if_fail (update);
+    g_return_if_fail (!update->concluded);
+    g_return_if_fail (then);
+
+    GPasteClipboardUpdateThen *chained = g_new (GPasteClipboardUpdateThen, 1);
+
+    chained->func = then;
+    chained->data = data;
+    update->thens = g_slist_append (update->thens, chained);
 }
 
 /**
@@ -1446,12 +1623,13 @@ g_paste_clipboard_update_new (GPasteClipboardProvider              *provider,
  * holds, and dedup that very content out of every later update.
  *
  * Asked of the update and not of the guard's cancellable, which answers a moment
- * too late for one half of this and never for the other: a conclusion disarms
- * the guard and takes the provider over, and only then cancels -- the
- * cancellation being what runs the handlers that could free the very update
- * being concluded (see g_paste_clipboard_read_guard_timed_out ()) -- while an
- * update overtaken by the next one is not cancelled at all, its reads being what
- * still has to count it out.
+ * too late for both: a conclusion disarms the guard and takes the provider
+ * over, and only then cancels -- the cancellation being what runs the handlers
+ * that could free the very update being concluded (see
+ * g_paste_clipboard_read_guard_timed_out ()) -- and an update overtaken by the
+ * next one has its guard brought forward to an idle
+ * (g_paste_clipboard_update_supersede ()), which concludes and cancels it a
+ * main-loop turn later, its reads landing in between.
  */
 G_PASTE_VISIBLE gboolean
 g_paste_clipboard_update_is_expired (const GPasteClipboardUpdate *update)

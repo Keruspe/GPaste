@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-client-history.h>
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gsettings-keys.h>
 #include <gpaste-3/gpaste-update-enums.h>
@@ -10,7 +11,7 @@
 #include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-history-saver.h>
-#include <gpaste-daemon/gpaste-password-item.h>
+#include <gpaste-daemon/gpaste-password-item-private.h>
 #include <gpaste-daemon/gpaste-storage-backend.h>
 #include <gpaste-daemon/gpaste-storage-backend-private.h>
 #include <gpaste-daemon/gpaste-text-item.h>
@@ -93,6 +94,10 @@ struct _GPasteHistory
     GPasteItem           *pending_selection;
     gboolean              pending_clear;
     GSList               *pending_dropped;
+    /* @pending_dropped's passwords while they are announced, from the
+     * selection made with their departure to their own announcements, borrowed
+     * from the list the emission owns (g_paste_history_get_dropping ()). */
+    const GSList         *dropping;
 
     /* The uuids of what was added while @stopped: in the model and nowhere
      * else, recording having stopped, until the reload ending the handover
@@ -107,8 +112,8 @@ struct _GPasteHistory
     /* The passwords the model held when reload_backend () swapped it out, until
      * the reloaded model arrives: one it no longer holds -- a migration to a
      * plain flavour imports none -- has left the history, and is announced as
-     * any other departure is. A switch starting another load drops them: that
-     * is a history swapped out, which no password leaves. */
+     * any other departure is. A switch starting another load drops them, having
+     * announced those the store does not keep (g_paste_history_swap_out ()). */
     GSList               *reload_passwords;
 
     /* The load out is a reload of a model that held something
@@ -116,6 +121,13 @@ struct _GPasteHistory
      * when it was first loaded, and carry what was copied since, which the
      * history need not hold -- the reload publishes nothing over that. */
     gboolean              reload_keeps_selections;
+
+    /* The listings out (g_paste_history_list_sizes_async ()), told of whatever
+     * makes the size one took of a history stale while it counts the stores:
+     * another history emptied, its store written meanwhile, and the history in
+     * use left, which it sized from the model. Borrowed, each listing taking
+     * itself off as it ends; the main thread's alone. */
+    GSList               *listings;
 };
 
 G_PASTE_DEFINE_TYPE (History, history, G_TYPE_OBJECT)
@@ -154,6 +166,11 @@ g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
         dropped = g_steal_pointer (&self->pending_dropped);
     }
 
+    /* A handler emitting pending changes of its own sees its own, and this
+     * emission its own again once it returns. */
+    const GSList *outer = self->dropping;
+
+    self->dropping = dropped;
     if (item || clear)
     {
         g_debug ("history: selected");
@@ -178,6 +195,13 @@ g_paste_history_emit_pending (GPasteHistorySelectionScope *scope)
                        l->data,
                        NULL);
     }
+    self->dropping = outer;
+}
+
+const GSList *
+g_paste_history_get_dropping (GPasteHistory *self)
+{
+    return self->dropping;
 }
 
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (GPasteHistorySelectionScope, g_paste_history_emit_pending)
@@ -218,6 +242,30 @@ static void
 g_paste_history_private_elect_new_biggest (GPasteHistory *self)
 {
     g_paste_history_private_elect_new_biggest_sparing (self, NULL);
+}
+
+/* @item, joining the candidates past the head -- leaving it, unpinned, or in
+ * another's place -- placed with one comparison rather than an election:
+ * tracked when at least as heavy as the one tracked, unless a favourite. A tie
+ * goes to @item, either one being the biggest the cap may evict and freeing as
+ * much: an election would give it to the one nearer the head, which an item
+ * leaving the head is, but for one further down only a walk of the history
+ * tells which, the walk this spares
+ * (/history/memory_cap_replacement_takes_tie). */
+static void
+g_paste_history_private_offer_biggest (GPasteHistory *self,
+                                       GPasteItem    *item)
+{
+    if (g_paste_item_is_favourite (item))
+        return;
+
+    guint64 size = g_paste_item_get_size (item);
+
+    if (size >= self->biggest_size)
+    {
+        self->biggest_uuid = g_paste_item_get_uuid (item);
+        self->biggest_size = size;
+    }
 }
 
 /* Drop the item at @index from the model. The array's ref is *stolen* rather
@@ -320,6 +368,8 @@ g_paste_history_private_clear (GPasteHistory *self)
 {
     g_ptr_array_set_size (self->history, 0);
     g_hash_table_remove_all (self->by_uuid);
+    /* Elected again, to nothing: @biggest_uuid borrowed a freed item's string. */
+    g_paste_history_private_elect_new_biggest (self);
 }
 
 /* Take over an item list from the storage layer (transfer full) and install it
@@ -361,6 +411,61 @@ g_paste_history_emit_update (GPasteHistory     *self,
                    NULL);
 }
 
+/* Whether the store of the history being left keeps @item, a password of the
+ * model's, for a switch back to find: not on a plain flavour, which stores no
+ * password, nor for anything added while a load was out, which nothing has
+ * recorded. */
+static gboolean
+g_paste_history_store_keeps (GPasteHistory *self,
+                             GPasteItem    *item)
+{
+    return !g_paste_history_saver_is_loading (self->saver) && g_paste_storage_backend_stores_item (self->backend, item);
+}
+
+/* A reference to each password of the history being left: those its store
+ * keeps when @kept, the others otherwise, the ones a reload set aside
+ * included. Those are asked of the store alone: they wait on that reload's
+ * load, which g_paste_history_store_keeps () would take for their having been
+ * added while it was out. */
+static GSList *
+g_paste_history_collect_passwords (GPasteHistory *self,
+                                   gboolean       kept)
+{
+    g_autoslist (GPasteItem) list = NULL;
+
+    for (guint i = 0; i < self->history->len; ++i)
+    {
+        GPasteItem *item = g_ptr_array_index (self->history, i);
+
+        if (G_PASTE_IS_PASSWORD_ITEM (item) && !g_paste_history_store_keeps (self, item) == !kept)
+            list = g_slist_prepend (list, g_object_ref (item));
+    }
+
+    for (GSList *l = self->reload_passwords; l; l = l->next)
+    {
+        if (!g_paste_storage_backend_stores_item (self->backend, l->data) == !kept)
+            list = g_slist_prepend (list, g_object_ref (l->data));
+    }
+
+    return g_steal_pointer (&list);
+}
+
+/* Swap the model out for the load of another history: the passwords the history
+ * left holds that its store does not keep go with it for good, and are
+ * announced as any other departure is (GPasteHistory::password-dropped), the
+ * ones a reload set aside included; those it keeps are still there to come
+ * back to. */
+static void
+g_paste_history_swap_out (GPasteHistory *self)
+{
+    self->pending_dropped = g_slist_concat (g_paste_history_collect_passwords (self, FALSE), self->pending_dropped);
+    g_paste_history_private_clear (self);
+    g_clear_slist (&self->reload_passwords, g_object_unref);
+}
+
+static void g_paste_history_listings_resize (GPasteHistory *self,
+                                             const gchar   *name);
+
 /* Hand the saver what the history being left holds, for a write still out for
  * it to be counted by (g_paste_history_saver_left ()). Not while a load is
  * out: the model then holds none of what its writes are writing, nothing
@@ -368,8 +473,26 @@ g_paste_history_emit_update (GPasteHistory     *self,
 static void
 g_paste_history_leave (GPasteHistory *self)
 {
+    g_paste_history_listings_resize (self, self->name);
     if (self->name && !g_paste_history_saver_is_loading (self->saver))
         g_paste_history_saver_left (self->saver, self->name, self->history);
+}
+
+/* Leave the history in use for the one called @name, whose load is to fill
+ * the model. One that could not be read must not keep the next from being
+ * persisted: that load's own result decides (g_paste_history_on_loaded ()),
+ * nothing being recorded meanwhile. @stopped is deliberately left alone: a
+ * handover is not ours to undo. */
+static void
+g_paste_history_swap_to (GPasteHistory *self,
+                         const gchar   *name)
+{
+    g_paste_history_leave (self);
+    g_paste_history_swap_out (self);
+    g_set_str (&self->name, name);
+    self->size = 0;
+    self->unreadable = FALSE;
+    self->reload_keeps_selections = FALSE;
 }
 
 /* Have the saver persist a change to the history. @displaced says whether
@@ -518,7 +641,7 @@ static void
 g_paste_history_private_check_memory_usage_sparing (GPasteHistory *self,
                                                     GPasteItem    *spared)
 {
-    guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
+    guint64 max_memory = g_paste_util_max_memory (self->settings);
 
     /* A head that alone weighs more than the cap -- an image selected after the
      * cap was lowered under its decoded size -- no eviction brings under it:
@@ -669,6 +792,16 @@ g_paste_history_private_merge_into_head (GPasteHistory *self,
     g_paste_history_update (self, G_PASTE_UPDATE_ACTION_REPLACE, G_PASTE_UPDATE_TARGET_ITEM, 0, G_PASTE_HISTORY_SAVE_REPLACE, head, g_paste_item_get_uuid (head), FALSE);
 }
 
+/* Whether @item is refused, by an add as by what a Replace or MakePassword
+ * puts in an item's place: heavier than max-memory-usage, it would evict
+ * everything else and still not fit. */
+static gboolean
+g_paste_history_refuses (GPasteHistory *self,
+                         GPasteItem    *item)
+{
+    return g_paste_item_get_size (item) > g_paste_util_max_memory (self->settings);
+}
+
 static void
 _g_paste_history_add (GPasteHistory *self,
                       GPasteItem    *item,
@@ -676,8 +809,6 @@ _g_paste_history_add (GPasteHistory *self,
 {
     g_return_if_fail (G_PASTE_IS_HISTORY (self));
     g_return_if_fail (G_PASTE_IS_ITEM (item));
-
-    guint64 max_memory = g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024;
 
     /* On add (new_selection) we own @item (transfer full) and must consume it on
      * every path; on select it is borrowed (already in the history) and merely
@@ -699,7 +830,7 @@ _g_paste_history_add (GPasteHistory *self,
     /* Only an add is refused. What a select moves is already in the history,
      * where the cap lets it stay as the head or a favourite, and a select left
      * where it is would announce an item the head does not hold. */
-    if (new_selection && g_paste_item_get_size (item) > max_memory)
+    if (new_selection && g_paste_history_refuses (self, item))
         return;
 
     guint length_before = self->history->len;
@@ -755,18 +886,10 @@ _g_paste_history_add (GPasteHistory *self,
              * its old size and put back at its new one. */
             self->size -= g_paste_item_get_size (old_first);
             g_paste_item_set_state (old_first, G_PASTE_ITEM_STATE_IDLE);
+            self->size += g_paste_item_get_size (old_first);
 
-            guint64 size = g_paste_item_get_size (old_first);
-
-            self->size += size;
-
-            /* It just stopped being the untracked active item, so it becomes a
-             * candidate -- unless it is a favourite, which is never one. */
-            if (size >= self->biggest_size && !g_paste_item_is_favourite (old_first))
-            {
-                self->biggest_uuid = g_paste_item_get_uuid (old_first);
-                self->biggest_size = size;
-            }
+            /* It just stopped being the untracked active item. */
+            g_paste_history_private_offer_biggest (self, old_first);
         }
 
         /* Dedup is by value, not by uuid, so the index cannot help here --
@@ -840,9 +963,10 @@ _g_paste_history_add (GPasteHistory *self,
     g_paste_history_private_check_size (self);
     g_paste_history_private_check_memory_usage (self);
 
-    /* One in and nothing out means nothing was deduped, grown over or evicted;
-     * anything else and the store has rows the history no longer has. */
-    gboolean displaced = self->history->len != length_before + 1;
+    /* One in for an add, none for a select moving an entry, and nothing out
+     * means nothing was deduped, grown over or evicted; anything else and the
+     * store has rows the history no longer has. */
+    gboolean displaced = self->history->len != length_before + ((new_selection) ? 1 : 0);
 
     /* TARGET_ALL whichever path got here. An ordinary add shifts every position
      * along; a grown line is a new item, with a uuid of its own, standing where
@@ -960,7 +1084,7 @@ g_paste_history_remove_by_uuid (GPasteHistory *self,
 
     G_PASTE_LOCK_HISTORY;
 
-    g_debug ("history: remove '%s", uuid);
+    g_debug ("history: remove '%s'", uuid);
 
     guint index;
     GPasteItem *item = g_paste_history_private_get_indexed_by_uuid (self, uuid, &index);
@@ -1081,6 +1205,8 @@ _g_paste_history_replace (GPasteHistory *self,
     GPasteItem *old = g_ptr_array_index (self->history, index);
     g_autofree gchar *old_uuid = g_strdup (g_paste_item_get_uuid (old));
     guint length_before = self->history->len;
+    /* By the pointer: the tracker borrows the tracked item's own string. */
+    gboolean was_biggest = (self->biggest_uuid == g_paste_item_get_uuid (old));
 
     /* The pin belongs to the entry, not to the object holding its contents:
      * editing a pinned item, or turning one into a password, changes what it
@@ -1108,12 +1234,22 @@ _g_paste_history_replace (GPasteHistory *self,
      * left without it would have the next cap evict something smaller first.
      * Replace refuses contents weighing more than the cap on their own before
      * getting here (g_paste_history_replace ()), and MakePassword a password
-     * its name makes that heavy (g_paste_history_make_password ()). The first
-     * election runs either way: the replaced item may have been the elected
-     * one. */
-    g_paste_history_private_elect_new_biggest_sparing (self, new);
-    g_paste_history_private_check_memory_usage_sparing (self, new);
-    g_paste_history_private_elect_new_biggest (self);
+     * its name makes that heavy (g_paste_history_make_password ()).
+     *
+     * Under the cap there is nothing to evict, and the tracker only has to
+     * follow: elected anew when it was tracking the replaced item, else told of
+     * the replacement as an add tells it of an item leaving the head -- not two
+     * walks of the history for every edit. */
+    if (self->size > g_paste_util_max_memory (self->settings))
+    {
+        g_paste_history_private_elect_new_biggest_sparing (self, new);
+        g_paste_history_private_check_memory_usage_sparing (self, new);
+        g_paste_history_private_elect_new_biggest (self);
+    }
+    else if (was_biggest)
+        g_paste_history_private_elect_new_biggest (self);
+    else if (index > 0)
+        g_paste_history_private_offer_biggest (self, new);
 
     if (self->history->len != length_before)
     {
@@ -1158,7 +1294,7 @@ g_paste_history_replace (GPasteHistory *self,
                          const gchar   *contents)
 {
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
-    g_return_val_if_fail (!contents || g_utf8_validate (contents, -1, NULL), NULL);
+    g_return_val_if_fail (contents && g_utf8_validate (contents, -1, NULL), NULL);
 
     G_PASTE_LOCK_HISTORY;
     guint index;
@@ -1173,7 +1309,7 @@ g_paste_history_replace (GPasteHistory *self,
 
     /* Refused as an add of the same contents is (_g_paste_history_add ()):
      * kept, it would evict everything else and still not fit. */
-    if (g_paste_item_get_size (new) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+    if (g_paste_history_refuses (self, new))
         return NULL;
 
     _g_paste_history_replace (self, index, g_object_ref (new));
@@ -1304,16 +1440,10 @@ g_paste_history_set_favourite (GPasteHistory *self,
     }
     else
     {
-        /* The pool gained it, so nothing has to be re-elected: one comparison
-         * places it, the same way _g_paste_history_add places an item leaving
-         * the active slot. Index 0 stays untracked, as ever. */
-        guint64 size = g_paste_item_get_size (item);
-
-        if (index && size >= self->biggest_size)
-        {
-            self->biggest_uuid = g_paste_item_get_uuid (item);
-            self->biggest_size = size;
-        }
+        /* The pool gained it, so nothing has to be re-elected. Index 0 stays
+         * untracked, as ever. */
+        if (index)
+            g_paste_history_private_offer_biggest (self, item);
 
         /* Both caps may have been giving way to this item for a while. */
         g_paste_history_private_check_size (self);
@@ -1444,7 +1574,7 @@ g_paste_history_make_password (GPasteHistory *self,
      * nothing else bounds it: the replacement is spared by the cap, which
      * would evict everything else to make room for it, as Replace refuses
      * contents that heavy (g_paste_history_replace ()). */
-    if (g_paste_item_get_size (password) > g_paste_settings_get_max_memory_usage (self->settings) * 1024 * 1024)
+    if (g_paste_history_refuses (self, password))
         return NULL;
 
     _g_paste_history_replace (self, index, g_object_ref (password));
@@ -1510,7 +1640,7 @@ g_paste_history_delete_password (GPasteHistory *self,
 }
 
 /* Empty the model, recording the emptying as any change is: see
- * g_paste_history_update () for when that is. */
+ * g_paste_history_record () for when that is. */
 static void
 g_paste_history_empty_locked (GPasteHistory *self)
 {
@@ -1551,6 +1681,17 @@ g_paste_history_check_owned (GPasteHistory *self,
                  "The history storage is being handed over, cannot touch “%s” right now",
                  name);
     return FALSE;
+}
+
+G_PASTE_VISIBLE gboolean
+g_paste_history_check_current_owned (GPasteHistory *self,
+                                     GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+
+    G_PASTE_LOCK_HISTORY;
+
+    return !self->name || g_paste_history_check_owned (self, self->name, error);
 }
 
 /* What reads or writes a store outside the model also waits for the daemon it
@@ -1600,10 +1741,11 @@ g_paste_history_reaches_store (GPasteHistory *self,
     return g_paste_storage_backend_reaches_history (self->backend, name);
 }
 
-/* What empties or deletes a store checks first that the backend in use can
- * reach it (g_paste_storage_backend_reaches_history ()). Refused before
- * anything changes: the session's model can still be emptied one item at a
- * time. */
+/* What empties or deletes a store, or backs up one the backend in use keeps
+ * none of (g_paste_history_check_source_reachable ()), checks first that the
+ * backend in use can reach it (g_paste_storage_backend_reaches_history ()).
+ * Refused before anything changes: the session's model can still be emptied
+ * one item at a time. */
 static gboolean
 g_paste_history_check_store_reachable (GPasteHistory *self,
                                        const gchar   *name,
@@ -1613,8 +1755,21 @@ g_paste_history_check_store_reachable (GPasteHistory *self,
         return TRUE;
 
     g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
-                 "“%s” is kept by a storage not in use, which this one cannot reach", name);
+                 "“%s” is kept by a storage this one cannot reach", name);
     return FALSE;
+}
+
+/* A backup reading another history's store is refused as an emptying is only
+ * when the backend in use keeps none of it, the read finding nothing: one it
+ * keeps is what a listing shows and a switch loads, and is copied as such,
+ * what a store out of reach keeps beside it left where it is. */
+static gboolean
+g_paste_history_check_source_reachable (GPasteHistory *self,
+                                        const gchar   *name,
+                                        GError       **error)
+{
+    return g_paste_util_history_is_stored (name, g_paste_storage_backend_get_kind (self->backend)) ||
+           g_paste_history_check_store_reachable (self, name, error);
 }
 
 /**
@@ -1815,10 +1970,12 @@ g_paste_history_sync (GPasteHistory *self,
  * or @target names no history, with %G_IO_ERROR_BUSY as g_paste_history_sync ()
  * does and while a load still fills the model of the history in use, with
  * %G_PASTE_ERROR_ALREADY_EXISTS while writes to @target are still out, and
- * with %G_PASTE_ERROR_FAILED when the history in use could not be read -- an
- * empty model standing for data still locked away, which copied as-is would
- * answer for a valid, empty copy -- or as g_paste_history_saver_copy_finish ()
- * does.
+ * with %G_PASTE_ERROR_FAILED when another history is kept by no store but one
+ * the backend in use cannot reach, as g_paste_history_delete () refuses it, when
+ * the history in use could not be read -- an empty model standing for data
+ * still locked away, which copied as-is would answer for a valid, empty copy
+ * -- or when the history copied could not be read, or the copy could not be
+ * written.
  */
 G_PASTE_VISIBLE void
 g_paste_history_copy_async (GPasteHistory      *self,
@@ -1850,7 +2007,7 @@ g_paste_history_copy_async (GPasteHistory      *self,
     gboolean current = g_paste_str_equal (source, self->name);
 
     gboolean owned = (current) ? g_paste_history_check_owned (self, source, &error)
-                               : g_paste_history_check_store_owned (self, source, &error);
+                               : g_paste_history_check_store_owned (self, source, &error) && g_paste_history_check_source_reachable (self, source, &error);
 
     if (owned && g_paste_history_saver_holds_writes (self->saver, written))
         g_set_error_literal (&error, G_PASTE_ERROR, G_PASTE_ERROR_ALREADY_EXISTS, "a history already goes by that name");
@@ -1954,6 +2111,7 @@ g_paste_history_empty_other_async (GPasteHistory      *self,
     /* As in g_paste_history_copy_async (). */
     g_autoptr (GPasteStorageBackend) elsewhere = g_paste_storage_backend_new (g_paste_storage_backend_get_kind (self->backend), self->settings);
 
+    g_paste_history_listings_resize (self, name);
     g_paste_history_saver_empty (self->saver, elsewhere, name, callback, user_data);
 }
 
@@ -2038,15 +2196,17 @@ static void
 g_paste_history_on_loaded (gpointer user_data,
                            GList   *history,
                            gsize    size,
-                           gboolean save_after,
                            gboolean readable)
 {
     GPasteHistory *self = user_data;
+    /* What a load reads is installed as it is, nothing written back -- but for
+     * a trim, below. */
+    gboolean save_after = FALSE;
     G_PASTE_LOCK_HISTORY;
 
     /* What was added while the load was out -- a copy, an AddText -- is in the
      * model and nowhere else, recording waiting for the load (see
-     * g_paste_history_update ()), and the read list is about to take its
+     * g_paste_history_record ()), and the read list is about to take its
      * place. Kept aside, oldest first, to be added on top of what was read. */
     g_autolist (GPasteItem) added = NULL;
 
@@ -2066,8 +2226,12 @@ g_paste_history_on_loaded (gpointer user_data,
     /* The head read is no head the selections get when adds go on top of it:
      * the last of those is (see below), and a selection told to take the read
      * one instead would have it published over a password just copied --
-     * dropped, even, as an image whose texture the adds idle. */
-    g_paste_history_activate_first (self, !added && !self->reload_keeps_selections);
+     * dropped, even, as an image whose texture the adds idle. Nor is it made
+     * active then, an image decoding its whole texture only to be idled at the
+     * first add: the activation below covers it should every add be refused.
+     * What that spares is time alone, which no test tells apart. */
+    if (!added)
+        g_paste_history_activate_first (self, !self->reload_keeps_selections);
     self->reload_keeps_selections = FALSE;
 
     /* Unconditional: biggest_uuid borrows a uuid from the list we just freed. */
@@ -2078,10 +2242,7 @@ g_paste_history_on_loaded (gpointer user_data,
     self->unreadable = !readable;
 
     if (self->unreadable)
-    {
         g_warning ("Could not read the history back; it will not be overwritten");
-        save_after = FALSE;
-    }
     /* Both caps, applied to what was just read. A backend reads a favourite back
      * whatever it costs -- it counts only the items its cap could evict, or one
      * that had sunk past the cap would be dropped on load and destroyed by the
@@ -2125,7 +2286,9 @@ g_paste_history_on_loaded (gpointer user_data,
     {
         GPasteItem *item = l->data;
 
-        if (self->history->len && g_paste_item_equals (g_ptr_array_index (self->history, 0), item))
+        /* Not for an add refused below: the head would go with nothing in its
+         * place, and the store with it at the next write. */
+        if (self->history->len && !g_paste_history_refuses (self, item) && g_paste_item_equals (g_ptr_array_index (self->history, 0), item))
         {
             g_autoptr (GPasteItem) head = g_ptr_array_index (self->history, 0);
 
@@ -2242,7 +2405,7 @@ g_paste_history_reload_backend (GPasteHistory *self)
      * compositor in the gnome-shell host, and stop the standalone daemon, which
      * reloads after a passphrase change, from answering the bus meanwhile. The
      * store was just rewritten, so there is nothing to normalize back. */
-    g_paste_history_saver_load (self->saver, self->name, FALSE);
+    g_paste_history_saver_load (self->saver, self->name);
 
     /* Every view is told the history it shows is gone, as a switch tells it,
      * and redraws again once the load has filled it. A switch is announced by
@@ -2268,22 +2431,19 @@ g_paste_history_load_async (GPasteHistory *self,
     G_PASTE_LOCK_HISTORY;
 
     const gchar *resolved = g_paste_history_resolve_name (self, name);
+    gboolean same = self->name && g_paste_str_equal (resolved, self->name);
 
-    if (self->name && g_paste_str_equal (resolved, self->name) && !g_paste_history_saver_is_loading (self->saver))
+    if (same && !g_paste_history_saver_is_loading (self->saver))
         return;
 
-    g_paste_history_leave (self);
-    g_set_str (&self->name, resolved);
-    g_paste_history_private_clear (self);
-    self->size = 0;
-    /* A previously unreadable history must not keep the *next* one from being
-     * persisted: the load's own result decides (see g_paste_history_on_loaded).
-     * Nothing is recorded in the meantime, since a load is now in progress.
-     * @stopped is deliberately left alone — a handover is not ours to undo. */
-    self->unreadable = FALSE;
-    self->reload_keeps_selections = FALSE;
+    /* The history loading asked for again keeps its model: what was copied
+     * while the first load was out goes on top of what the second reads
+     * (g_paste_history_on_loaded ()). Another one is swapped in, as a switch
+     * swaps it (g_paste_history_history_name_changed ()). */
+    if (!same)
+        g_paste_history_swap_to (self, resolved);
 
-    g_paste_history_saver_load (self->saver, self->name, FALSE);
+    g_paste_history_saver_load (self->saver, self->name);
 }
 
 static void g_paste_history_history_name_changed (GPasteHistory *self);
@@ -2335,7 +2495,7 @@ g_paste_history_switch (GPasteHistory *self,
 /**
  * g_paste_history_delete:
  * @self: a #GPasteHistory instance
- * @name: (nullable): the history to delete (defaults to the configured one)
+ * @name: (nullable): the history to delete (defaults to the current one)
  * @error: return location for a #GError, or %NULL
  *
  * Delete the history called @name, the current one when %NULL. A current
@@ -2352,16 +2512,30 @@ g_paste_history_switch (GPasteHistory *self,
  * setting cannot be changed to leave the current history, or when the "no
  * storage" backend is in use while another flavour stores it; otherwise errors
  * are whatever the storage backend reports for unlinking it, in %G_IO_ERROR or
- * %G_FILE_ERROR.
+ * %G_FILE_ERROR -- its images included, the history then gone all the same.
+ * One never saved is deleted with no error.
  *
- * Returns: whether the history was deleted
+ * Returns: whether the history was deleted, its images with it
  */
 G_PASTE_VISIBLE gboolean
 g_paste_history_delete (GPasteHistory *self,
                         const gchar   *name,
                         GError       **error)
 {
+    return g_paste_history_delete_full (self, name, NULL, error);
+}
+
+gboolean
+g_paste_history_delete_full (GPasteHistory *self,
+                             const gchar   *name,
+                             gboolean      *deleted,
+                             GError       **error)
+{
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), FALSE);
+    g_return_val_if_fail (name || self->name, FALSE);
+
+    if (deleted)
+        *deleted = FALSE;
 
     /* A copy: leaving the current history below frees the name it was. */
     g_autofree gchar *history_name = g_strdup ((name) ? name : self->name);
@@ -2381,21 +2555,11 @@ g_paste_history_delete (GPasteHistory *self,
         /* The default history is where a deleted current history leaves the
          * daemon, and leaving comes first: a history-name GSettings refuses to
          * store would keep it current, and deleting it then would have the next
-         * copy write it back. A switch announces no password, so those it held
-         * are kept to be announced once it is gone. One the setting does not
-         * name -- loaded by name -- is emptied where it is, below. */
-        for (guint i = 0; i < self->history->len; ++i)
-        {
-            GPasteItem *item = g_ptr_array_index (self->history, i);
-
-            if (G_PASTE_IS_PASSWORD_ITEM (item))
-                passwords = g_slist_prepend (passwords, g_object_ref (item));
-        }
-
-        /* And those a reload set aside while its load is out, which the switch
-         * lets go of unannounced: the store about to be unlinked held them. */
-        for (GSList *l = self->reload_passwords; l; l = l->next)
-            passwords = g_slist_prepend (passwords, g_object_ref (l->data));
+         * copy write it back. A switch announces the passwords its store does
+         * not keep (g_paste_history_swap_out ()); those it keeps are kept here
+         * to be announced once the store holding them is gone. One the setting
+         * does not name -- loaded by name -- is emptied where it is, below. */
+        passwords = g_paste_history_collect_passwords (self, TRUE);
 
         /* The load the switch starts waits for the unlink: on the SQLite
          * flavours it holds the backend's one lock across its whole read -- a
@@ -2442,9 +2606,16 @@ g_paste_history_delete (GPasteHistory *self,
 
     g_paste_storage_backend_delete_history (self->backend, history_name, &local_error);
 
-    if (local_error)
+    /* No store to unlink is a history deleted all the same: one never saved,
+     * which both backends report so. */
+    if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (&local_error);
+
+    /* Back to the history only while its store is still there: one unlinked
+     * whose images could not all be swept is gone, and its load would make it
+     * again. That sweep's failure is still the delete's to report. */
+    if (local_error && g_paste_util_history_is_stored (history_name, g_paste_storage_backend_get_kind (self->backend)))
     {
-        /* Back to the history that is still there. */
         if (left && !g_paste_history_switch (self, history_name))
             g_warning ("Could not go back to “%s”, which was not deleted", history_name);
         if (left)
@@ -2455,6 +2626,8 @@ g_paste_history_delete (GPasteHistory *self,
 
     if (left)
         g_paste_history_saver_hold_loads (self->saver, FALSE);
+    if (deleted)
+        *deleted = TRUE;
 
     /* Whatever we could not read back is unlinked, so there is nothing left to
      * protect: recording must resume, or the gate would stay shut for the rest
@@ -2467,6 +2640,12 @@ g_paste_history_delete (GPasteHistory *self,
     {
         G_PASTE_LOCK_HISTORY;
         self->pending_dropped = g_slist_concat (g_steal_pointer (&passwords), self->pending_dropped);
+    }
+
+    if (local_error)
+    {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+        return FALSE;
     }
 
     return TRUE;
@@ -2489,28 +2668,22 @@ g_paste_history_history_name_changed (GPasteHistory *self)
     if (self->name && g_paste_str_equal (name, self->name))
         return;
 
-    g_paste_history_leave (self);
-    g_set_str (&self->name, name);
-
-    g_debug ("history: name changed to '%s'", self->name);
-
     /* What was added while a load of the history being left was out goes with
      * it, unrecorded: only the list that load was reading could have taken it
      * on top, a file history being written whole, and that load is given up. */
-    g_paste_history_private_clear (self);
-    g_clear_slist (&self->reload_passwords, g_object_unref);
+    g_paste_history_swap_to (self, name);
+
+    g_debug ("history: name changed to '%s'", self->name);
+
     g_hash_table_remove_all (self->stopped_adds);
     self->stopped_changes = FALSE;
-    self->reload_keeps_selections = FALSE;
-    self->size = 0;
-    /* Switching away from an unreadable history resumes recording: the new one
-     * stands on its own (see g_paste_history_load_async). A flushed history
-     * stays flushed, though — the in-shell daemon keeps answering the bus right
-     * through its migration, so a switch can land inside that window and must
-     * not put the pre-migration backend back to work: its load waits for the
-     * handover to end, held where the saver holds loads, and supersedes the
-     * load still out for the history left right away -- installed, that one
-     * would stand as the history switched to.
+
+    /* A flushed history stays flushed -- the in-shell daemon keeps answering
+     * the bus right through its migration, so a switch can land inside that
+     * window and must not put the pre-migration backend back to work: its load
+     * waits for the handover to end, held where the saver holds loads, and
+     * supersedes the load still out for the history left right away --
+     * installed, that one would stand as the history switched to.
      *
      * Nothing is written back: a trim the load makes saves itself
      * (g_paste_history_on_loaded ()), and what a read otherwise normalizes --
@@ -2518,10 +2691,8 @@ g_paste_history_history_name_changed (GPasteHistory *self)
      * as for the load g_paste_history_load_async () makes. A write here would
      * be the whole history rewritten for every switch, re-encrypted and
      * synced. */
-    self->unreadable = FALSE;
-
     g_paste_history_emit_switch (self, self->name);
-    g_paste_history_saver_load_when_released (self->saver, self->name, FALSE);
+    g_paste_history_saver_load_when_released (self->saver, self->name);
 }
 
 /* One detailed "notify::<key>" handler per setting the history reacts to, rather
@@ -2580,6 +2751,7 @@ g_paste_history_finalize (GObject *object)
     GPasteHistory *self = G_PASTE_HISTORY (object);
 
     g_free (self->name);
+    g_slist_free (self->listings);
     g_mutex_clear (&self->lock);
 
     G_OBJECT_CLASS (g_paste_history_parent_class)->finalize (object);
@@ -2797,9 +2969,12 @@ g_paste_history_is_unreadable (GPasteHistory *self)
  * @self: a #GPasteHistory instance
  * @pattern: the pattern to match
  *
- * Get the elements matching @pattern in the history
+ * Get the elements matching @pattern in the history, warning about a @pattern
+ * that is not a regular expression. Kept for the API: the daemon's Search goes
+ * through the search that reports that as an error instead.
  *
- * Returns: (transfer full): The uuids of the matching elements
+ * Returns: (transfer full) (nullable): The uuids of the matching elements, or
+ *     %NULL when @pattern is not a regular expression
  */
 G_PASTE_VISIBLE GStrv
 g_paste_history_search (GPasteHistory *self,
@@ -2823,38 +2998,43 @@ g_paste_history_search (GPasteHistory *self,
     return g_strv_builder_end (results);
 }
 
-GPtrArray *
-g_paste_history_search_items (GPasteHistory *self,
-                              const gchar   *pattern,
-                              GError       **error)
+/* @pattern as every search compiles it, @error saying when it is none. */
+static GRegex *
+g_paste_history_compile_search (const gchar *pattern,
+                                GError     **error)
 {
-    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
-    g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
-    g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
-    g_return_val_if_fail (!error || !*error, NULL);
+    /* Not the pattern itself: it is what was typed in the overview, the menu or
+     * the graphical tool, and a debug log is what a bug report carries. */
+    g_debug ("history: search (%" G_GSIZE_FORMAT " bytes)", strlen (pattern));
 
-    g_debug ("history: search '%s'", pattern);
-
-    G_PASTE_LOCK_HISTORY;
     g_autoptr (GError) regex_error = NULL;
-    g_autoptr (GRegex) regex = g_regex_new (pattern,
-                                            G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
-                                            G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
-                                            &regex_error);
+    GRegex *regex = g_regex_new (pattern,
+                                 G_REGEX_CASELESS|G_REGEX_MULTILINE|G_REGEX_DOTALL|G_REGEX_OPTIMIZE,
+                                 G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY,
+                                 &regex_error);
 
     /* GLib's own words after ours: what is wrong with the query, rather than
      * that something is. */
     if (!regex)
-    {
         g_set_error (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT, "the query is not a regular expression: %s", regex_error->message);
-        return NULL;
-    }
 
+    return regex;
+}
+
+/* The items of @items matching @regex, or named by @pattern as a uuid, each
+ * read by the strings it was built with -- its value, its name, an image's
+ * row -- which nothing changes once it is in a history: what lets a worker
+ * thread match what g_paste_history_search_items_async () took. */
+static GPtrArray *
+g_paste_history_match_items (const GPtrArray *items,
+                             const gchar     *pattern,
+                             GRegex          *regex)
+{
     g_autoptr (GPtrArray) results = g_ptr_array_new_with_free_func (g_object_unref);
 
-    for (guint i = 0; i < self->history->len; ++i)
+    for (guint i = 0; i < items->len; ++i)
     {
-        GPasteItem *item = g_ptr_array_index (self->history, i);
+        GPasteItem *item = g_ptr_array_index (items, i);
         const gchar *uuid = g_paste_item_get_uuid (item);
         /* An image's value is the checksum naming its file, which nobody ever
          * typed: what its row shows, its size and when it was taken, is what a
@@ -2868,11 +3048,18 @@ g_paste_history_search_items (GPasteHistory *self,
 
         /* A password's value is not what it is known by, its name is: matched
          * as the value would be, whatever its case, and the placeholder its
-         * value is not at all -- an asterisk typed would list every one. */
+         * value is not at all -- an asterisk typed would list every one. A
+         * nameless one's name is that same placeholder: it has no name to be
+         * found by, its uuid alone finding it. */
         if (g_paste_str_equal (pattern, uuid))
             match = TRUE;
         else if (G_PASTE_IS_PASSWORD_ITEM (item))
-            match = g_regex_match (regex, g_paste_password_item_get_name (G_PASTE_PASSWORD_ITEM (item)), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
+        {
+            GPastePasswordItem *password = G_PASTE_PASSWORD_ITEM (item);
+
+            match = !g_paste_password_item_is_nameless (password) &&
+                    g_regex_match (regex, g_paste_password_item_get_name (password), G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL);
+        }
         else if (g_regex_match (regex, text, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL) ||
                  (shown && g_regex_match (regex, shown, G_REGEX_MATCH_NOTEMPTY|G_REGEX_MATCH_NEWLINE_ANY, NULL)))
             match = TRUE;
@@ -2882,6 +3069,341 @@ g_paste_history_search_items (GPasteHistory *self,
     }
 
     return g_steal_pointer (&results);
+}
+
+GPtrArray *
+g_paste_history_search_items (GPasteHistory *self,
+                              const gchar   *pattern,
+                              GError       **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_HISTORY (self), NULL);
+    g_return_val_if_fail (pattern && g_utf8_validate (pattern, -1, NULL), NULL);
+    g_return_val_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH, NULL);
+    g_return_val_if_fail (!error || !*error, NULL);
+
+    g_autoptr (GRegex) regex = g_paste_history_compile_search (pattern, error);
+
+    if (!regex)
+        return NULL;
+
+    G_PASTE_LOCK_HISTORY;
+
+    return g_paste_history_match_items (self->history, pattern, regex);
+}
+
+typedef struct
+{
+    gchar     *pattern;
+    GRegex    *regex;
+    GPtrArray *items;
+} SearchData;
+
+static void
+search_data_free (SearchData *data)
+{
+    /* NULL-safe, as the other task data's free functions are: the autoptr in
+     * g_paste_history_search_items_async () frees the struct half-built should
+     * it return before filling it, which no path does, so no test tells. */
+    g_free (data->pattern);
+    g_clear_pointer (&data->regex, g_regex_unref);
+    g_clear_pointer (&data->items, g_ptr_array_unref);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (SearchData, search_data_free)
+
+static void
+g_paste_history_search_thread (GTask        *task,
+                               gpointer      source_object G_GNUC_UNUSED,
+                               gpointer      task_data,
+                               GCancellable *cancellable G_GNUC_UNUSED)
+{
+    SearchData *data = task_data;
+
+    g_task_return_pointer (task, g_paste_history_match_items (data->items, data->pattern, data->regex), (GDestroyNotify) g_ptr_array_unref);
+}
+
+G_PASTE_VISIBLE void
+g_paste_history_search_items_async (GPasteHistory      *self,
+                                    const gchar        *pattern,
+                                    GAsyncReadyCallback callback,
+                                    gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (pattern && g_utf8_validate (pattern, -1, NULL));
+    g_return_if_fail (strlen (pattern) <= G_PASTE_HISTORY_MAX_SEARCH_LENGTH);
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    g_autoptr (GError) error = NULL;
+    GRegex *regex = g_paste_history_compile_search (pattern, &error);
+
+    g_task_set_source_tag (task, g_paste_history_search_items_async);
+    if (!regex)
+    {
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
+    }
+
+    g_autoptr (SearchData) data = g_new0 (SearchData, 1);
+
+    data->pattern = g_strdup (pattern);
+    data->regex = regex;
+
+    {
+        G_PASTE_LOCK_HISTORY;
+
+        data->items = g_ptr_array_copy (self->history, (GCopyFunc) (void (*) (void)) g_object_ref, NULL);
+        g_ptr_array_set_free_func (data->items, g_object_unref);
+    }
+
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) search_data_free);
+    g_task_run_in_thread (task, g_paste_history_search_thread);
+}
+
+G_PASTE_VISIBLE GPtrArray *
+g_paste_history_search_items_finish (GAsyncResult *result,
+                                     GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_history_search_items_async, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+/* How many items @name holds by what is in memory, when that answers: @size is
+ * written only then, the store answering otherwise. */
+static gboolean
+g_paste_history_size_in_memory (GPasteHistory *self,
+                                const gchar   *name,
+                                guint64       *size)
+{
+    /* The model, even while a load fills it: the store is the load's to read
+     * until then, and on an encrypted flavour a read of our own would derive
+     * the key again, on the main thread. The update the load raises once it is
+     * in is what a listing asks again on (GetHistorySize in the interface). */
+    if (g_paste_str_equal (name, g_paste_history_get_current (self)))
+    {
+        *size = g_paste_history_get_length (self);
+        return TRUE;
+    }
+
+    /* A history just switched away from can still have writes out, which a
+     * count of its store would not see yet: what they say it holds comes first
+     * (/history-ordering/count-pending). */
+    return g_paste_history_saver_count_pending (self->saver, name, size);
+}
+
+typedef struct
+{
+    /* Weakly, as anything the history tracks (@listings in GPasteHistory)
+     * holds it: one let go of while the stores are counted goes as its owner
+     * drops it, rather than once the counts are over. */
+    GWeakRef              history;
+    GPasteStorageBackend *backend;
+    GStrv                 names;
+    guint64              *sizes;
+    /* Whether the pass out counts each store, which its worker reads. */
+    gboolean             *counting;
+    /* Whether the size taken of each history stands: none does before the
+     * first pass, nor one the history changed since its size was taken
+     * (g_paste_history_listings_resize ()). */
+    gboolean             *sized;
+} ListSizesData;
+
+static void
+list_sizes_data_free (ListSizesData *data)
+{
+    g_autoptr (GPasteHistory) history = g_weak_ref_get (&data->history);
+
+    if (history)
+        history->listings = g_slist_remove (history->listings, data);
+    g_weak_ref_clear (&data->history);
+    g_clear_object (&data->backend);
+    g_strfreev (data->names);
+    g_free (data->sizes);
+    g_free (data->counting);
+    g_free (data->sized);
+    g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (ListSizesData, list_sizes_data_free)
+
+/* Have every listing out size @name again (@listings in GPasteHistory). */
+static void
+g_paste_history_listings_resize (GPasteHistory *self,
+                                 const gchar   *name)
+{
+    for (GSList *l = self->listings; l; l = l->next)
+    {
+        ListSizesData *data = l->data;
+
+        for (guint i = 0; data->names[i]; ++i)
+        {
+            if (g_paste_str_equal (data->names[i], name))
+                data->sized[i] = FALSE;
+        }
+    }
+}
+
+static gboolean
+list_sizes_data_stands (ListSizesData *data)
+{
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        if (!data->sized[i])
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void
+g_paste_history_list_sizes_thread (GTask        *task,
+                                   gpointer      source_object G_GNUC_UNUSED,
+                                   gpointer      task_data,
+                                   GCancellable *cancellable G_GNUC_UNUSED)
+{
+    ListSizesData *data = task_data;
+
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        if (data->counting[i])
+            data->sizes[i] = g_paste_storage_backend_count_history (data->backend, data->names[i]);
+    }
+
+    g_task_return_boolean (task, TRUE);
+}
+
+static void g_paste_history_list_sizes_pass (GTask         *task,
+                                             GPasteHistory *self);
+
+static void
+on_list_sizes_counted (GObject      *source_object G_GNUC_UNUSED,
+                       GAsyncResult *result        G_GNUC_UNUSED,
+                       gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    ListSizesData *data = g_task_get_task_data (task);
+    g_autoptr (GPasteHistory) self = g_weak_ref_get (&data->history);
+
+    /* Only what changed meanwhile is sized again, once however often it
+     * changed: every store counted again would hold back the answer for as
+     * long as changes kept landing in a pass, a key derivation apiece on an
+     * encrypted store. A history gone changes nothing more, and what was
+     * counted stands. */
+    if (self && !list_sizes_data_stands (data))
+        g_paste_history_list_sizes_pass (g_steal_pointer (&task), self);
+    else
+        g_task_return_boolean (task, TRUE);
+}
+
+/* One count of the stores of the histories whose size does not stand, bar
+ * those in use or with writes out: what those hold now is noted here, to stand
+ * should they be neither by the time g_paste_history_list_sizes_finish () sizes
+ * them again, as the answer goes out. @task is the listing's, which this
+ * pass's own holds until it is over. */
+static void
+g_paste_history_list_sizes_pass (GTask         *task,
+                                 GPasteHistory *self)
+{
+    ListSizesData *data = g_task_get_task_data (task);
+
+    g_set_object (&data->backend, self->backend);
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        data->counting[i] = !data->sized[i] && !g_paste_history_size_in_memory (self, data->names[i], &data->sizes[i]);
+        data->sized[i] = TRUE;
+    }
+
+    g_autoptr (GTask) pass = g_task_new (NULL, NULL, on_list_sizes_counted, task);
+
+    g_task_set_static_name (pass, "gpaste-history-list-sizes");
+    g_task_set_task_data (pass, data, NULL);
+    g_task_run_in_thread (pass, g_paste_history_list_sizes_thread);
+}
+
+/**
+ * g_paste_history_list_sizes_async:
+ * @self: a #GPasteHistory instance
+ * @names: (transfer full) (array zero-terminated=1): the histories to size, in
+ *     the order to answer them in
+ * @callback: (scope async): called with every history and its size
+ * @user_data: data passed to @callback
+ *
+ * Size every history @names lists, as g_paste_history_get_size () does each.
+ * The stores are counted on a worker thread: a count reads a whole document
+ * of a file history -- and derives a key, for an encrypted one -- which on the
+ * main loop would stall it for as long. The history in use, and any with
+ * writes out, are sized from what is in memory as
+ * g_paste_history_list_sizes_finish () builds the answer: a size of the
+ * history in use asked after the listing, and answered before it, is then no
+ * newer than what the listing says. A history emptied while the stores are
+ * counted, or the one in use left meanwhile, is sized again: a store counted
+ * before a write reached it would otherwise be answered for as it no longer
+ * is. @self is held weakly: let go of meanwhile, it goes there and then, and
+ * the listing answers what it counted.
+ */
+void
+g_paste_history_list_sizes_async (GPasteHistory      *self,
+                                  GStrv               names,
+                                  GAsyncReadyCallback callback,
+                                  gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_HISTORY (self));
+    g_return_if_fail (names);
+
+    g_autoptr (GTask) task = g_task_new (NULL, NULL, callback, user_data);
+    guint length = g_strv_length (names);
+    g_autoptr (ListSizesData) data = g_new0 (ListSizesData, 1);
+
+    g_task_set_source_tag (task, g_paste_history_list_sizes_async);
+    g_weak_ref_init (&data->history, self);
+    data->names = names;
+    data->sizes = g_new0 (guint64, length);
+    data->counting = g_new0 (gboolean, length);
+    data->sized = g_new0 (gboolean, length);
+    self->listings = g_slist_prepend (self->listings, data);
+    g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) list_sizes_data_free);
+    g_paste_history_list_sizes_pass (g_steal_pointer (&task), self);
+}
+
+/**
+ * g_paste_history_list_sizes_finish:
+ * @result: the #GAsyncResult g_paste_history_list_sizes_async () handed its
+ *     callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * Never fails: @error is left unset. The history in use and those with writes
+ * out are sized here: the answer is to go out from where this is called. Once
+ * the history is gone, every size is the one counted.
+ *
+ * Returns: (transfer full): every history and its size, as ListHistories
+ *     answers them
+ */
+GVariant *
+g_paste_history_list_sizes_finish (GAsyncResult *result,
+                                   GError      **error)
+{
+    g_return_val_if_fail (g_task_is_valid (result, NULL), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_history_list_sizes_async, NULL);
+
+    if (!g_task_propagate_boolean (G_TASK (result), error))
+        return NULL;
+
+    ListSizesData *data = g_task_get_task_data (G_TASK (result));
+    g_autoptr (GPasteHistory) self = g_weak_ref_get (&data->history);
+    g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (G_PASTE_HISTORIES_VARIANT_TYPE);
+
+    for (guint i = 0; data->names[i]; ++i)
+    {
+        guint64 size = data->sizes[i];
+
+        if (self)
+            g_paste_history_size_in_memory (self, data->names[i], &size);
+        g_variant_builder_add (&builder, G_PASTE_HISTORY_VARIANT_STRING, data->names[i], size);
+    }
+
+    return g_variant_ref_sink (g_variant_builder_end (&builder));
 }
 
 /**
@@ -2961,16 +3483,10 @@ g_paste_history_get_size (GPasteHistory *self,
     g_return_val_if_fail (G_PASTE_IS_HISTORY (self), 0);
     g_return_val_if_fail (name, 0);
 
-    if (g_paste_str_equal (name, g_paste_history_get_current (self)))
-        return g_paste_history_get_length (self);
+    guint64 size;
 
-    /* A history just switched away from can still have writes out, which a
-     * count of its store would not see yet: what they say it holds comes first
-     * (/history-ordering/count-pending). */
-    guint64 count;
-
-    if (g_paste_history_saver_count_pending (self->saver, name, &count))
-        return count;
+    if (g_paste_history_size_in_memory (self, name, &size))
+        return size;
 
     return g_paste_storage_backend_count_history (self->backend, name);
 }

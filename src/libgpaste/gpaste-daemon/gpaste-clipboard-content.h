@@ -123,8 +123,13 @@ gchar       *g_paste_clipboard_text_from_bytes      (GBytes              *bytes,
  * Wide enough that one read which cannot report progress -- a single big
  * transfer, the only thing this batch is waiting on, so nothing lands to say it
  * is moving -- is not cut off either. The cost of waiting is a late item; the
- * cost of giving up early is no item at all. */
+ * cost of giving up early is no item at all.
+ *
+ * Overridable for test-read-guard, which compiles the guard in on a shorter
+ * allowance. */
+#ifndef G_PASTE_CLIPBOARD_READ_TIMEOUT
 #define G_PASTE_CLIPBOARD_READ_TIMEOUT 30
+#endif
 
 /* The deadline a batch of clipboard reads runs under, and the #GCancellable
  * every one of them goes out on. Both backends embed one, so what running out
@@ -275,7 +280,8 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * the guard concludes it without a backend hook. Only to the conclusion, and not
  * to the teardown, because a conclusion the reads outlive would otherwise hold
  * both of them for as long as those reads do, which for ones that never land is
- * the rest of the session.
+ * the rest of the session -- the reads holding the provider themselves
+ * meanwhile, but not the settings.
  *
  * @pending counts the reads still out and @sensitive_pending how many of those
  * are hint or sensitive-offer reads, which is what tells a hint that answered
@@ -290,6 +296,9 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @concluded rather than folded into it because the two say opposite things
  * about what is still owed -- a superseded update has yet to call its callback,
  * and that callback is what releases whatever the caller put behind it.
+ * @released says the owner left once the content had landed
+ * (g_paste_clipboard_update_owner_gone ()), which makes the copy complete: one
+ * superseded after that still builds its item, for the history alone.
  *
  * @slot is where the backend keeps its pointer to the update in flight on this
  * selection, cleared at the conclusion: one goes out per
@@ -316,8 +325,18 @@ GPasteItem *g_paste_clipboard_content_to_item (GPasteSettings            *settin
  * @unchanged confirms an exact match with the cache. A read producing no item
  * without this confirmation leaves the selection unidentified, not empty.
  * @reselect asks for the selection to be re-owned after all reads complete:
- * trimmed text needs its normalized value published. */
+ * trimmed text needs its normalized value published.
+ *
+ * @thens is what the conclusion runs once the callback has returned, in the
+ * order chained: see g_paste_clipboard_update_then (). */
 typedef struct _GPasteClipboardUpdate GPasteClipboardUpdate;
+
+/* What a backend does once an update has concluded and its callback has
+ * returned, told whether that update was superseded: see
+ * g_paste_clipboard_update_then (). */
+typedef void (*GPasteClipboardUpdateThenFunc) (GPasteClipboardProvider *provider,
+                                               gboolean                 superseded,
+                                               gpointer                 data);
 
 struct _GPasteClipboardUpdate
 {
@@ -331,6 +350,7 @@ struct _GPasteClipboardUpdate
     gint                                  sensitive_pending;
     gboolean                              concluded;
     gboolean                              superseded;
+    gboolean                              released;
     GPasteClipboardUpdate               **slot;
     GPasteClipboardContent               *cache;
     gchar                                *mime;
@@ -350,6 +370,8 @@ struct _GPasteClipboardUpdate
      * the backend says otherwise. */
     gboolean                              record;
     GPasteClipboardMimeResults            mimes;
+
+    GSList                               *thens;
 };
 
 /* What a backend answers about the selection it is reading: whether that
@@ -373,7 +395,11 @@ typedef void     (*GPasteClipboardMimeReadFunc)    (gpointer                back
                                                     GPasteClipboardMimeCtx *ctx);
 
 void                    g_paste_clipboard_update_supersede                (GPasteClipboardUpdate               **slot);
-void                    g_paste_clipboard_update_owner_gone               (GPasteClipboardUpdate               **slot);
+GPasteClipboardUpdate  *g_paste_clipboard_update_owner_gone               (GPasteClipboardUpdate               **slot);
+void                    g_paste_clipboard_update_then                     (GPasteClipboardUpdate                *update,
+                                                                           GPasteClipboardUpdateThenFunc         then,
+                                                                           gpointer                              data);
+const gchar            *g_paste_clipboard_update_overtaken_text           (void);
 GPasteClipboardUpdate  *g_paste_clipboard_update_new                      (GPasteClipboardProvider              *provider,
                                                                            GPasteSettings                       *settings,
                                                                            GPasteClipboardContentKind            content_kind,

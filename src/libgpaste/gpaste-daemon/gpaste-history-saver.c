@@ -651,8 +651,9 @@ g_paste_history_saver_count_stored (GPasteHistorySaver *self,
     return count;
 }
 
-/* The latest write still out for @name, a copy's aside: one reads a store,
- * unread yet, and the history it writes is listed once it has landed. */
+/* The latest write still out to @name, a copy's included: it writes @name
+ * whole, from the snapshot it carries, from nothing when it empties @name
+ * (g_paste_history_saver_empty ()), or from a store it has yet to read. */
 static GPasteHistorySaverWrite *
 g_paste_history_saver_latest_write (GPasteHistorySaver *self,
                                     const gchar        *name)
@@ -661,11 +662,11 @@ g_paste_history_saver_latest_write (GPasteHistorySaver *self,
     {
         GPasteHistorySaverWrite *pending = link->data;
 
-        if (pending->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (pending->name, name))
+        if (g_paste_str_equal (pending->name, name))
             return pending;
     }
 
-    if (self->writing && self->writing->op != G_PASTE_HISTORY_SAVE_COPY && g_paste_str_equal (self->writing->name, name))
+    if (self->writing && g_paste_str_equal (self->writing->name, name))
         return self->writing;
 
     return NULL;
@@ -698,11 +699,17 @@ g_paste_history_saver_count_pending (GPasteHistorySaver *self,
     if (!latest)
         return FALSE;
 
-    /* A snapshot -- an emptied history's being none at all -- is counted as
-     * the store counts it once it holds it, by the settings in force now; a
-     * write carrying none -- an incremental backend's add, remove or replace --
-     * by what the history held as it left @name, the same way. */
-    if (latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history)
+    /* An emptying leaves nothing, whatever the store holds until it lands: an
+     * incremental backend's carries no snapshot, and the history left after it
+     * none to count either; another history's is a copy of nothing, answered
+     * by the daemon as emptied before it lands. A snapshot is counted as the
+     * store counts it once it holds it, by the settings in force now; a write
+     * carrying none -- an incremental backend's add, remove or replace -- by
+     * what the history held as it left @name, the same way. A copy from a
+     * store it has yet to read leaves the count to the store. */
+    if (latest->op == G_PASTE_HISTORY_SAVE_CLEAR || (latest->op == G_PASTE_HISTORY_SAVE_COPY && !latest->history && !latest->source))
+        *count = 0;
+    else if (latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history)
         *count = g_paste_history_saver_count_stored (self, latest->history);
     else if (latest->counted)
         *count = g_paste_history_saver_count_stored (self, latest->counted);
@@ -735,8 +742,9 @@ g_paste_history_saver_left (GPasteHistorySaver *self,
     GPasteHistorySaverWrite *latest = g_paste_history_saver_latest_write (self, name);
 
     /* The one in flight included: its worker reads none of @counted, which
-     * only the main thread touches, as it does the write's free. */
-    if (!latest || latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->history || latest->counted)
+     * only the main thread touches, as it does the write's free. A copy is
+     * never counted by it. */
+    if (!latest || latest->op == G_PASTE_HISTORY_SAVE_FULL || latest->op == G_PASTE_HISTORY_SAVE_COPY || latest->history || latest->counted)
         return;
 
     for (guint i = history->len; i > 0; --i)
@@ -776,7 +784,6 @@ struct _GPasteHistorySaverLoadData
     GPasteStorageBackend *backend;
     gchar                *name;
     guint64               generation;
-    gboolean              save_after;
 };
 
 static void
@@ -876,8 +883,7 @@ g_paste_history_saver_load_done (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    self->loaded (self->owner, g_steal_pointer (&load_result->history), load_result->size,
-                  data->save_after, load_result->readable);
+    self->loaded (self->owner, g_steal_pointer (&load_result->history), load_result->size, load_result->readable);
 }
 
 /**
@@ -997,21 +1003,11 @@ g_paste_history_saver_start_load (GPasteHistorySaver *self)
     g_task_run_in_thread (task, g_paste_history_saver_load_task);
 }
 
-/**
- * g_paste_history_saver_load:
- * @self: a #GPasteHistorySaver
- * @name: the history name to read
- * @save_after: whether the loaded history should be persisted back once installed
- *
- * Read @name in the background. When it completes (and has not been superseded
- * by a later load) the result is handed to the #GPasteHistorySaverLoadedFunc.
- */
 /* Make @name's read the load wanted, superseding the one out: see
  * g_paste_history_saver_load (). */
 static void
 g_paste_history_saver_set_load (GPasteHistorySaver *self,
-                                const gchar        *name,
-                                gboolean            save_after)
+                                const gchar        *name)
 {
     self->load_in_progress = TRUE;
     self->load_generation++;
@@ -1020,11 +1016,6 @@ g_paste_history_saver_set_load (GPasteHistorySaver *self,
     data->backend = g_object_ref (self->backend);
     data->name = g_strdup (name);
     data->generation = self->load_generation;
-    /* save_after exists so a snapshot-rewriting backend persists its read-time
-     * normalization (format upgrade, uuid dedup, truncation). An incremental
-     * backend normalizes its storage on open instead, so writing the whole
-     * history back after a load would be pure churn: drop the request. */
-    data->save_after = save_after && !g_paste_storage_backend_is_incremental (self->backend);
 
     /* Whatever the load before it was reading, nobody is waiting for it: the
      * generation check below drops its result, and this is what stops the read
@@ -1036,14 +1027,21 @@ g_paste_history_saver_set_load (GPasteHistorySaver *self,
     self->pending_load = g_steal_pointer (&data);
 }
 
+/**
+ * g_paste_history_saver_load:
+ * @self: a #GPasteHistorySaver
+ * @name: the history name to read
+ *
+ * Read @name in the background. When it completes (and has not been superseded
+ * by a later load) the result is handed to the #GPasteHistorySaverLoadedFunc.
+ */
 G_PASTE_VISIBLE void
 g_paste_history_saver_load (GPasteHistorySaver *self,
-                            const gchar        *name,
-                            gboolean            save_after)
+                            const gchar        *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    g_paste_history_saver_set_load (self, name, save_after);
+    g_paste_history_saver_set_load (self, name);
     self->loads_held = FALSE;
     g_paste_history_saver_start_load (self);
 }
@@ -1052,7 +1050,6 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
  * g_paste_history_saver_load_when_released:
  * @self: a #GPasteHistorySaver
  * @name: the history name to read
- * @save_after: whether the loaded history should be persisted back once installed
  *
  * As g_paste_history_saver_load (), superseding the load out, but leaving loads
  * held as they are: while they are (g_paste_history_saver_hold_loads ()), the
@@ -1060,12 +1057,11 @@ g_paste_history_saver_load (GPasteHistorySaver *self,
  */
 G_PASTE_VISIBLE void
 g_paste_history_saver_load_when_released (GPasteHistorySaver *self,
-                                          const gchar        *name,
-                                          gboolean            save_after)
+                                          const gchar        *name)
 {
     g_return_if_fail (G_PASTE_IS_HISTORY_SAVER (self));
 
-    g_paste_history_saver_set_load (self, name, save_after);
+    g_paste_history_saver_set_load (self, name);
     g_paste_history_saver_start_load (self);
 }
 

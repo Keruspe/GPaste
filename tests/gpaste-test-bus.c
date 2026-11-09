@@ -99,23 +99,13 @@ on_wait_timeout (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
-/* The main context iterated until @done says so, or until the deadline: the
- * caller asserts what it waited for, which says what timed out. */
+/* g_paste_test_env_wait_until () for G_PASTE_TEST_BUS_WAIT_SECONDS. */
 void
 g_paste_test_bus_wait_until (GPasteTestBusDone done,
                              gconstpointer     data,
                              gconstpointer     arg)
 {
-    gboolean timed_out = FALSE;
-    guint source = g_timeout_add_seconds (G_PASTE_TEST_BUS_WAIT_SECONDS, on_wait_timeout, &timed_out);
-
-    g_source_set_name_by_id (source, "[GPaste] test wait deadline");
-
-    while (!done (data, arg) && !timed_out)
-        g_main_context_iteration (NULL, TRUE);
-
-    if (!timed_out)
-        g_source_remove (source);
+    g_paste_test_env_wait_until (done, data, arg, G_PASTE_TEST_BUS_WAIT_SECONDS);
 }
 
 /* A GPasteTestBusDone for a pointer that something fills in: @pointer is the
@@ -125,6 +115,24 @@ g_paste_test_bus_is_set (gconstpointer pointer,
                          gconstpointer arg G_GNUC_UNUSED)
 {
     return *((gconstpointer const *) pointer) != NULL;
+}
+
+/* The same for a pointer that something clears -- a weak pointer, a slot a
+ * teardown empties. */
+gboolean
+g_paste_test_bus_is_unset (gconstpointer pointer,
+                           gconstpointer arg G_GNUC_UNUSED)
+{
+    return *((gconstpointer const *) pointer) == NULL;
+}
+
+/* A GPasteTestBusDone for a gboolean that something sets: @flag is the
+ * address of it, @arg unused. */
+gboolean
+g_paste_test_bus_is_true (gconstpointer flag,
+                          gconstpointer arg G_GNUC_UNUSED)
+{
+    return *(const gboolean *) flag;
 }
 
 static gint
@@ -175,25 +183,33 @@ owner_reached (gconstpointer proxy,
     return g_strcmp0 (current, owner) == 0;
 }
 
-/* Until @proxy has learnt that @server owns its name: for an owner arriving
- * after the proxy's init, it learns it once its GetAll on that owner answered,
- * which can be after the daemon's own PropertiesChanged has made a
- * GPasteClient ready. */
+/* Until @proxy has learnt that @server owns its name, or with a %NULL @server
+ * that nobody does: for an owner arriving after the proxy's init, it learns it
+ * once its GetAll on that owner answered, which can be after the daemon's own
+ * PropertiesChanged has made a GPasteClient ready. */
 void
 g_paste_test_bus_wait_for_owner (GDBusProxy      *proxy,
                                  GDBusConnection *server)
 {
-    const gchar *owner = g_dbus_connection_get_unique_name (server);
+    const gchar *owner = (server) ? g_dbus_connection_get_unique_name (server) : NULL;
 
     g_paste_test_bus_wait_until (owner_reached, proxy, owner);
     g_assert_true (owner_reached (proxy, owner));
+}
+
+/* Read atomically: a count a bus filter keeps is bumped on GDBus's worker
+ * thread, with g_atomic_int_inc (), while this reads it on the main one. */
+static guint
+count_read (const guint *count)
+{
+    return (guint) g_atomic_int_get ((const gint *) count);
 }
 
 static gboolean
 count_reached (gconstpointer count,
                gconstpointer at_least)
 {
-    return *(const guint *) count >= GPOINTER_TO_UINT (at_least);
+    return count_read (count) >= GPOINTER_TO_UINT (at_least);
 }
 
 /* The main context run for @ms: for what happens on a later frame or timer
@@ -208,6 +224,15 @@ g_paste_test_bus_pump (guint ms)
     g_source_set_name_by_id (g_timeout_add (ms, on_wait_timeout, &done), "[GPaste] test pump");
     while (!done)
         g_main_context_iteration (NULL, TRUE);
+}
+
+/* What is ready on the main context dispatched, until nothing is: waiting for
+ * nothing, it settles what has already happened, a teardown's idles and the
+ * replies a round trip saw in. A state to assert is waited for instead. */
+void
+g_paste_test_bus_drain (void)
+{
+    while (g_main_context_iteration (NULL, FALSE));
 }
 
 /* Every reply @server has sent on @connection is ahead of this one, so once it
@@ -225,8 +250,7 @@ g_paste_test_bus_round_trip (GDBusConnection *connection,
                                                              NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
 
     g_assert_no_error (error);
-
-    while (g_main_context_iteration (NULL, FALSE));
+    g_paste_test_bus_drain ();
 }
 
 /* A signal handler counting its emissions into @count, for any signal when
@@ -246,5 +270,5 @@ g_paste_test_bus_wait_for_count (const guint *count,
                                  guint        at_least)
 {
     g_paste_test_bus_wait_until (count_reached, count, GUINT_TO_POINTER (at_least));
-    g_assert_cmpuint (*count, >=, at_least);
+    g_assert_cmpuint (count_read (count), >=, at_least);
 }

@@ -6,6 +6,7 @@
 #include <gpaste-3/gpaste-error.h>
 #include <gpaste-3/gpaste-gdbus-defines.h>
 #include <gpaste-3/gpaste-util.h>
+#include <gpaste-3/gpaste-util-private.h>
 #include <gpaste-3/gpaste-update-enums.h>
 
 #include <errno.h>
@@ -15,9 +16,18 @@
  * second before a name nobody owns reads as missing -- what an upgrade takes to
  * put one back -- and two minutes before an owner that never serves stops
  * reading as starting -- long enough for a re-exec, an upgrade or a manual
- * restart. Past that, trying again is the user's call. */
-#define G_PASTE_CLIENT_GRACE_SECONDS   1
-#define G_PASTE_CLIENT_GIVE_UP_SECONDS 127
+ * restart. Past that, trying again is the user's call. A daemon of this version
+ * held at its start-up migration or passphrase prompt owns the name and serves
+ * nothing either, for as long as the user takes to answer, and is given up on
+ * all the same: nothing on the bus tells it from one that will never serve,
+ * and it heals once answered, the presence following the export. Telling them
+ * apart takes the daemon saying it is prompting, which is a change to the
+ * interface. A test can wait the second out; the two minutes are cut short by
+ * the one compiling this file in (tests/client/test-give-up.c). */
+#define G_PASTE_CLIENT_GRACE_SECONDS 1
+#ifndef G_PASTE_CLIENT_GIVE_UP_SECONDS
+#define G_PASTE_CLIENT_GIVE_UP_SECONDS 120
+#endif
 
 struct _GPasteClient
 {
@@ -31,8 +41,11 @@ struct _GPasteClient
     gboolean             following;
     /* Whether the wait has run out with nothing served. */
     gboolean             spent;
-    guint                grace_source;
-    guint                give_up_source;
+    GSource             *grace_source;
+    GSource             *give_up_source;
+    /* What the wait's timers and its probe's reply run on: the context @self
+     * was built in, which every other callback of its is dispatched on. */
+    GMainContext        *context;
     /* The request for a daemon in flight, cancelled and replaced by the next:
      * the wait is the latest one's to start, an older one having been
      * overtaken. */
@@ -50,24 +63,40 @@ struct _GPasteClient
  *
  * A proxy for the GPaste daemon's D-Bus interface.
  *
- * Every method comes in a synchronous flavor and an async pair, and both report
- * failures the same way, in one of two kinds of domain:
+ * Every method comes in a synchronous flavor and an async pair -- the search for
+ * what is being typed (g_paste_client_search_text()) in the pair alone -- and
+ * both report failures the same way:
  *
  * - %G_PASTE_ERROR for a request the daemon understood and refused, e.g.
  *   %G_PASTE_ERROR_NOT_FOUND for an unknown uuid. The daemon registers the
  *   domain with g_dbus_error_register_error_domain(), so the code survives the
  *   round-trip and callers can switch on it instead of matching on the message.
  * - %G_DBUS_ERROR or %G_IO_ERROR for a failure of the transport itself: no
- *   daemon on the bus, it went away mid-call, the call was cancelled. These say
- *   nothing about the request.
+ *   daemon on the bus, it went away mid-call
+ *   (g_paste_client_is_daemon_gone_error ()), the call was cancelled. These say
+ *   nothing about the request, bar the %G_IO_ERROR cases below.
+ * - %G_IO_ERROR_BUSY, one of the two %G_IO_ERROR codes that are no transport
+ *   failure, for a request the daemon refuses for now and will take later: one
+ *   changing the items, or BackupHistory, EmptyHistory and DeleteHistory,
+ *   while the daemon hands its storage over, and a backup of the current
+ *   history while it loads -- see the D-Bus interface's own documentation.
+ *   Worth asking again, not dropping.
+ * - %G_IO_ERROR_INVALID_DATA, the other, for a string D-Bus cannot carry or
+ *   a reply GPaste's own daemon never sends. A call carrying a string that is
+ *   not UTF-8 -- a file name in another encoding, a relative one joined to a
+ *   working directory named in one -- fails with it before anything is sent;
+ *   an item with no valid uuid is one g_paste_client_get_item () and
+ *   g_paste_client_get_item_at_index () fail on and a listing leaves out.
+ *
+ * A call reading a file fails as the read does, which is about the request
+ * too: g_paste_client_add_file_sync ()'s in %G_FILE_ERROR for a file the daemon
+ * cannot look up, open or read (%G_FILE_ERROR_NOENT, %G_FILE_ERROR_ACCES,
+ * ...), as g_paste_client_get_image_sync () does for an image whose cache
+ * file cannot be read.
  *
  * A caller that wants to tell "the daemon said no" from "the daemon is not
  * there" should therefore check the domain with g_error_matches(), not the bare
  * code: the numbering of the two overlaps.
- *
- * A call carrying a string that is not UTF-8, which is all D-Bus carries -- a
- * file name in another encoding, a relative one joined to a working directory
- * named in one -- fails with %G_IO_ERROR_INVALID_DATA without being sent.
  */
 static void g_paste_client_daemon3_iface_init        (GPasteDaemon3Iface  *iface);
 static void g_paste_client_initable_iface_init       (GInitableIface      *iface);
@@ -225,7 +254,6 @@ g_paste_client_check_utf8_strv (const gchar * const *strings,
         }                                                                                                \
     } while (FALSE)
 
-
 /* A single item's reply, or an error for one GPaste's own daemon never sends:
  * an item with no valid uuid, which the parser leaves out
  * (g_paste_util_get_dbus_item_result ()), a call that succeeded handing back
@@ -246,15 +274,47 @@ g_paste_client_item_result (GVariant *variant,
  * caller would show that as is -- a notification, the command line. Where the
  * error maps to a domain, GPaste's own or GDBus' or one GLib encodes, the
  * domain and code already say what the prefix does, so it goes; an unmapped
- * one keeps it, the name being all there is to tell it by. */
-static void
+ * one keeps it, the name being all there is to tell it by. Exported for the
+ * tests compiling gpaste-util.c in, as g_paste_client_is_following () is. */
+G_PASTE_VISIBLE void
 g_paste_client_strip_remote_error (GError **error)
 {
     if (error && *error && !g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_DBUS_ERROR))
         g_dbus_error_strip_remote_error (*error);
 }
 
-#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
+/* Every method but the ones below is answered out of what the daemon already
+ * holds, so the GDBusProxy default is as much time as any of them can need.
+ * Upload and UploadAndCopy are one exception: they answer only once the
+ * pastebin has taken the paste, a network round trip a large item or a loaded
+ * service pushes well past those 25 seconds -- and a call that times out
+ * reports a failure the upload did not have, having already succeeded on the
+ * daemon's side.
+ *
+ * BackupHistory, EmptyHistory and ListHistories answer once a worker thread
+ * has been through a store: a backup writes the whole copy behind the writes
+ * already out, a write and a sync per image for a history of screenshots;
+ * emptying another history writes its store; a listing counts every other
+ * history in its own, deriving a key for each encrypted one. Slow storage or a
+ * long queue pushes them past the default too, and a backup that timed out is
+ * one still being written, which a retry is refused for.
+ *
+ * Reexecute is another: expiry waits for the selections to be identified.
+ * Each wait has a sixty-second deadline and completion revalidation retries
+ * for at most thirty seconds, so this allowance also covers the final wait.
+ * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
+ *
+ * Doctor is the last, and waits for as long as it takes: the check answers once
+ * the user has typed whatever passphrase it asks for, or turned it down.
+ */
+#define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
+#define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_STORE     (10 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
+#define G_PASTE_CLIENT_TIMEOUT_DOCTOR    G_MAXINT
+
+/* A method that answers nothing, waiting @timeout for its reply. */
+#define G_PASTE_CLIENT_METHOD_FULL(name, timeout, PARAMS, ARGS, STRINGS)                        \
     G_PASTE_VISIBLE void                                                                        \
     g_paste_client_##name##_sync (GPasteClient *self ARGLIST PARAMS,                            \
                                   GError      **error)                                          \
@@ -267,7 +327,7 @@ g_paste_client_strip_remote_error (GError **error)
                                                                                                 \
         g_paste_daemon3_call_##name##_sync (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                \
                                             G_DBUS_CALL_FLAGS_NONE,                             \
-                                            -1, /* timeout */                                   \
+                                            timeout,                                            \
                                             NULL, /* cancellable */                             \
                                             error);                                             \
         g_paste_client_strip_remote_error (error);                                              \
@@ -284,7 +344,7 @@ g_paste_client_strip_remote_error (GError **error)
                                                                                                 \
         g_paste_daemon3_call_##name (G_PASTE_DAEMON3 (self) ARGLIST ARGS,                       \
                                      G_DBUS_CALL_FLAGS_NONE,                                    \
-                                     -1, /* timeout */                                          \
+                                     timeout,                                                   \
                                      cancellable,                                               \
                                      callback,                                                  \
                                      user_data);                                                \
@@ -305,25 +365,8 @@ g_paste_client_strip_remote_error (GError **error)
         g_paste_client_strip_remote_error (error);                                              \
     }
 
-/* Every method but four is answered out of what the daemon already holds, so
- * the GDBusProxy default is as much time as any of them can need. Upload and
- * UploadAndCopy are one exception: they answer only once the pastebin has
- * taken the paste, a network round trip a large item or a loaded service pushes
- * well past those 25 seconds -- and a call that times out reports a failure the
- * upload did not have, having already succeeded on the daemon's side.
- *
- * Reexecute is another: expiry waits for the selections to be identified.
- * Each wait has a sixty-second deadline and completion revalidation retries
- * for at most thirty seconds, so this allowance also covers the final wait.
- * The CLI preserves deadline errors; only an unsupported method uses SIGUSR1.
- *
- * Doctor is the last, and waits for as long as it takes: the check answers once
- * the user has typed whatever passphrase it asks for, or turned it down.
- */
-#define G_PASTE_CLIENT_TIMEOUT_DEFAULT   -1
-#define G_PASTE_CLIENT_TIMEOUT_UPLOAD    (10 * 60 * 1000)
-#define G_PASTE_CLIENT_TIMEOUT_REEXECUTE (2 * 60 * 1000)
-#define G_PASTE_CLIENT_TIMEOUT_DOCTOR    G_MAXINT
+#define G_PASTE_CLIENT_METHOD(name, PARAMS, ARGS, STRINGS)                                      \
+    G_PASTE_CLIENT_METHOD_FULL (name, G_PASTE_CLIENT_TIMEOUT_DEFAULT, PARAMS, ARGS, STRINGS)
 
 /* Same, for a method that answers something: @decl declares the out parameter,
  * @out passes it, @ret turns it into the return value and @fail is what every
@@ -590,8 +633,8 @@ g_paste_client_add_file_finish (GPasteClient *self,
  * Add the password to the #GPasteDaemon
  *
  * A name already in use fails with %G_PASTE_ERROR_ALREADY_EXISTS in the
- * %G_PASTE_ERROR domain, leaving the history and clipboard untouched.
- * The nameless placeholder "******" may be shared by multiple passwords.
+ * %G_PASTE_ERROR domain, leaving the history and clipboard untouched, and the
+ * nameless placeholder "******" with %G_PASTE_ERROR_INVALID_ARGUMENT.
  *
  * @timeout is as in g_paste_client_make_password().
  *
@@ -631,23 +674,23 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
 /**
  * g_paste_client_backup_history_sync:
  * @self: a #GPasteClient instance
- * @history: the name of the history
- * @backup: the name of the backup
+ * @history: the name of the history to back up, the current one or any other
+ * @backup: the name to give the backup
  * @error: return location for a #GError, or %NULL
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
 /**
  * g_paste_client_backup_history:
  * @self: a #GPasteClient instance
- * @history: the name of the history
- * @backup: the name of the backup
+ * @history: the name of the history to back up, the current one or any other
+ * @backup: the name to give the backup
  * @cancellable: (nullable): a #GCancellable to abandon the call with
  * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
 /**
  * g_paste_client_backup_history_finish:
@@ -655,10 +698,10 @@ G_PASTE_CLIENT_METHOD_RET (add_password,
  * @result: the #GAsyncResult handed to the callback
  * @error: return location for a #GError, or %NULL
  *
- * Backup the current history
+ * Back up @history under the name @backup
  */
-G_PASTE_CLIENT_METHOD (backup_history,
-                       (const gchar *history, const gchar *backup), (history, backup), (history, backup))
+G_PASTE_CLIENT_METHOD_FULL (backup_history, G_PASTE_CLIENT_TIMEOUT_STORE,
+                            (const gchar *history, const gchar *backup), (history, backup), (history, backup))
 
 /**
  * g_paste_client_change_passphrase_sync:
@@ -759,6 +802,10 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * @error: return location for a #GError, or %NULL
  *
  * Delete the password from the #GPasteDaemon
+ *
+ * The nameless placeholder "******", which names none of the nameless
+ * passwords, fails with %G_PASTE_ERROR_INVALID_ARGUMENT in the %G_PASTE_ERROR
+ * domain.
  */
 /**
  * g_paste_client_delete_password:
@@ -770,6 +817,9 @@ G_PASTE_CLIENT_METHOD (delete_history,
  * @user_data: the data to pass to @callback
  *
  * Delete the password from the #GPasteDaemon
+ *
+ * The nameless placeholder is refused as in
+ * g_paste_client_delete_password_sync().
  */
 /**
  * g_paste_client_delete_password_finish:
@@ -914,8 +964,8 @@ g_paste_client_doctor_finish (GPasteClient *self,
  *
  * Empty the history from the #GPasteDaemon
  */
-G_PASTE_CLIENT_METHOD (empty_history,
-                       (const gchar *name), (name), (name))
+G_PASTE_CLIENT_METHOD_FULL (empty_history, G_PASTE_CLIENT_TIMEOUT_STORE,
+                            (const gchar *name), (name), (name))
 
 /**
  * g_paste_client_get_item_sync:
@@ -1340,10 +1390,10 @@ G_PASTE_CLIENT_METHOD_RET (get_uris,
  *
  * Returns: (element-type GPasteClientHistory) (transfer full): a newly allocated list of histories
  */
-G_PASTE_CLIENT_METHOD_RET (list_histories,
-                           GList *, NULL,
-                           g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
-                           (), (), ())
+G_PASTE_CLIENT_METHOD_RET_FULL (list_histories, G_PASTE_CLIENT_TIMEOUT_STORE,
+                                GList *, NULL,
+                                g_autoptr (GVariant) histories = NULL, &histories, g_paste_util_get_dbus_histories_result (histories),
+                                (), (), ())
 
 /**
  * g_paste_client_merge_sync:
@@ -1509,13 +1559,25 @@ G_PASTE_CLIENT_METHOD (report_extension_state,
  * finishing it the ordinary way reports a failure for every restart that
  * worked. Matched with its domain: G_DBUS_ERROR_NO_REPLY is 4, and so is
  * G_IO_ERROR_NOT_DIRECTORY, which a bare code comparison would take for a
- * successful re-exec. */
+ * successful re-exec.
+ *
+ * No daemon to re-execute, the call starting none, is said in GPaste's words
+ * here too, for every caller to show: the bus's words name the owner the call
+ * went to ("Name ":1.42" does not exist"), which tells a user nothing. The
+ * domain and code stay, for g_paste_client_is_daemon_gone_error (). */
 static void
 g_paste_client_reexecute_propagate (GError  *err,
                                     GError **error)
 {
     if (err && !g_error_matches (err, G_DBUS_ERROR, G_DBUS_ERROR_NO_REPLY))
     {
+        if (g_paste_client_is_daemon_gone_error (err))
+        {
+            g_autoptr (GError) gone = err;
+
+            err = g_error_new_literal (gone->domain, gone->code, g_paste_util_no_daemon_message ());
+        }
+
         g_propagate_error (error, err);
         g_paste_client_strip_remote_error (error);
     }
@@ -1531,7 +1593,10 @@ g_paste_client_reexecute_propagate (GError  *err,
  * Reexecute the #GPasteDaemon
  *
  * A standalone daemon that re-executes goes away without answering, so a call
- * left unanswered that way is a success and leaves @error unset.
+ * left unanswered that way is a success and leaves @error unset. The call
+ * starts no daemon: with none running it fails with
+ * %G_DBUS_ERROR_NAME_HAS_NO_OWNER, its message saying so in GPaste's words
+ * rather than the bus's.
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_sync (GPasteClient *self,
@@ -1542,8 +1607,15 @@ g_paste_client_reexecute_sync (GPasteClient *self,
 
     GError *err = NULL;
 
+    /* The one method sent so as to start no daemon: a re-exec is for one
+     * running, and one the bus started for it would find open the migration
+     * gate its caller opened just before
+     * (g_paste_util_open_storage_migration ()), running the migration while
+     * the caller reports the re-exec failed. Sent to a name nobody owns -- its
+     * owner gone, whether or not the client has heard of it yet -- it fails
+     * with NameHasNoOwner instead. */
     g_paste_daemon3_call_reexecute_sync (G_PASTE_DAEMON3 (self),
-                                         G_DBUS_CALL_FLAGS_NONE,
+                                         G_DBUS_CALL_FLAGS_NO_AUTO_START,
                                          G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                          NULL, /* cancellable */
                                          &err);
@@ -1558,7 +1630,8 @@ g_paste_client_reexecute_sync (GPasteClient *self,
  *            satisfied, or %NULL to ignore the result
  * @user_data: (nullable): the data to pass to @callback
  *
- * Reexecute the #GPasteDaemon
+ * Reexecute the #GPasteDaemon, starting none: see
+ * g_paste_client_reexecute_sync().
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute (GPasteClient       *self,
@@ -1568,8 +1641,9 @@ g_paste_client_reexecute (GPasteClient       *self,
 {
     g_return_if_fail (G_PASTE_IS_CLIENT (self));
 
+    /* As in g_paste_client_reexecute_sync (). */
     g_paste_daemon3_call_reexecute (G_PASTE_DAEMON3 (self),
-                                    G_DBUS_CALL_FLAGS_NONE,
+                                    G_DBUS_CALL_FLAGS_NO_AUTO_START,
                                     G_PASTE_CLIENT_TIMEOUT_REEXECUTE,
                                     cancellable,
                                     callback,
@@ -1585,7 +1659,8 @@ g_paste_client_reexecute (GPasteClient       *self,
  * Reexecute the #GPasteDaemon
  *
  * As in g_paste_client_reexecute_sync(), a call the daemon left unanswered by
- * going away is a success and leaves @error unset.
+ * going away is a success and leaves @error unset, and one finding no daemon
+ * fails with %G_DBUS_ERROR_NAME_HAS_NO_OWNER.
  */
 G_PASTE_VISIBLE void
 g_paste_client_reexecute_finish (GPasteClient *self,
@@ -1677,6 +1752,91 @@ G_PASTE_CLIENT_METHOD_RET (search,
                            GList *, NULL,
                            g_autoptr (GVariant) results = NULL, &results, g_paste_util_get_dbus_items_result (results),
                            (const gchar *pattern), (pattern), (pattern))
+
+static void
+free_items (gpointer items)
+{
+    g_list_free_full (items, g_object_unref);
+}
+
+static void
+on_search_text_ready (GObject      *source_object,
+                      GAsyncResult *res,
+                      gpointer      user_data)
+{
+    g_autoptr (GTask) task = user_data;
+    g_autoptr (GError) error = NULL;
+    GList *items = g_paste_client_search_finish (G_PASTE_CLIENT (source_object), res, &error);
+
+    /* What was typed always escapes to a regular expression, so the one way
+     * Search can refuse it is its length. */
+    if (g_error_matches (error, G_PASTE_ERROR, G_PASTE_ERROR_INVALID_ARGUMENT))
+        g_task_return_pointer (task, NULL, NULL);
+    else if (error)
+        g_task_return_error (task, g_steal_pointer (&error));
+    else
+        g_task_return_pointer (task, items, free_items);
+}
+
+/**
+ * g_paste_client_search_text:
+ * @self: a #GPasteClient instance
+ * @text: what was typed
+ * @cancellable: (nullable): a #GCancellable to abandon the call with
+ * @callback: (nullable): a #GAsyncReadyCallback to call once the request is
+ *            satisfied, or %NULL to ignore the result
+ * @user_data: (nullable): the data to pass to @callback
+ *
+ * Search for the items holding @text as it is, whatever its case: what a front
+ * end asks for what its user typed. Search takes a regular expression, which
+ * @text is escaped into (g_regex_escape_string()), so a '(' still searches and
+ * a '.' matches nothing but itself; a text too long for the daemon to search
+ * for finds nothing, rather than failing. A search for what is being typed
+ * goes out at every pause in the typing, which nothing should block on, so
+ * there is no synchronous flavour.
+ */
+G_PASTE_VISIBLE void
+g_paste_client_search_text (GPasteClient       *self,
+                            const gchar        *text,
+                            GCancellable       *cancellable,
+                            GAsyncReadyCallback callback,
+                            gpointer            user_data)
+{
+    g_return_if_fail (G_PASTE_IS_CLIENT (self));
+    g_return_if_fail (text);
+    g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+    GTask *task = g_task_new (self, cancellable, callback, user_data);
+    g_autofree gchar *pattern = g_regex_escape_string (text, -1);
+
+    g_task_set_source_tag (task, g_paste_client_search_text);
+    g_paste_client_search (self, pattern, cancellable, on_search_text_ready, task);
+}
+
+/**
+ * g_paste_client_search_text_finish:
+ * @self: a #GPasteClient instance
+ * @result: the #GAsyncResult handed to the callback
+ * @error: return location for a #GError, or %NULL
+ *
+ * The items g_paste_client_search_text() found. A failure is in one of the
+ * domains the D-Bus methods fail in (see #GPasteClient), and never
+ * %G_PASTE_ERROR_INVALID_ARGUMENT.
+ *
+ * Returns: (element-type GPasteClientItem) (transfer full): a newly allocated list of items
+ */
+G_PASTE_VISIBLE GList *
+g_paste_client_search_text_finish (GPasteClient *self,
+                                   GAsyncResult *result,
+                                   GError      **error)
+{
+    g_return_val_if_fail (G_PASTE_IS_CLIENT (self), NULL);
+    g_return_val_if_fail (g_task_is_valid (result, self), NULL);
+    g_return_val_if_fail (g_task_get_source_tag (G_TASK (result)) == g_paste_client_search_text, NULL);
+    g_return_val_if_fail (!error || !*error, NULL);
+
+    return g_task_propagate_pointer (G_TASK (result), error);
+}
 
 /**
  * g_paste_client_select_sync:
@@ -2170,7 +2330,7 @@ on_grace_over (gpointer user_data)
 
     if (self)
     {
-        self->grace_source = 0;
+        g_clear_pointer (&self->grace_source, g_source_unref);
         g_paste_client_update_presence (self);
     }
 
@@ -2184,7 +2344,7 @@ on_give_up (gpointer user_data)
 
     if (self)
     {
-        self->give_up_source = 0;
+        g_clear_pointer (&self->give_up_source, g_source_unref);
         self->spent = TRUE;
         g_paste_client_update_presence (self);
     }
@@ -2192,12 +2352,38 @@ on_give_up (gpointer user_data)
     return G_SOURCE_REMOVE;
 }
 
+/* A timer of the wait's, on @self's own context rather than the global default
+ * one g_timeout_add () would put it on: a client built and followed in a thread
+ * of its own would have its presence moved, and announced, from another. */
+static GSource *
+g_paste_client_add_timer (GPasteClient *self,
+                          guint         seconds,
+                          GSourceFunc   callback,
+                          const gchar  *name)
+{
+    GSource *source = g_timeout_source_new_seconds (seconds);
+
+    g_source_set_callback (source, callback, g_paste_weak_ref_new (self), g_paste_weak_ref_free);
+    g_source_set_static_name (source, name);
+    g_source_attach (source, self->context);
+
+    return source;
+}
+
+static void
+g_paste_client_clear_timer (GSource **source)
+{
+    if (*source)
+        g_source_destroy (*source);
+    g_clear_pointer (source, g_source_unref);
+}
+
 /* Called off, whatever it was waiting on: a request out included. */
 static void
 g_paste_client_stop_waiting (GPasteClient *self)
 {
-    g_clear_handle_id (&self->grace_source, g_source_remove);
-    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    g_paste_client_clear_timer (&self->grace_source);
+    g_paste_client_clear_timer (&self->give_up_source);
     g_paste_clear_cancellable (&self->probe);
     self->spent = FALSE;
 }
@@ -2207,16 +2393,12 @@ g_paste_client_stop_waiting (GPasteClient *self)
 static void
 g_paste_client_start_waiting (GPasteClient *self)
 {
-    g_clear_handle_id (&self->grace_source, g_source_remove);
-    g_clear_handle_id (&self->give_up_source, g_source_remove);
+    g_paste_client_clear_timer (&self->grace_source);
+    g_paste_client_clear_timer (&self->give_up_source);
     self->spent = FALSE;
 
-    self->grace_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GRACE_SECONDS, on_grace_over,
-                                                     g_paste_weak_ref_new (self), g_paste_weak_ref_free);
-    g_source_set_name_by_id (self->grace_source, "[GPaste] daemon grace");
-    self->give_up_source = g_timeout_add_seconds_full (G_PRIORITY_DEFAULT, G_PASTE_CLIENT_GIVE_UP_SECONDS, on_give_up,
-                                                       g_paste_weak_ref_new (self), g_paste_weak_ref_free);
-    g_source_set_name_by_id (self->give_up_source, "[GPaste] daemon give up");
+    self->grace_source = g_paste_client_add_timer (self, G_PASTE_CLIENT_GRACE_SECONDS, on_grace_over, "[GPaste] daemon grace");
+    self->give_up_source = g_paste_client_add_timer (self, G_PASTE_CLIENT_GIVE_UP_SECONDS, on_give_up, "[GPaste] daemon give up");
 }
 
 /* Tracked in @self->probe so that dispose () can cancel it, so it holds @self
@@ -2279,6 +2461,10 @@ g_paste_client_probe_daemon (GPasteClient *self)
     g_weak_ref_init (&data->self, self);
     data->cancellable = g_object_ref (self->probe);
 
+    /* A call's reply lands on the context the thread making it has as its
+     * default: @self's own, pushed, whichever the caller has, as for the
+     * wait's timers (g_paste_client_add_timer ()) that reply starts. */
+    g_main_context_push_thread_default (self->context);
     g_dbus_connection_call (g_dbus_proxy_get_connection (proxy),
                             g_dbus_proxy_get_name (proxy),
                             g_dbus_proxy_get_object_path (proxy),
@@ -2291,6 +2477,7 @@ g_paste_client_probe_daemon (GPasteClient *self)
                             self->probe,
                             on_probe_ready,
                             data);
+    g_main_context_pop_thread_default (self->context);
     g_paste_client_update_presence (self);
 }
 
@@ -2538,9 +2725,7 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
                                      const gchar * const *invalidated_properties)
 {
     GPasteClient *self = G_PASTE_CLIENT (proxy);
-    GVariantDict dict;
-
-    g_variant_dict_init (&dict, changed_properties);
+    g_auto (GVariantDict) dict = G_VARIANT_DICT_INIT (changed_properties);
 
     if (g_paste_client_property_moved (&dict, invalidated_properties, G_PASTE_DAEMON_PROP_ACTIVE))
     {
@@ -2553,8 +2738,6 @@ g_paste_client_g_properties_changed (GDBusProxy          *proxy,
 
     if (g_paste_client_property_moved (&dict, invalidated_properties, G_PASTE_DAEMON_PROP_VERSION))
         g_object_notify (G_OBJECT (self), "version");
-
-    g_variant_dict_clear (&dict);
 }
 
 /* The other half of a daemon restart. The proxy empties its property cache when
@@ -2576,6 +2759,24 @@ g_paste_client_notify (GObject    *object,
     {
         g_autofree gchar *owner = g_dbus_proxy_get_name_owner (G_DBUS_PROXY (object));
 
+        /* A new owner is a daemon started since the last one went, which gets
+         * a wait of its own rather than what is left of its predecessor's --
+         * two minutes to serve, whether it took the name partway through that
+         * wait or after it ran out. One going before it ever served gets the
+         * grace second any daemon leaving does, rather than reading as absent
+         * the moment it goes: the proxy, which had cached nothing of it, says
+         * nothing else, and its grace from arriving has long run out. */
+        if (self->following && ((owner) ? self->presence != G_PASTE_DAEMON_PRESENCE_READY
+                                        : self->presence == G_PASTE_DAEMON_PRESENCE_STARTING))
+            g_paste_client_start_waiting (self);
+
+        /* An owner coming or going is a daemon starting or not, whatever the
+         * history says. Announced before the properties are said to have
+         * moved below, so that a handler of any of theirs reading the
+         * presence finds it starting, not a wait that ran out on the previous
+         * owner (/client/give-up/new-owner). */
+        g_paste_client_update_presence (self);
+
         if (owner)
         {
             g_object_notify (object, "active");
@@ -2583,17 +2784,6 @@ g_paste_client_notify (GObject    *object,
             g_object_notify (object, "history");
             g_object_notify (object, "version");
         }
-
-        /* A new owner is a daemon started since the last one went, which gets
-         * a wait of its own rather than what is left of its predecessor's --
-         * two minutes to serve, whether it took the name partway through that
-         * wait or after it ran out. */
-        if (owner && self->following && self->presence != G_PASTE_DAEMON_PRESENCE_READY)
-            g_paste_client_start_waiting (self);
-
-        /* An owner coming or going is a daemon starting or not, whatever the
-         * history says. */
-        g_paste_client_update_presence (self);
     }
     /* Ahead of the handlers of "notify::history" themselves, this being the
      * class handler: one that reads the presence finds it already moved. */
@@ -2648,7 +2838,7 @@ on_name_owner_changed (GDBusConnection *connection     G_GNUC_UNUSED,
 
 /**
  * g_paste_client_is_daemon_gone_error:
- * @error: an error a call on a #GPasteClient failed with
+ * @error: (nullable): an error a call on a #GPasteClient failed with, or %NULL
  *
  * Whether @error says the daemon the call went to left the bus rather than
  * refused it: it disconnected without answering, or the name had no owner by
@@ -2680,6 +2870,7 @@ g_paste_client_dispose (GObject *object)
     GPasteClient *self = G_PASTE_CLIENT (object);
 
     g_paste_client_stop_waiting (self);
+    g_clear_pointer (&self->context, g_main_context_unref);
 
     if (self->owner_watch)
     {
@@ -2800,13 +2991,15 @@ g_paste_client_class_init (GPasteClientClass *klass)
      * GPasteClient::show-history:
      * @client: the object on which the signal was emitted
      *
-     * The "show-history" signal is emitted when we switch
-     * from a history to another.
+     * The "show-history" signal is emitted when the daemon asks for the
+     * history to be shown -- the ShowHistory method, its keyboard shortcut or
+     * `gpaste-client show-history` -- for a client with a window of its own to
+     * show it in. A switch from one history to another is notify::history.
      */
     signals[SHOW_HISTORY] = NEW_SIGNAL ("show-history");
 
     /**
-     * GPasteClient::track:
+     * GPasteClient::tracking:
      * @client: the object on which the signal was emitted
      * @tracking_state: whether we're now tracking or not
      *
@@ -2847,6 +3040,7 @@ g_paste_client_init (GPasteClient *self)
     /* Straight out of the generated binding, so the wire format this proxy
      * expects and the one the daemon serves cannot drift apart. */
     g_dbus_proxy_set_interface_info (G_DBUS_PROXY (self), g_paste_daemon3_interface_info ());
+    self->context = g_main_context_ref_thread_default ();
 }
 
 /* What the presence starts as, read once initialising the proxy has settled
@@ -2867,9 +3061,15 @@ g_paste_client_seed_presence (GPasteClient *self)
      * presence leaving ready for it. The name is the proxy's own, which a
      * client built through the initables chooses
      * (/client/presence/handoff-other-name). */
-    if (!self->owner_watch)
+    GDBusConnection *connection = g_dbus_proxy_get_connection (G_DBUS_PROXY (self));
+
+    /* Only for a named proxy on a message bus, as GDBusProxy subscribes for its
+     * own: a peer-to-peer connection has no bus to send it, and a proxy with no
+     * name would hear every name on the bus change hands. */
+    if (!self->owner_watch && g_dbus_proxy_get_name (G_DBUS_PROXY (self)) &&
+        (g_dbus_connection_get_flags (connection) & G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION))
     {
-        self->owner_watch = g_dbus_connection_signal_subscribe (g_dbus_proxy_get_connection (G_DBUS_PROXY (self)),
+        self->owner_watch = g_dbus_connection_signal_subscribe (connection,
                                                                 "org.freedesktop.DBus",
                                                                 "org.freedesktop.DBus",
                                                                 "NameOwnerChanged",

@@ -72,14 +72,15 @@ _keybinding_free (gpointer data)
     g_free (k);
 }
 
-/* Rebinding comes in bursts: an accelerator typed into the preferences writes
- * its GSettings key on every keystroke, and every write lands here. Coalesce
- * them, or a single edit costs a full ungrab and grab per keystroke -- a D-Bus
- * round trip each -- and reopens the window with nothing grabbed at all in
- * between.
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_Keybinding, _keybinding_free)
+
+/* Rebinding comes in bursts: the master switch flipped back and forth, a reset
+ * writing several keys, another process writing dconf -- and every write lands
+ * here. Coalesced, so that a burst costs the portal one replacement set, a D-Bus
+ * round trip, rather than one per write.
  * The delay is measured from the last write of the burst, not the first: a
- * pending rebind is pushed back rather than left to fire in the middle of the
- * typing, which would cost a rebind per delay instead of one for the whole edit.
+ * pending rebind is pushed back rather than left to fire in the middle of it,
+ * which would cost a rebind per delay instead of one for the whole burst.
  * The source holds the keybinder weakly: dispose () is the one thing that
  * cancels it, and a reference of its own would put that out of reach. */
 static gboolean
@@ -197,14 +198,15 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 {
     g_return_if_fail (G_PASTE_IS_KEYBINDER (self));
 
-    /* The parsed accelerators go first, whatever the master switch says:
-     * g_paste_keybinding_activate () caches the keycodes it parsed and
+    /* Every binding goes inactive first, whatever the master switch says:
+     * g_paste_keybinding_activate () records whether its accelerator parses and
      * _keybinding_activate () skips a binding that is already active, so an
-     * edited accelerator only takes effect once its binding has been through
-     * here. Only the keybindings go inactive -- the provider keeps what it
-     * holds until the set below reaches it, which is what lets it recognise a
-     * set that has not changed. Ungrabbing first would take that away, and with
-     * it the portal session whose permission the user has already given. */
+     * accelerator edited into or out of parsing only counts once its binding
+     * has been through here. Only the keybindings go inactive -- the provider
+     * keeps what it holds until the set below reaches it, which is what lets it
+     * recognise a set that has not changed. Ungrabbing first would take that
+     * away, and with it the portal session whose permission the user has
+     * already given. */
     for (guint i = 0; i < self->keybindings->len; ++i)
         _keybinding_deactivate (self->keybindings->pdata[i]);
 
@@ -253,6 +255,7 @@ g_paste_keybinder_activate_all (GPasteKeybinder *self)
 static void
 on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
                          const gchar                *id,
+                         const gchar                *activation_token,
                          gpointer                    user_data)
 {
     GPasteKeybinder *self = user_data;
@@ -264,7 +267,7 @@ on_keybinding_activated (GPasteGlobalShortcutClient *provider G_GNUC_UNUSED,
     _Keybinding *k = self->keybindings->pdata[index];
 
     if (g_paste_keybinding_is_active (k->binding))
-        g_paste_keybinding_perform (k->binding);
+        g_paste_keybinding_perform (k->binding, activation_token);
 }
 
 static void

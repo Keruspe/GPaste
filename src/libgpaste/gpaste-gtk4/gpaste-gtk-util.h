@@ -39,32 +39,51 @@ void     g_paste_gtk_util_show_window      (GApplication *application);
 void     g_paste_gtk_util_toast            (GtkWidget   *origin,
                                             const gchar *message);
 
-AdwDialog *g_paste_gtk_util_form_dialog    (const gchar  *heading,
-                                            const gchar  *confirm_label,
-                                            GtkWidget    *content,
-                                            gint          width,
-                                            gint          height,
-                                            GtkWidget   **confirm);
+AdwDialog *g_paste_gtk_util_form_dialog              (const gchar *heading,
+                                                      const gchar *confirm_label,
+                                                      GtkWidget   *content,
+                                                      gint         width,
+                                                      gint         height,
+                                                      GtkWidget  **confirm);
+void       g_paste_gtk_util_form_dialog_set_complete (AdwDialog   *dialog,
+                                                      gboolean     complete);
+gboolean   g_paste_gtk_util_form_dialog_hold         (AdwDialog   *dialog);
+gboolean   g_paste_gtk_util_form_dialog_is_held      (AdwDialog   *dialog);
+gboolean   g_paste_gtk_util_form_dialog_done         (AdwDialog   *dialog,
+                                                      const gchar *failure);
 
-/* @text is what the user wrote, never empty, or %NULL if nothing was
- * confirmed: the user cancelled, the window went under the dialog, or the call
- * was refused (see g_paste_gtk_util_text_dialog ()). */
-typedef void (*GPasteGtkTextDialogCallback) (const gchar *text,
-                                             gpointer     user_data);
+/* Handed what the user confirmed, never empty, with @dialog held up until
+ * g_paste_gtk_util_text_dialog_done () says how it went (see
+ * g_paste_gtk_util_text_dialog ()). */
+typedef void (*GPasteGtkTextDialogSubmit) (AdwDialog   *dialog,
+                                           const gchar *text,
+                                           gpointer     user_data);
 
 gboolean g_paste_gtk_util_can_host_dialog  (GtkWindow *window);
 
-void     g_paste_gtk_util_text_dialog      (GtkWindow                  *parent,
-                                            const gchar                *heading,
-                                            const gchar                *confirm_label,
-                                            const gchar                *text,
-                                            GPasteGtkTextDialogCallback callback,
-                                            gpointer                    user_data);
+void     g_paste_gtk_util_text_dialog      (GtkWindow                *parent,
+                                            const gchar              *heading,
+                                            const gchar              *confirm_label,
+                                            const gchar              *text,
+                                            GPasteGtkTextDialogSubmit submit,
+                                            gpointer                  user_data,
+                                            GDestroyNotify            destroy);
+void     g_paste_gtk_util_text_dialog_done (AdwDialog   *dialog,
+                                            const gchar *failure);
 
 GtkWidget *g_paste_gtk_util_password_strength_row_new  (const gchar *title,
                                                         const gchar *unavailable);
 void       g_paste_gtk_util_password_strength_row_rate (GtkWidget   *row,
                                                         GtkEditable *source);
+
+void g_paste_gtk_util_set_row_title   (AdwPreferencesRow   *row,
+                                       const gchar         *title);
+void g_paste_gtk_util_set_group_text  (AdwPreferencesGroup *group,
+                                       const gchar         *title,
+                                       const gchar         *description);
+void g_paste_gtk_util_set_status_text (AdwStatusPage       *page,
+                                       const gchar         *title,
+                                       const gchar         *description);
 
 GtkWidget *g_paste_gtk_util_spin_row_new (gdouble min,
                                           gdouble max,

@@ -80,7 +80,7 @@ The test infrastructure and what each suite covers are documented in [`tests/AGE
 | `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` | **Derivable** type with a `Private` struct |
 | `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE` | Abstract base class with private data |
 
-**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types (`GPasteItem`, `GPasteStorageBackend`, `GPasteBusObject`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` and the `_g_paste_x_get_instance_private()` const shim it emits.
+**A final type puts its fields straight in `struct _GPasteX`, with no `Private` struct.** `G_DECLARE_FINAL_TYPE` already keeps that struct in the `.c` file, where nothing outside can reach it, so a private struct adds only an offset lookup per access and a `priv = …` line in every function. Access the fields as `self->field`. Private structs are for the **derivable and abstract** types with state (`GPasteItem`, `GPasteStorageBackend`, …), whose instance struct *is* public and so cannot carry them — those keep `G_PASTE_DEFINE_TYPE_WITH_PRIVATE` (or `G_PASTE_DEFINE_ABSTRACT_TYPE_WITH_PRIVATE`) and reach it through the `g_paste_x_get_instance_private()` that emits; an abstract type with none, as `GPasteBusObject`, is `G_PASTE_DEFINE_ABSTRACT_TYPE`.
 
 ### Documenting errors
 
@@ -120,7 +120,7 @@ Key rules:
 - Do **not** use `g_autolist`/`g_autoslist` on lists that do not own their elements. `gdk_file_list_get_files` is **`(transfer container)`** — it returns a fresh `g_slist_copy()` whose `GFile`s stay owned by the `GdkFileList`, so its result must be freed with `g_autoptr(GSList)` (never leaked, never `g_autoslist`'d). `g_hash_table_get_values` is the same shape — use `g_autoptr(GList)`.
 - Do **not** use auto-cleanup on a variable whose ownership is intentionally transferred — use `g_steal_pointer` to make the handoff explicit.
 - Do **not** use `if (ptr) g_slist_free_full (g_steal_pointer (&ptr), fn)` in dispose — use `g_clear_slist (&ptr, fn)` instead (handles NULL safely).
-- When storing a `g_settings_get_string` value (owned, `(transfer full)`) into a `gchar *` field, free the old value and take ownership directly: `g_free(field); field = g_settings_get_string(...)`. Do **not** assign without freeing first (leak on re-assignment), and do **not** route it through `g_set_str` (that would re-`g_strdup` an already-owned string — a wasted allocation).
+- A `g_settings_get_string` value is owned (`(transfer full)`), so it goes into a `gchar *` field through `g_set_str_take(&field, g_settings_get_string(...))`, as `gpaste-settings.c` does (`ASSIGN_TAKE`): not `g_set_str`, which would `g_strdup` a string already owned, and not the `g_free(field); field = …` pair the rule above rules out.
 - For a stored `GSource`/timeout/idle/signal handler id, prefer `g_clear_handle_id (&id, remove_func)` over the hand-rolled `if (id) { remove_func (id); id = 0; }` — it is NULL-safe and nulls the field in one call (e.g. `g_clear_handle_id (&priv->retry_source, g_source_remove)`). Use this in new code and when touching such cleanup.
 - A `GCancellable` field standing for an operation that may be superseded is given up on with `g_paste_clear_cancellable (&field)` (`gpaste-macros.h`), not a hand-rolled `g_cancellable_cancel` + `g_clear_object` pair: GLib has `g_set_object` and friends but nothing cancellable-aware, and a plain set would drop the reference without cancelling, leaving the operation it named running — which is the whole of what the field is for. It only clears; the successor, where there is one, is allocated by the caller at the point the new operation goes out, so a caller with none to issue (a `dispose ()`, a request answered without a round trip) is not left holding a cancellable that stands for a reply which is never coming. Both halves are NULL-safe, so a slot that may or may not have something out needs no guard.
 - A stack `GVariantBuilder` is declared and initialised in one statement: `g_auto (GVariantBuilder) builder = G_VARIANT_BUILDER_INIT (<type>)`. The type is not copied there, so it has to be one that outlives the builder — every builder in this tree names a literal (`G_VARIANT_TYPE_VARDICT`, `G_VARIANT_TYPE ("aa{sv}")`, `G_PASTE_ITEMS_VARIANT_TYPE`), which is. A `g_auto` declaration left bare until a later `g_variant_builder_init` is a builder whose cleanup would run over whatever the stack held, should anything return in between; for the case where the type really is not known until later, that is what `G_VARIANT_BUILDER_INIT_UNSET ()` and `g_variant_builder_init_static ()` are for.
@@ -136,8 +136,9 @@ now written down once; add to the list, not to its consumers.
 
 | List | Lives in | Drives |
 |---|---|---|
-| The keyboard shortcuts | `G_PASTE_FOR_EACH_KEYBINDING` in `gpaste-3/gpaste-keybindings.h` | the shortcuts dialog, the preferences' shortcuts page, `data/control-center/42-gpaste.xml` (generated at build time by `tools/gen-keybindings-xml.py`, which fails on an entry it cannot read rather than leave it out), and the daemon's own bindings. Each carries two names: the sentence the shortcut UIs show and the few words the desktop portal lists it under |
-| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the listing's own flags: `listing_flags_given()`), which leading arguments name items (`item_args`), and what dispatch needs of the daemon (`needs_client`: no client, a client -- for the re-exec verbs, which have to reach a daemon that never serves this interface -- or a daemon serving, waited for) |
+| The keyboard shortcuts | `G_PASTE_FOR_EACH_KEYBINDING` in `gpaste-3/gpaste-keybindings.h` | the shortcuts dialog, the preferences' shortcuts page, `data/control-center/42-gpaste.xml` (generated at build time by `tools/gen-keybindings-xml.c`, which expands the macro itself, built for the machine running the build), and the daemon's own bindings. Each carries two names: the sentence the shortcut UIs show and the few words the desktop portal lists it under |
+| The command line's verbs | `commands[]` in `src/client/gpaste-client.c` | dispatch, `show_help()` printed straight from it, which command lines are read from stdin (`reads_pipe`, bar a verb-less line carrying one of the options the listing's row reads: `listing_flags_given()`), which leading arguments name items (`item_args`), which options it reads (`options`, by their letters), and what dispatch needs of the daemon (`needs_client`: no client, a daemon serving, waited for, or -- for the re-exec verbs, which have to reach a GPaste 45 or 50 too -- the same, but for such an older daemon, which never serves this interface and is signalled without waiting) |
+| The command line's options | `options[]` in `src/client/gpaste-client.c` | getopt's table and letters, and `show_help()`'s option lines, grouped under their headings |
 | A `GPasteItem`'s kind | `GPasteItemKind` in `gpaste-3/gpaste-item-enums.h` | the item classes and both storage backends, through `g_paste_item_kind_to_string()` / `_from_string()`. The wire carries the enum *value*, not its nick, so the nicks are the on-disk format's business alone |
 | The prompts' wording | `GPastePromptText` in `gpaste-daemon/gpaste-prompt.h` | both passphrase/migration dialogs -- the Adwaita one out of process and the St one in the shell |
 | The D-Bus methods | `data/dbus/org.gnome.GPaste3.xml` | both halves of the wire, via gdbus-codegen |
@@ -147,10 +148,12 @@ now written down once; add to the list, not to its consumers.
 **The prompts are built twice, but say one thing.** St and Adwaita share no
 widget vocabulary, so `src/gnome-shell/prompt.js` and `src/daemon/gpaste-prompt-adw.c`
 each build their own dialog -- but every *decision* (`can_keep`, `can_import`,
-`backend_changes`, `passphrase_is_complete`, `remember_state`,
-`passphrase_strength`) and every *word* (`g_paste_prompt_text()`,
-`g_paste_prompt_storage_label()`) comes from the C side. Add a string there, not
-in a dialog.
+`backend_changes`, `cleanup_warns`, `passphrase_is_complete`, `remember_state`,
+`remember_answer`, `passphrase_strength`) and every *word*
+(`g_paste_prompt_text()`, `g_paste_prompt_storage_label()`, a passphrase
+request's `get_shown_description()` and `get_accept_label()`) comes from the C
+side. Add a string there, not in a dialog -- and to both dialogs, which
+`tests/gnome-shell/test-prompt.cjs` holds to the same words.
 
 **A history is identified by its name.** Every `GPasteStorageBackendClass` vfunc
 takes one; a backend derives its own path with
@@ -161,9 +164,10 @@ The shell completions and the man page are the exception: each verb completes
 its arguments differently and the man page says more than a table could carry,
 so they stay hand-written and `tests/completions` checks them against
 `commands[]` instead, failing on a row it cannot read rather than leaving it out
-— every verb and alias has to be offered by all three shells, `--use-index` by
-bash after every verb with a nonzero `item_args`, and every canonical verb
-documented in the man page.
+— every verb and alias has to be offered by all three shells, each by bash with
+exactly the options its row reads, `--use-index` among them after every verb
+with a nonzero `item_args` (the general options aside, which every line
+answers), and every canonical verb and every option documented in the man page.
 
 An enumeration that has to back a `GValue` needs a GType: `GPasteItemKind`,
 `GPasteStorage`, `GPasteUpdateAction`, `GPasteUpdateTarget`,
@@ -212,15 +216,16 @@ Each part documents itself in an `AGENTS.md` beside its code. Read the one for t
 
 ### `src/client/` — `gpaste-client`
 
-CLI tool for scripting and shell integration. Talks to the daemon via `GPasteClient`, constructed only when the selected command needs it. `commands[].item_args` selects which arguments `--use-index` resolves: one for item verbs, all for merge, none for text, patterns, paths or history names. Indexes must be complete unsigned decimal values within `guint64`, all checked before any is looked up. Every string a command talking to the daemon would send -- its arguments, piped input, merge's decoration and separator, file paths included -- is checked to be UTF-8 before the client is built (the working directory a relative path is resolved against being the library's to check: `g_paste_client_add_file*()` refuses a path not in UTF-8, or a relative one whose working directory has gone, before sending it), and a command whose pipe brought nothing is not its line's at all: the listing or the help answers it, no client built: `GPasteClient` refuses such a string itself, every call failing with `G_IO_ERROR_INVALID_DATA` before it is sent, and the CLI's own check spares starting a daemon for a command it would refuse. Entry point for subcommands like `ui` (launches the GTK UI), `daemon-reexec`, `migrate` (resets the backend revision and re-execs the daemon to run an on-demand storage migration, refusing a daemon of this version still starting before it resets anything -- a GPaste 45 or 50, which reads as starting too, told apart by `g_paste_util_daemon_is_legacy()`, as the re-exec verbs tell it apart before saying a daemon is still starting) and `doctor` (waits for the daemon's check of the store, prints its report and fails unless nothing is left wrong; a daemon predating the method is told to be restarted).
+CLI tool for scripting and shell integration. Talks to the daemon via `GPasteClient`, constructed only when the selected command needs it. `commands[].item_args` selects which arguments `--use-index` resolves: one for item verbs, all for merge, none for text, patterns, paths or history names. Indexes must be complete unsigned decimal values within `guint64`, all checked before any is looked up. Every string a command talking to the daemon would send -- its arguments, piped input, merge's decoration and separator, file paths included -- is checked to be UTF-8 before the client is built (the working directory a relative path is resolved against being the library's to check: `g_paste_client_add_file*()` refuses a path not in UTF-8, or a relative one whose working directory has gone, before sending it): `GPasteClient` refuses such a string itself, every call failing with `G_IO_ERROR_INVALID_DATA` before it is sent, and the CLI's own check spares starting a daemon for a command it would refuse. A command whose pipe brought nothing is not its line's at all: the listing or the help answers it, no client built. Entry point for subcommands like `ui` (launches the GTK UI), `daemon-reexec`, `migrate` (resets the backend revision and re-execs the daemon to run an on-demand storage migration, once a daemon of this version still starting serves -- the re-exec verbs waiting for one as every verb talking to the daemon does, bar for a GPaste 45 or 50, which reads as starting too, never serves this interface and is reached by signal, told apart by `g_paste_util_daemon_is_legacy()`, and bar for an owner that question could not reach, which both ask again, `daemon-reexec` signalling one that turns out a GPaste 45 or 50 and `migrate` refusing one it still cannot tell apart, or a name the client already knows nobody owns, before it opens the gate, and closing the gate again when the re-exec, which starts no daemon, finds nobody owning a name the presence did not show gone) and `doctor` (waits for the daemon's check of the store, prints its report and fails unless nothing is left wrong; a daemon predating the method is told to be restarted).
 
 ## Key dependencies
 
 - Meson ≥ 1.9 (`pkgconfig.generate()` naming an internal dependency as a requirement)
-- GLib/GObject/Gio ≥ 2.90
+- GLib/GObject/Gio ≥ 2.90, and GLib ≥ 2.44 for the machine running the build too, which builds the helper writing the control center's keybindings file
 - GTK4 ≥ 4.24 + libadwaita ≥ 1.10 (UI and preferences)
 - GCR (`gcr-4`) ≥ 4.0 (password item storage; also the secure-memory allocator for encryption secrets)
-- gjs ≥ 1.78 (GNOME Shell extension runtime)
+- libmutter (`libmutter-51`, with `gnome-shell`: the extension's in-shell daemon reads and writes MetaSelection) -- GNOME Shell's own gjs runs the extension, meson asking for none
+- dbus-1, gnome-keybindings and systemd for their pkg-config files alone, unless the install directories they give are passed (see the options above); gobject-introspection with `introspection`, vala with `vapi`
 - gtk4-x11 (the daemon forces the GDK x11 backend at startup)
 - libXfixes (the GDK backend converts the selections it cannot read through GTK itself, and ICCCM has those conversions carry the ownership timestamp `XFixesSelectionNotify` brings; it goes with `src/daemon/gpaste-clipboard-x11-hints.c`)
 - libsodium (optional; gated by the `encryption` meson feature, `auto` by default — history-encryption converter)
@@ -232,4 +237,4 @@ CLI tool for scripting and shell integration. Talks to the daemon via `GPasteCli
 
 Image items use `GdkTexture` from GTK4 directly — there is no longer a GdkPixbuf dependency.
 
-On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel gjs-devel libXfixes-devel`
+On Fedora: `dnf install meson ninja-build glib2-devel gtk4-devel gcr-devel libadwaita-devel libXfixes-devel mutter-devel dbus-devel gnome-control-center gobject-introspection-devel vala`

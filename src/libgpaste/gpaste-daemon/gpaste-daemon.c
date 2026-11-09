@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: 2010-2026 Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
 // SPDX-License-Identifier: BSD-2-Clause
 
+#include <gpaste-3/gpaste-util-private.h>
 #include <gpaste-daemon/gpaste-clipboards-manager.h>
 #include <gpaste-daemon/gpaste-daemon-methods.h>
-#include <gpaste-daemon/gpaste-daemon.h>
+#include <gpaste-daemon/gpaste-daemon-private.h>
 #include <gpaste-daemon/gpaste-history.h>
+#include <gpaste-daemon/gpaste-history-private.h>
 #include <gpaste-daemon/gpaste-keybinder.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-prompt.h>
@@ -45,7 +47,7 @@ struct _GPasteDaemon
     gboolean                 in_process;
 
     /* The uploads out (UploadData), borrowed from their tasks: what leaving the
-     * bus ends (g_paste_daemon_cancel_uploads ()). */
+     * bus, or the host's exec, ends (g_paste_daemon_cancel_uploads ()). */
     GList                   *uploads;
 
     /* The Doctor calls waiting on the host's check: see
@@ -58,6 +60,7 @@ G_PASTE_DEFINE_TYPE (Daemon, daemon, G_PASTE_TYPE_BUS_OBJECT)
 enum
 {
     REEXECUTE_SELF,
+    REEXECUTE_HELD,
     CHANGE_PASSPHRASE,
     DOCTOR,
 
@@ -101,8 +104,8 @@ g_paste_daemon_update (GPasteDaemon      *self,
  * Emit the signal to show history
  *
  * This never fails: handing the signal to the exported interface is all it does,
- * and that reports nothing back. @error is left untouched, and is only still
- * here because callers pass one.
+ * and that reports nothing back. @error is never set, and is only still here as
+ * part of the library's interface.
  */
 G_PASTE_VISIBLE void
 g_paste_daemon_show_history (GPasteDaemon *self,
@@ -292,27 +295,57 @@ reexecute_stood_down (GDBusMethodInvocation *invocation)
                                            "The daemon stood down before it could re-execute.");
 }
 
-/* An exec waits for a storage worker rewriting the store to be done
- * (g_paste_storage_is_busy ()), which can take minutes: a request over the bus
- * is refused meanwhile, rather than answered for an exec that has not happened
- * and may never -- its later failures having no one left to tell. One without
- * an invocation (SIGUSR1) is the host's to carry out once the worker is done,
- * through g_paste_daemon_reexecute () again. Nothing execs in gnome-shell.
+static gboolean
+g_paste_daemon_reexecute_held (GPasteDaemon *self)
+{
+    gboolean held = FALSE;
+
+    g_signal_emit (self,
+                   signals[REEXECUTE_HELD],
+                   0, /* detail */
+                   &held);
+
+    return held;
+}
+
+/* A request over the bus is refused while the host holds re-execs back
+ * (GPasteDaemon::reexecute-held: a stop, a check of the store or a change of
+ * passphrase under way), and while a storage worker rewrites the store
+ * (g_paste_storage_is_busy ()), which can take minutes: refused before the
+ * expiry brings any countdown forward for it, rather than answered for an exec
+ * that has not happened and may never -- its later failures having no one left
+ * to tell. Nothing execs in gnome-shell.
  *
- * Both are refused while a change of passphrase or a check of the store holds
- * the history handed over at its prompt (g_paste_daemon_flush ()), for as long
- * as the user takes to answer: an exec would take the prompt with it, and what
- * was copied meanwhile, which only the reload ending the handover records. */
+ * One without an invocation (SIGUSR1), and one the expiry has run for
+ * (@expired), the passwords off already, go through to the host, which defers
+ * the exec until whatever holds it is done (reexec () in
+ * src/daemon/gpaste-daemon.c), the request answered as accepted: refused, the
+ * passwords would have come off for no restart.
+ *
+ * Over the bus and from SIGUSR1 alike, one is refused while the history is
+ * handed over (g_paste_daemon_flush ()) with nothing holding re-execs back,
+ * which is a host deferring nothing: the exec would drop what was copied
+ * meanwhile, which only the reload ending the handover records. */
 static gboolean
 g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
-                                  GDBusMethodInvocation *invocation)
+                                  GDBusMethodInvocation *invocation,
+                                  gboolean               expired)
 {
-    if (self->in_process)
+    if (self->in_process || expired)
         return FALSE;
 
-    const gchar *current = g_paste_history_get_current (self->history);
+    if (g_paste_daemon_reexecute_held (self))
+    {
+        if (!invocation)
+            return FALSE;
 
-    if (current && !g_paste_history_sync (self->history, current, NULL))
+        /* Which of the three holds it is the host's to know. */
+        g_dbus_method_invocation_return_error_literal (invocation, G_IO_ERROR, G_IO_ERROR_BUSY,
+                                                       "The daemon is stopping, checking its store or changing its passphrase; re-execute once that is done");
+        return TRUE;
+    }
+
+    if (!g_paste_history_check_current_owned (self->history, NULL))
     {
         const gchar *message = "The history storage is being handed over; re-execute once that is done";
 
@@ -331,23 +364,22 @@ g_paste_daemon_reexecute_refused (GPasteDaemon          *self,
     return TRUE;
 }
 
-static void g_paste_daemon_cancel_uploads (GPasteDaemon *self);
-
 static void
 g_paste_daemon_reexecute_now (GPasteDaemon          *self,
-                              GDBusMethodInvocation *invocation)
+                              GDBusMethodInvocation *invocation,
+                              gboolean               expired)
 {
-    if (g_paste_daemon_reexecute_refused (self, invocation))
+    if (g_paste_daemon_reexecute_refused (self, invocation, expired))
         return;
 
-    g_paste_clipboards_manager_store (self->clipboards_manager);
-
-    /* An exec replaces this process with one that has no idea of the commands
-     * it left running, so their uploads end here -- for good, should the exec
-     * fail and this daemon carry on. Nothing execs in gnome-shell, which keeps
-     * them, and a host waiting on the store execs later, cancelling them then. */
-    if (!self->in_process && !g_paste_storage_is_busy ())
-        g_paste_daemon_cancel_uploads (self);
+    /* Nothing is handed to a clipboard manager first: one taking a selection
+     * over converts it from this process, which the exec replaces before it
+     * could answer, and it would be handed a password with no countdown along
+     * with the rest. The new daemon publishes the history's head; whatever else
+     * the selections carried goes with this process.
+     *
+     * The uploads out are left to the host, which ends them just before its
+     * exec (g_paste_daemon_cancel_uploads ()). */
 
     gboolean accepted = FALSE;
 
@@ -411,7 +443,7 @@ on_reexecute_passwords_expired (GObject      *source_object G_GNUC_UNUSED,
         return;
     }
 
-    g_paste_daemon_reexecute_now (self, data->invocation);
+    g_paste_daemon_reexecute_now (self, data->invocation, TRUE);
 }
 
 static void
@@ -430,16 +462,17 @@ g_paste_daemon_reexecute_after_expiry (GPasteDaemon          *self,
      * no restart. */
     if (self->in_process)
     {
-        g_paste_daemon_reexecute_now (self, invocation);
+        g_paste_daemon_reexecute_now (self, invocation, FALSE);
         return;
     }
 
     /* Before any countdown is brought forward for it. */
-    if (g_paste_daemon_reexecute_refused (self, invocation))
+    if (g_paste_daemon_reexecute_refused (self, invocation, FALSE))
         return;
 
-    /* Storing preserves the selection across exec. Await classification and
-     * expiry first, so the successor inherits no unmonitored password. */
+    /* Await classification and expiry first, so the successor inherits no
+     * unmonitored password: see g_paste_daemon_reexecute_now () for what is
+     * left behind. */
     ReexecuteData *data = g_new0 (ReexecuteData, 1);
 
     g_weak_ref_init (&data->daemon, self);
@@ -493,6 +526,11 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
     G_PASTE_DBUS_ASSERT (g_paste_storage_is_supported (storage),
                          G_PASTE_ERROR_FAILED,
                          "This build cannot open the history to change its passphrase.");
+    /* As Doctor is (g_paste_daemon_handle_doctor ()): a caller told the change
+     * began would wait for a prompt nothing is there to raise. */
+    G_PASTE_DBUS_ASSERT (g_signal_has_handler_pending (self, signals[CHANGE_PASSPHRASE], 0, FALSE),
+                         G_PASTE_ERROR_FAILED,
+                         "Nothing hosting this daemon can change its passphrase.");
 
     if (!g_paste_storage_backend_try_lock ())
     {
@@ -536,9 +574,11 @@ g_paste_daemon_change_passphrase (GPasteDaemon *self,
  * the last of the three to come back judges the upload. */
 typedef struct
 {
+    GTask        *task;        /* borrowed: the task owns this */
     GSubprocess  *upload;      /* the deadline has to be able to kill it */
     GCancellable *cancellable;
     guint         timeout_id;
+    gboolean      given_up;    /* answered already (g_paste_daemon_cancel_uploads ()) */
     GBytes       *item;        /* the value going in, holding its item */
     guint         pending;     /* the write, the read and the exit still out */
     gboolean      timed_out;
@@ -583,7 +623,7 @@ g_paste_daemon_upload_done (GTask *task)
 {
     UploadData *data = g_task_get_task_data (task);
 
-    if (--data->pending)
+    if (--data->pending || data->given_up)
         return;
 
     GPasteDaemon *self = g_task_get_source_object (task);
@@ -601,15 +641,6 @@ g_paste_daemon_upload_done (GTask *task)
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "The upload command did not answer within %d seconds.",
                                  G_PASTE_DAEMON_UPLOAD_TIMEOUT);
-        return;
-    }
-
-    /* Given up on by the daemon going away (g_paste_daemon_cancel_uploads ()):
-     * the kill that ended the command is not an answer it gave, and nobody is
-     * left to put an address anywhere. */
-    if (g_cancellable_is_cancelled (data->cancellable))
-    {
-        g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "The upload was given up on, the daemon going away.");
         return;
     }
 
@@ -655,10 +686,18 @@ g_paste_daemon_upload_done (GTask *task)
         return;
     }
 
+    /* termbin ends its url with a NUL as well as a newline, as a C string
+     * would: trailing NULs end the answer. One before anything else is still
+     * refused below, with the rest. */
+    gsize answered = data->answered;
+
+    while (answered && !data->answer[answered - 1])
+        --answered;
+
     /* Reported without quoting it, for the reason the exit above is: a command
      * that hands its own input back answers something that is not a url, and
      * that something is the item. */
-    if (!g_utf8_validate (data->answer, (gssize) data->answered, NULL))
+    if (!g_utf8_validate (data->answer, (gssize) answered, NULL))
     {
         g_task_return_new_error (task, G_PASTE_ERROR, G_PASTE_ERROR_FAILED,
                                  "The upload command answered something that is not a url.");
@@ -667,7 +706,7 @@ g_paste_daemon_upload_done (GTask *task)
 
     /* The command answers the url on stdout, with the newline it ended the line
      * with; anything else means it did not upload. */
-    g_autofree gchar *url = g_strstrip (g_strndup (data->answer, data->answered));
+    g_autofree gchar *url = g_strstrip (g_strndup (data->answer, answered));
 
     if (!*url)
     {
@@ -763,24 +802,37 @@ on_upload_exited (GObject      *source_object,
     g_paste_daemon_upload_done (task);
 }
 
-/* Each upload out given up on and its command killed, which brings all three of
- * its parts back at once: what answers it then is the cancellation. */
-static void
+/* Each upload out given up on, its command killed, and answered as cancelled
+ * there and then: the kill is not an answer the command gave, and nobody is
+ * left to put an address anywhere. Not left to its three parts coming back, a
+ * main loop turn later: an exec or a stop following in the same turn gives
+ * them none, and the caller would hear the bus's NoReply instead. What comes
+ * back then only cleans up (g_paste_daemon_upload_done ()). A command killed
+ * for an exec is the new image's to reap, which knows nothing of it: a zombie
+ * until that one exits, where waiting on the kill could block on a command
+ * stuck in the kernel. */
+G_PASTE_VISIBLE void
 g_paste_daemon_cancel_uploads (GPasteDaemon *self)
 {
-    for (const GList *u = self->uploads; u; u = u->next)
+    g_autoptr (GList) uploads = g_steal_pointer (&self->uploads);
+
+    for (const GList *u = uploads; u; u = u->next)
     {
         UploadData *data = u->data;
 
+        data->given_up = TRUE;
+        g_clear_handle_id (&data->timeout_id, g_source_remove);
         g_cancellable_cancel (data->cancellable);
         g_subprocess_force_exit (data->upload);
+        g_task_return_new_error (data->task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "The upload was given up on, the daemon going away.");
     }
 }
 
 /**
  * g_paste_daemon_upload:
  * @self: (transfer none): the #GPasteDaemon
- * @uuid: the uuid of the item to upload, or "" (or %NULL) for the current one
+ * @uuid: (nullable): the uuid of the item to upload, or "" (or %NULL) for the
+ *     current one
  * @callback: (nullable): a #GAsyncReadyCallback to call once the upload is done
  * @user_data: (nullable): the data to pass to @callback
  *
@@ -861,6 +913,7 @@ g_paste_daemon_upload (GPasteDaemon       *self,
 
     g_autoptr (UploadData) data = g_new0 (UploadData, 1);
 
+    data->task = task;
     data->upload = upload;
     data->cancellable = g_cancellable_new ();
     /* The item's own string, which never changes once in the history, held
@@ -938,15 +991,15 @@ g_paste_daemon_upload_finish (GPasteDaemon *self,
 /****************/
 
 /* Whether a shortcut may change the history's items, as every D-Bus method
- * changing one asks (g_paste_daemon_methods_check_owned ()): while the store is
- * handed over the change would be recorded nowhere, and the reload ending the
- * handover would undo it. */
+ * changing one asks (g_paste_history_check_current_owned ()): while the store
+ * is handed over the change would be recorded nowhere, and the reload ending
+ * the handover would undo it. */
 static gboolean
 keybinding_may_change (GPasteHistory *history)
 {
     g_autoptr (GError) error = NULL;
 
-    if (g_paste_history_sync (history, g_paste_history_get_current (history), &error))
+    if (g_paste_history_check_current_owned (history, &error))
         return TRUE;
 
     g_message ("Keyboard shortcut ignored: %s", error->message);
@@ -957,6 +1010,7 @@ keybinding_may_change (GPasteHistory *history)
  * for is armed on the clipboards, which the history has no reach into. */
 static void
 keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
+                          const gchar      *activation_token G_GNUC_UNUSED,
                           gpointer          data)
 {
     GPasteDaemon *daemon = data;
@@ -984,6 +1038,7 @@ keybinding_make_password (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
+                const gchar      *activation_token G_GNUC_UNUSED,
                 gpointer          data)
 {
     if (keybinding_may_change (data))
@@ -992,17 +1047,15 @@ keybinding_pop (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_show_history (GPasteKeybinding *self G_GNUC_UNUSED,
+                         const gchar      *activation_token G_GNUC_UNUSED,
                          gpointer          data)
 {
-    g_autoptr (GError) error = NULL;
-
-    g_paste_daemon_show_history (data, &error);
-    if (error)
-        g_warning ("Failed to show history: %s", error->message);
+    g_paste_daemon_show_history (data, NULL);
 }
 
 static void
 keybinding_sync_clipboard_to_primary (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      const gchar      *activation_token G_GNUC_UNUSED,
                                       gpointer          data)
 {
     g_paste_clipboards_manager_sync_from_to (data, TRUE);
@@ -1010,6 +1063,7 @@ keybinding_sync_clipboard_to_primary (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_sync_primary_to_clipboard (GPasteKeybinding *self G_GNUC_UNUSED,
+                                      const gchar      *activation_token G_GNUC_UNUSED,
                                       gpointer          data)
 {
     g_paste_clipboards_manager_sync_from_to (data, FALSE);
@@ -1017,9 +1071,10 @@ keybinding_sync_primary_to_clipboard (GPasteKeybinding *self G_GNUC_UNUSED,
 
 static void
 keybinding_launch_ui (GPasteKeybinding *self G_GNUC_UNUSED,
+                      const gchar      *activation_token,
                       gpointer          data G_GNUC_UNUSED)
 {
-    g_paste_util_spawn ("Ui");
+    g_paste_util_spawn_with_token ("Ui", activation_token);
 }
 
 static void
@@ -1049,6 +1104,7 @@ on_keybinding_upload_done (GObject      *source_object,
 
 static void
 keybinding_upload (GPasteKeybinding *self G_GNUC_UNUSED,
+                   const gchar      *activation_token G_GNUC_UNUSED,
                    gpointer          data)
 {
     g_paste_daemon_upload (data, NULL, on_keybinding_upload_done, NULL);
@@ -1370,9 +1426,33 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (get_uris,
                                 g_auto (GStrv) uris, (const gchar * const *) uris,
                                 (const gchar *uuid), (uuid))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (list_histories,
-                                GVariant *histories, histories,
-                                (), ())
+static void
+on_histories_listed (GObject      *source_object G_GNUC_UNUSED,
+                     GAsyncResult *result,
+                     gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+    g_autoptr (GVariant) histories = g_paste_daemon_methods_list_histories_finish (result, &error);
+
+    if (histories)
+        g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@" G_PASTE_HISTORIES_VARIANT_STRING ")", histories));
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* The stores counted on a worker thread: see
+ * g_paste_history_list_sizes_async (). */
+static gboolean
+g_paste_daemon_handle_list_histories (GPasteDaemon          *self,
+                                      GDBusMethodInvocation *invocation)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_list_histories_async (&methods, on_histories_listed, invocation);
+
+    return TRUE;
+}
 
 G_PASTE_DAEMON_HANDLER_RET_ERR (make_password,
                                 g_autofree gchar *new_uuid, new_uuid,
@@ -1410,9 +1490,33 @@ G_PASTE_DAEMON_HANDLER_RET_ERR (replace,
                                 g_autofree gchar *new_uuid, new_uuid,
                                 (const gchar *uuid, const gchar *contents), (uuid, contents))
 
-G_PASTE_DAEMON_HANDLER_RET_ERR (search,
-                                GVariant *results, results,
-                                (const gchar *query), (query))
+static void
+on_search_answered (GObject      *source_object G_GNUC_UNUSED,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+    GDBusMethodInvocation *invocation = user_data;
+    GError *error = NULL;
+    g_autoptr (GVariant) results = g_paste_daemon_methods_search_finish (result, &error);
+
+    if (results)
+        g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@" G_PASTE_ITEMS_VARIANT_STRING ")", results));
+    else
+        g_dbus_method_invocation_take_error (invocation, error);
+}
+
+/* Matched on a worker thread: see g_paste_history_search_items_async (). */
+static gboolean
+g_paste_daemon_handle_search (GPasteDaemon          *self,
+                              GDBusMethodInvocation *invocation,
+                              const gchar           *query)
+{
+    const GPasteDaemonMethods methods = G_PASTE_DAEMON_METHODS (self);
+
+    g_paste_daemon_methods_search_async (&methods, query, on_search_answered, invocation);
+
+    return TRUE;
+}
 
 G_PASTE_DAEMON_HANDLER_ERR (select, (const gchar *uuid), (uuid))
 
@@ -1424,11 +1528,10 @@ static gboolean
 g_paste_daemon_handle_show_history (GPasteDaemon          *self,
                                     GDBusMethodInvocation *invocation)
 {
-    g_autoptr (GError) error = NULL;
+    g_paste_daemon_show_history (self, NULL);
+    g_paste_daemon3_complete_show_history (self->skeleton, invocation);
 
-    g_paste_daemon_show_history (self, &error);
-
-    G_PASTE_DAEMON_ANSWER (g_paste_daemon3_complete_show_history (self->skeleton, invocation));
+    return TRUE;
 }
 
 G_PASTE_DAEMON_HANDLER_ERR (strip_rich_text, (const gchar *uuid), (uuid))
@@ -1577,6 +1680,14 @@ g_paste_daemon_unregister_on_connection (GPasteBusObject *self)
     g_clear_handle_id (&daemon->startup_changed_id, g_source_remove);
     g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (daemon->skeleton));
 
+    /* Off the bus, the skeleton forgets what it announced: it sends a change only
+     * for a value that moved, so exported again with the values it had, the
+     * daemon would announce none of them, and a client that asked for them too
+     * early would go without (g_paste_daemon_register_on_connection ()). */
+    g_paste_daemon3_set_active (daemon->skeleton, FALSE);
+    g_paste_daemon3_set_history (daemon->skeleton, "");
+    g_paste_daemon3_set_version (daemon->skeleton, "");
+
     g_signal_group_set_target (daemon->settings_signals, NULL);
     g_signal_group_set_target (daemon->history_signals, NULL);
     g_signal_group_set_target (daemon->screensaver_signals, NULL);
@@ -1714,9 +1825,7 @@ g_paste_daemon_register_on_connection (GPasteBusObject *self,
                                            connection,
                                            G_PASTE_DAEMON_OBJECT_PATH,
                                            error))
-    {
         return FALSE;
-    }
 
     g_signal_group_set_target (daemon->settings_signals, daemon->settings);
     g_signal_group_set_target (daemon->history_signals, daemon->history);
@@ -1772,7 +1881,8 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
      * @gpaste_daemon: the object on which the signal was emitted
      *
      * The "reexecute-self" signal is emitted when the daemon is about
-     * to reexecute itself into a new freshly spawned daemon.
+     * to reexecute itself into a new freshly spawned daemon. The uploads out
+     * are left running: a host about to exec ends them first.
      *
      * Returns: TRUE if the host accepted an in-process restart; FALSE on failure.
      */
@@ -1787,13 +1897,38 @@ g_paste_daemon_class_init (GPasteDaemonClass *klass)
                                             0);
 
     /**
+     * GPasteDaemon::reexecute-held:
+     * @gpaste_daemon: the object on which the signal was emitted
+     *
+     * The "reexecute-held" signal is emitted when a re-exec is asked for,
+     * before anything is done for it: a handler returning %TRUE holds it back
+     * -- its host is stopping, checking the store or changing its passphrase
+     * -- and a request over D-Bus is refused as busy. One asked for without a
+     * caller to answer (SIGUSR1), or that something started holding while the
+     * passwords came off, is the host's to defer in "reexecute-self".
+     *
+     * Returns: %TRUE to hold the re-exec back
+     */
+    signals[REEXECUTE_HELD] = g_signal_new ("reexecute-held",
+                                            G_PASTE_TYPE_DAEMON,
+                                            G_SIGNAL_RUN_LAST,
+                                            0, /* class offset */
+                                            g_signal_accumulator_true_handled,
+                                            NULL, /* accumulator data */
+                                            NULL,
+                                            G_TYPE_BOOLEAN,
+                                            0);
+
+    /**
      * GPasteDaemon::change-passphrase:
      * @gpaste_daemon: the object on which the signal was emitted
      *
      * The "change-passphrase" signal is emitted when the passphrase of the
      * encrypted history should be changed. Like "reexecute-self", the work
      * belongs to whoever hosts the daemon, which is also who supplies the
-     * #GPastePrompt the prompts are put to the user through.
+     * #GPastePrompt the prompts are put to the user through. A host that
+     * re-execs holds re-execs back while it runs ("reexecute-held"): an exec
+     * would take the prompts with it, and what was copied meanwhile.
      */
     signals[CHANGE_PASSPHRASE] = g_signal_new ("change-passphrase",
                                                G_PASTE_TYPE_DAEMON,

@@ -245,6 +245,21 @@ g_paste_ui_history_model_set_size (GPasteUiHistoryModel *self,
 }
 
 /**
+ * g_paste_ui_history_model_lists_uuids:
+ * @self: a #GPasteUiHistoryModel
+ *
+ * Returns: whether the rows are named, as a search's and the pinned items'
+ *          are, rather than counted
+ */
+gboolean
+g_paste_ui_history_model_lists_uuids (GPasteUiHistoryModel *self)
+{
+    g_return_val_if_fail (G_PASTE_IS_UI_HISTORY_MODEL (self), FALSE);
+
+    return self->by_uuid;
+}
+
+/**
  * g_paste_ui_history_model_set_uuids:
  * @self: a #GPasteUiHistoryModel
  * @uuids: (array zero-terminated=1) (nullable): the uuids to list

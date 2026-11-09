@@ -7,7 +7,7 @@
 
 #include <gpaste-test-bus.h>
 #include <gpaste-test-env.h>
-#include <gpaste-daemon/gpaste-daemon.h>
+#include <gpaste-daemon/gpaste-daemon-private.h>
 #include <gpaste-daemon/gpaste-storage-migration.h>
 
 static guint  rekeys;
@@ -75,8 +75,16 @@ fake_daemon_flush (GPasteDaemon *self G_GNUC_UNUSED)
     if (exit_calls)
     {
         g_string_append_c (exit_calls, 'f');
-        g_idle_add_once (fake_answer, NULL);
+        g_source_set_name_by_id (g_idle_add_once (fake_answer, NULL), "[GPaste] test flushed answer");
     }
+}
+
+/* u for the uploads out ended, as an exec ends them. */
+static void
+fake_cancel_uploads (GPasteDaemon *self G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'u');
 }
 
 /* The bus a re-exec flushes its replies on, d for that flush, and x for an
@@ -118,6 +126,31 @@ fake_daemon_expire_password (GPasteDaemon *self G_GNUC_UNUSED)
 static void
 fake_reload_storage (GPasteDaemon *self G_GNUC_UNUSED)
 {
+}
+
+/* g for the extension reported gone, and whether it runs, as a case has it. */
+static gboolean extension_runs;
+
+static void
+fake_extension_state_changed (GPasteDaemon *self G_GNUC_UNUSED,
+                              gboolean      state)
+{
+    if (exit_calls && !state)
+        g_string_append_c (exit_calls, 'g');
+}
+
+static gboolean
+fake_get_extension_enabled (GPasteSettings *settings G_GNUC_UNUSED)
+{
+    return extension_runs;
+}
+
+/* R for a re-exec asked of the daemon, which brings its countdowns forward. */
+static void
+fake_daemon_reexecute (GPasteDaemon *self G_GNUC_UNUSED)
+{
+    if (exit_calls)
+        g_string_append_c (exit_calls, 'R');
 }
 
 static void
@@ -188,6 +221,9 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define g_paste_storage_doctor_finish fake_doctor_finish
 #define g_paste_daemon_flush fake_daemon_flush
 #define g_paste_daemon_resume fake_daemon_resume
+#define g_paste_daemon_reexecute fake_daemon_reexecute
+#define g_paste_daemon_extension_state_changed fake_extension_state_changed
+#define g_paste_settings_get_extension_enabled fake_get_extension_enabled
 #define g_paste_daemon_expire_password fake_daemon_expire_password
 #define g_application_quit fake_application_quit
 #define g_application_get_dbus_connection fake_get_dbus_connection
@@ -195,7 +231,9 @@ fake_decryption_needed (GPasteSettings *settings G_GNUC_UNUSED)
 #define execl fake_execl
 #define g_paste_daemon_reload_storage fake_reload_storage
 #define g_paste_daemon_doctor_done fake_doctor_done
+#define g_paste_daemon_cancel_uploads fake_cancel_uploads
 #include "gpaste-daemon.c"
+#undef g_paste_daemon_cancel_uploads
 #undef g_paste_storage_decryption_needed
 #undef g_paste_storage_migration_needed
 #undef g_paste_storage_when_idle
@@ -312,8 +350,9 @@ test_stop_order (void)
 }
 
 /* A re-exec flushes the history first, then lets what that landed answer --
- * a backup the flush wrote, answered from an idle -- and only then flushes the
- * replies on the bus: flushed before, a backup's reply is queued after the
+ * a backup the flush wrote, answered from an idle -- then ends the uploads out,
+ * nothing being left to put the exec off, and only then flushes the replies on
+ * the bus: flushed before, a backup's or an upload's reply is queued after the
  * flush and the exec closes the socket under it. Both execs failing here, the
  * daemon resumes. */
 static void
@@ -325,13 +364,12 @@ test_reexec_order (void)
     GLogLevelFlags fatal = g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
 
     /* What the cases before left due, their flushes' answers among it. */
-    while (g_main_context_iteration (NULL, FALSE))
-        ;
+    g_paste_test_bus_drain ();
     exit_calls = calls;
     g_assert_false (reexec (daemon, &ctx));
     exit_calls = NULL;
     g_log_set_always_fatal (fatal);
-    g_assert_cmpstr (calls->str, ==, "fadxxr");
+    g_assert_cmpstr (calls->str, ==, "faudxxr");
 }
 
 static gboolean
@@ -364,6 +402,157 @@ test_reexec_while_stopping (void)
     g_assert_false (reexec (daemon, &ctx));
     exit_calls = NULL;
     g_assert_cmpstr (calls->str, ==, "");
+}
+
+/* A re-exec while a check of the store or a change of passphrase is under
+ * way is owed rather than refused: what gets that far came past the daemon's
+ * hold (SIGUSR1, or a check or a change started as the passwords came off),
+ * and an exec now would take the prompt with it. Asked of the daemon again
+ * once that is done. */
+static void
+test_reexec_while_checking (void)
+{
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    const gsize flags[] = { G_STRUCT_OFFSET (DaemonContext, checking), G_STRUCT_OFFSET (DaemonContext, changing_passphrase) };
+
+    for (guint i = 0; i < G_N_ELEMENTS (flags); ++i)
+    {
+        g_autoptr (GString) calls = g_string_new (NULL);
+        DaemonContext ctx = { .daemon = daemon };
+        gboolean *flag = G_STRUCT_MEMBER_P (&ctx, flags[i]);
+
+        *flag = TRUE;
+        exit_calls = calls;
+        g_assert_true (reexec (daemon, &ctx));
+        g_assert_true (ctx.reexec_owed);
+        g_assert_cmpstr (calls->str, ==, "");
+
+        /* Still under way: nothing yet. Done: asked of the daemon, R. */
+        run_owed_reexec (&ctx);
+        g_assert_cmpstr (calls->str, ==, "");
+        *flag = FALSE;
+        run_owed_reexec (&ctx);
+        exit_calls = NULL;
+        g_assert_cmpstr (calls->str, ==, "R");
+        g_assert_false (ctx.reexec_owed);
+    }
+}
+
+/* The daemon holds a request over the bus back, before the passwords come
+ * off, for whatever reexec () would not carry out now. */
+static void
+test_reexecute_held (void)
+{
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    const gsize flags[] = {
+        G_STRUCT_OFFSET (DaemonContext, stopping),
+        G_STRUCT_OFFSET (DaemonContext, checking),
+        G_STRUCT_OFFSET (DaemonContext, changing_passphrase),
+    };
+    DaemonContext idle = { .daemon = daemon };
+
+    g_assert_false (reexecute_held (daemon, &idle));
+    for (guint i = 0; i < G_N_ELEMENTS (flags); ++i)
+    {
+        DaemonContext ctx = { .daemon = daemon };
+
+        *((gboolean *) G_STRUCT_MEMBER_P (&ctx, flags[i])) = TRUE;
+        g_assert_true (reexecute_held (daemon, &ctx));
+    }
+}
+
+static void
+set_flag (gpointer user_data)
+{
+    *((gboolean *) user_data) = TRUE;
+}
+
+/* What the turn of the loop a re-exec gives its flush's answers lets through
+ * is asked about again: a stop dispatched there -- a SIGTERM, a takeover --
+ * leaves no exec and nothing resumed, the daemon perhaps gone; a check of the
+ * store or a change of passphrase started there owes the exec, nothing
+ * resumed either, the history handed over being that concern's. Either way
+ * the uploads out are left running, for the exec owed or the daemon leaving
+ * the bus. */
+static void
+test_reexec_loop_lets_through (void)
+{
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    const struct { gsize flag; gboolean accepted; } cases[] = {
+        { G_STRUCT_OFFSET (DaemonContext, stopping), FALSE },
+        { G_STRUCT_OFFSET (DaemonContext, checking), TRUE },
+        { G_STRUCT_OFFSET (DaemonContext, changing_passphrase), TRUE },
+    };
+
+    g_paste_test_bus_drain ();
+    for (guint i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_autoptr (GString) calls = g_string_new (NULL);
+        DaemonContext ctx = { .daemon = daemon };
+
+        g_source_set_name_by_id (g_idle_add_once (set_flag, G_STRUCT_MEMBER_P (&ctx, cases[i].flag)), "[GPaste] dispatched in the loop");
+        exit_calls = calls;
+        g_assert_cmpint (reexec (daemon, &ctx), ==, cases[i].accepted);
+        exit_calls = NULL;
+        g_assert_cmpstr (calls->str, ==, "fa");
+        g_assert_cmpint (ctx.reexec_owed, ==, cases[i].accepted);
+    }
+}
+
+/* An extension disabled while the settle held the daemon at a prompt is
+ * reported gone once the daemon is there to be told, its own report having
+ * reached an owner serving nothing; one that ran nothing then, or still runs,
+ * is reported nothing. */
+static void
+test_extension_gone_while_settling (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    DaemonContext ctx = { .daemon = (GPasteDaemon *) &rekeys };
+    const struct { gboolean ran, runs; const gchar *told; } cases[] = {
+        { TRUE,  FALSE, "g" },
+        { TRUE,  TRUE,  ""  },
+        { FALSE, FALSE, ""  },
+    };
+
+    exit_calls = calls;
+    for (gsize i = 0; i < G_N_ELEMENTS (cases); ++i)
+    {
+        g_string_truncate (calls, 0);
+        ctx.extension_ran = cases[i].ran;
+        extension_runs = cases[i].runs;
+        report_extension_gone (&ctx);
+        g_assert_cmpstr (calls->str, ==, cases[i].told);
+    }
+    exit_calls = NULL;
+}
+
+/* SIGUSR1 asks the daemon for a re-exec, its countdowns brought forward, only
+ * once the store is idle and with no stop waiting on it: not for an exec a stop
+ * refuses, nor minutes before one a storage worker puts off. */
+static void
+test_usr1_waits_for_store (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    GPasteDaemon *daemon = (GPasteDaemon *) &rekeys;
+    DaemonContext ctx = { .daemon = daemon, .stopping = TRUE };
+
+    exit_calls = calls;
+    usr1_handler (&ctx);
+    g_assert_cmpstr (calls->str, ==, "");
+
+    ctx.stopping = FALSE;
+    storage_busy = TRUE;
+    usr1_handler (&ctx);
+    g_assert_cmpstr (calls->str, ==, "");
+    g_assert_nonnull (idle_data);
+
+    gpointer wait = g_steal_pointer (&idle_data);
+
+    storage_busy = FALSE;
+    on_storage_idle (wait);
+    idle_destroy (wait);
+    exit_calls = NULL;
+    g_assert_cmpstr (calls->str, ==, "R");
 }
 
 /* A stop waiting on a storage worker waits once: a second stop signal meanwhile
@@ -419,6 +608,22 @@ test_takeover_lets_go (void)
     g_clear_pointer (&idle_data, idle_destroy);
 }
 
+/* What the daemon answered from idles as it went, which the ended main loop
+ * no longer runs, goes out before the exit flushes the bus. */
+static void
+test_exit_answers (void)
+{
+    g_autoptr (GString) calls = g_string_new (NULL);
+    DaemonContext ctx = { 0 };
+
+    g_paste_test_bus_drain ();
+    exit_calls = calls;
+    g_source_set_name_by_id (g_idle_add_once (fake_answer, NULL), "[GPaste] test idle answer");
+    answer_before_exit (&ctx);
+    exit_calls = NULL;
+    g_assert_cmpstr (calls->str, ==, "ad");
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -430,7 +635,13 @@ main (int argc, char *argv[])
     g_test_add_func ("/daemon-host/stop-order", test_stop_order);
     g_test_add_func ("/daemon-host/reexec-order", test_reexec_order);
     g_test_add_func ("/daemon-host/reexec-while-stopping", test_reexec_while_stopping);
+    g_test_add_func ("/daemon-host/reexec-while-checking", test_reexec_while_checking);
+    g_test_add_func ("/daemon-host/reexecute-held", test_reexecute_held);
+    g_test_add_func ("/daemon-host/reexec-loop-lets-through", test_reexec_loop_lets_through);
+    g_test_add_func ("/daemon-host/extension-gone-while-settling", test_extension_gone_while_settling);
     g_test_add_func ("/daemon-host/stop-once", test_stop_once);
+    g_test_add_func ("/daemon-host/usr1-waits-for-store", test_usr1_waits_for_store);
+    g_test_add_func ("/daemon-host/exit-answers", test_exit_answers);
 
     return g_paste_test_env_run ();
 }

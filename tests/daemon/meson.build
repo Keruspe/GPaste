@@ -11,7 +11,7 @@ test_prompt_adw = executable(
   'test-prompt-adw',
   sources: 'test-prompt-adw.c',
   include_directories: include_directories('../../src/daemon'),
-  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_bus_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
+  dependencies: [ gpaste_daemon_internal_dep, gpaste_test_env_dep, gpaste_test_gtk_dep, libadwaita_dep, libgpaste_gtk4_internal_dep ],
 )
 
 test('prompt-adw', test_prompt_adw, depends: [gpaste_schemas, test_bus_supervisor])

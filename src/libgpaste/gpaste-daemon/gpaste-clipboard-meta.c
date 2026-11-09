@@ -10,6 +10,7 @@
 #include <gpaste-daemon/gpaste-clipboard-content.h>
 #include <gpaste-daemon/gpaste-clipboard-meta.h>
 #include <gpaste-daemon/gpaste-color-item.h>
+#include <gpaste-daemon/gpaste-daemon-util.h>
 #include <gpaste-daemon/gpaste-image-item.h>
 #include <gpaste-daemon/gpaste-password-item.h>
 #include <gpaste-daemon/gpaste-sensitive-mime.h>
@@ -46,28 +47,173 @@
 #define META_MIME_IMAGE      "image/png"
 #define META_MIME_URIS       "text/uri-list"
 
+typedef struct _GPasteClipboardMetaRelease GPasteClipboardMetaRelease;
+
 struct _GPasteClipboardMeta
 {
     GObject parent_instance;
 
-    MetaSelection         *selection;
-    MetaSelectionType      type;
-    gboolean               is_clipboard;
-    GPasteSettings        *settings;
-    MetaSelectionSource   *owned_source;
-    gulong                 owner_changed_id;
+    MetaSelection              *selection;
+    MetaSelectionType           type;
+    gboolean                    is_clipboard;
+    GPasteSettings             *settings;
+    MetaSelectionSource        *owned_source;
+    gulong                      owner_changed_id;
 
-    GPasteClipboardContent content;
+    GPasteClipboardContent      content;
 
     /* The update in flight on this selection, cleared when it concludes: see
      * @slot on #GPasteClipboardUpdate. */
-    GPasteClipboardUpdate *update;
+    GPasteClipboardUpdate      *update;
+    /* A release not answered yet: see
+     * g_paste_clipboard_meta_answer_release (). */
+    GPasteClipboardMetaRelease *release;
 };
 
 static void g_paste_clipboard_meta_provider_iface_init (GPasteClipboardProviderInterface *iface);
 
 G_PASTE_DEFINE_TYPE_WITH_INTERFACE (ClipboardMeta, clipboard_meta, G_TYPE_OBJECT,
                                     G_PASTE_TYPE_CLIPBOARD_PROVIDER, g_paste_clipboard_meta_provider_iface_init)
+
+/* A release, answered once the read it ended has handed over its copy, or on
+ * the next turn of the main loop when there is none: see
+ * g_paste_clipboard_meta_answer_release (). That read holds it, and the
+ * provider with it, until it concludes; the turn's source holds it otherwise,
+ * and the provider weakly, dispose () being what supersedes it (see AGENTS.md
+ * on what an object tracks so that its own dispose() can end it). */
+struct _GPasteClipboardMetaRelease
+{
+    GWeakRef                              self;
+    GPasteClipboardProviderUpdateCallback callback;
+    gpointer                              user_data;
+    /* Chained onto that read, which is_reading () counts instead while it
+     * stays in the provider's slot: the read's own callback, once it has
+     * concluded, finds the cache answering for the copy. */
+    gboolean                              chained;
+    /* Answered as superseded, when the read concludes or the turn comes. */
+    gboolean                              superseded;
+};
+
+static void
+g_paste_clipboard_meta_release_free (GPasteClipboardMetaRelease *release)
+{
+    g_weak_ref_clear (&release->self);
+    g_free (release);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GPasteClipboardMetaRelease, g_paste_clipboard_meta_release_free)
+
+static void
+g_paste_clipboard_meta_supersede_release (GPasteClipboardMeta *self)
+{
+    GPasteClipboardMetaRelease *release = g_steal_pointer (&self->release);
+
+    if (release)
+        release->superseded = TRUE;
+}
+
+/* Every write and every change makes both the read and the release in flight
+ * stale. */
+static void
+g_paste_clipboard_meta_supersede (GPasteClipboardMeta *self)
+{
+    g_paste_clipboard_update_supersede (&self->update);
+    g_paste_clipboard_meta_supersede_release (self);
+}
+
+/* A superseded release says nothing about the selection, and the change that
+ * took over answers for the cache. A provider gone by now was disposed, which
+ * superseded it: the callback only releases its state then. */
+static void
+g_paste_clipboard_meta_release_answer (GPasteClipboardMetaRelease *release,
+                                       gboolean                    superseded)
+{
+    g_autoptr (GPasteClipboardMeta) self = g_weak_ref_get (&release->self);
+
+    if (self && self->release == release)
+        self->release = NULL;
+    superseded |= release->superseded || !self;
+
+    if (!superseded)
+        g_paste_clipboard_content_clear (&self->content);
+
+    if (release->callback)
+    {
+        release->callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, superseded,
+                           (superseded) ? G_PASTE_CLIPBOARD_SECRET_UNKNOWN : G_PASTE_CLIPBOARD_SECRET_NO,
+                           release->user_data);
+    }
+}
+
+/* The read a release ended has concluded, its copy handed over: see
+ * g_paste_clipboard_meta_answer_release (). */
+static void
+g_paste_clipboard_meta_release_after_read (GPasteClipboardProvider *provider G_GNUC_UNUSED,
+                                           gboolean                 superseded,
+                                           gpointer                 data)
+{
+    g_autoptr (GPasteClipboardMetaRelease) release = data;
+
+    g_paste_clipboard_meta_release_answer (release, superseded);
+}
+
+static gboolean
+g_paste_clipboard_meta_release_due (gpointer user_data)
+{
+    g_paste_clipboard_meta_release_answer (user_data, FALSE);
+
+    return G_SOURCE_REMOVE;
+}
+
+/* Answer a release, once @read -- the update in flight it ended, which
+ * g_paste_clipboard_update_owner_gone () concludes on the next turn of the main
+ * loop -- has handed over its copy, and on the next turn when there is none.
+ *
+ * A selection nobody owns is empty, and its cache is cleared rather than
+ * ignored: that is what has ensure_not_empty () put the history's head back on
+ * it (/meta/release/head-back). The conclusion records what the owner served
+ * before leaving and fills the cache with it, which the manager it calls back
+ * synchronises to the other selection as any copy; so the cache is cleared
+ * after it, and the head put back is that copy. Cleared before, the conclusion
+ * would fill it again for a selection nobody owns, and nothing would ever be
+ * put back on it (/meta/release/after-text, /meta/release/after-text-synced).
+ * The selection counts as being read until then, through the read while it is
+ * out and through the release when there is none, the cache naming content the
+ * selection no longer holds. Kept in @release meanwhile all the same, so that
+ * whatever reaches the selection before the answer -- a publication the read's
+ * own callback makes there included -- supersedes it.
+ *
+ * Never at once, even with no read to wait for: a release comes in under
+ * MetaSelection's owner-changed emission, and putting the head back is a
+ * meta_selection_set_owner () whose own emission would reach every handler
+ * connected after GPaste's before the release it answers, leaving them taking
+ * for empty a selection GPaste owns (/meta/release/emission-order). */
+static void
+g_paste_clipboard_meta_answer_release (GPasteClipboardMeta                  *self,
+                                       GPasteClipboardUpdate                *read,
+                                       GPasteClipboardProviderUpdateCallback callback,
+                                       gpointer                              user_data)
+{
+    GPasteClipboardMetaRelease *release = g_new0 (GPasteClipboardMetaRelease, 1);
+
+    g_weak_ref_init (&release->self, self);
+    release->callback = callback;
+    release->user_data = user_data;
+    self->release = release;
+
+    if (read)
+    {
+        release->chained = TRUE;
+        g_paste_clipboard_update_then (read, g_paste_clipboard_meta_release_after_read, release);
+    }
+    else
+    {
+        guint source_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, g_paste_clipboard_meta_release_due, release,
+                                           (GDestroyNotify) g_paste_clipboard_meta_release_free);
+
+        g_source_set_name_by_id (source_id, "[GPaste] clipboard release");
+    }
+}
 
 static gboolean
 g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
@@ -78,7 +224,7 @@ g_paste_clipboard_meta_is_clipboard (GPasteClipboardMeta *self)
 static gboolean
 g_paste_clipboard_meta_is_reading (GPasteClipboardMeta *self)
 {
-    return self->update != NULL;
+    return self->update || (self->release && !self->release->chained);
 }
 
 static const gchar *
@@ -164,14 +310,14 @@ g_paste_clipboard_meta_on_transfer_done (GObject      *source_object,
         data->callback (self, bytes, data->user_data);
 }
 
-/* @mib in bytes, made in 64 bits and clamped there, before it narrows to a
- * gsize: on a 32-bit build, 4096 MiB or a multiple of it would wrap to 0, and
- * every transfer be cut at its first byte and dropped. The schema allows up to
- * 16383 MiB; no test builds 32-bit to show it. */
+/* The history's memory cap (g_paste_util_max_memory ()) clamped before it
+ * narrows to a gsize: on a 32-bit build, 4096 MiB or a multiple of it would
+ * wrap to 0, and every transfer be cut at its first byte and dropped. No test
+ * builds 32-bit to show it. */
 static gsize
-g_paste_clipboard_meta_transfer_limit (guint64 mib)
+g_paste_clipboard_meta_transfer_limit (guint64 bytes)
 {
-    return (gsize) MIN (mib * 1024 * 1024, (guint64) G_MAXSSIZE - 1);
+    return (gsize) MIN (bytes, (guint64) G_MAXSSIZE - 1);
 }
 
 static void
@@ -189,10 +335,14 @@ g_paste_clipboard_meta_read_mime (GPasteClipboardMeta             *self,
     data->ostream = g_memory_output_stream_new_resizable ();
     /* Bounded, as nothing else bounds what an owner serves, inside the
      * compositor: an endless offer would have it buffer until the read guard's
-     * deadline. Nothing larger than the history's memory limit could be kept
-     * anyway, a secret included, so one byte past it is all a read takes, to
-     * tell such a content from one that just fits. */
-    data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_settings_get_max_memory_usage (self->settings));
+     * deadline. Nothing larger than the history's memory limit could be kept as
+     * a text anyway, so one byte past it is all a read takes, to tell such a
+     * content from one that just fits. A secret weighs nothing against that
+     * limit, the history keeping a password of any size, and one past it is
+     * left out, no item recording it: the price of the bound, which the GDK
+     * backend, reading out of the compositor, need not pay -- no real secret
+     * runs to megabytes. */
+    data->limit = g_paste_clipboard_meta_transfer_limit (g_paste_util_max_memory (self->settings));
     data->callback = callback;
     data->user_data = user_data;
 
@@ -304,7 +454,7 @@ g_paste_clipboard_meta_decode_file_list (GValue  *value,
     if (file_list)
         g_value_take_boxed (value, file_list);
     else
-        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "More than %u files", G_PASTE_CLIPBOARD_MAX_FILES);
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "No file, or more than %u files", G_PASTE_CLIPBOARD_MAX_FILES);
 }
 
 static void
@@ -343,10 +493,14 @@ g_paste_clipboard_meta_serialize (GdkContentSerializer *serializer)
     }
     else
     {
-        g_auto (GStrv) uris = g_paste_clipboard_file_list_get_uris (g_value_get_boxed (value));
+        /* An empty list is a NULL boxed, which GTK's own serializer writes
+         * nothing for: registered for every caller in the process, this one
+         * may be handed one GPaste never makes. */
+        GdkFileList *files = g_value_get_boxed (value);
+        g_auto (GStrv) uris = (files) ? g_paste_clipboard_file_list_get_uris (files) : NULL;
         g_autoptr (GString) list = g_string_new (NULL);
 
-        for (GStrv uri = uris; *uri; ++uri)
+        for (GStrv uri = uris; uri && *uri; ++uri)
             g_string_append_printf (list, "%s\r\n", *uri);
         bytes = g_string_free_to_bytes (g_steal_pointer (&list));
     }
@@ -490,24 +644,29 @@ struct _GPasteClipboardMetaSource
 {
     MetaSelectionSource parent_instance;
 
-    GList              *mimetypes;           /* owned list of gchar*, in advertised order */
-    GHashTable         *contents;            /* gchar* mimetype -> GBytes */
-    GValue              value;               /* G_VALUE_INIT unless a typed payload is bridged */
-    GHashTable         *serialize_mimetypes; /* gchar* set of mimetypes served from @value */
+    GList      *mimetypes;           /* owned list of gchar*, in advertised order */
+    GHashTable *contents;            /* gchar* mimetype -> GBytes */
+    GValue      value;               /* G_VALUE_INIT unless a typed payload is bridged */
+    GHashTable *serialize_mimetypes; /* gchar* set of mimetypes served from @value */
 };
 
-G_DEFINE_FINAL_TYPE (GPasteClipboardMetaSource, g_paste_clipboard_meta_source, META_TYPE_SELECTION_SOURCE)
+G_PASTE_DEFINE_TYPE (ClipboardMetaSource, clipboard_meta_source, META_TYPE_SELECTION_SOURCE)
+
+/* A #GCopyFunc takes a user_data g_strdup () does not: cast to one, g_strdup ()
+ * would be called through a type it does not have. */
+static gpointer
+g_paste_clipboard_meta_source_copy_mimetype (gconstpointer mimetype,
+                                             gpointer      user_data G_GNUC_UNUSED)
+{
+    return g_strdup (mimetype);
+}
 
 static GList *
 g_paste_clipboard_meta_source_get_mimetypes (MetaSelectionSource *source)
 {
-    const GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
-    GList *ret = NULL;
+    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
 
-    for (const GList *m = self->mimetypes; m; m = m->next)
-        ret = g_list_prepend (ret, g_strdup (m->data));
-
-    return g_list_reverse (ret);
+    return g_list_copy_deep (self->mimetypes, g_paste_clipboard_meta_source_copy_mimetype, NULL);
 }
 
 typedef struct
@@ -548,8 +707,8 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
                                           GAsyncReadyCallback  callback,
                                           gpointer             user_data)
 {
-    const GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
-    GTask *task = g_task_new (source, cancellable, callback, user_data);
+    GPasteClipboardMetaSource *self = G_PASTE_CLIPBOARD_META_SOURCE (source);
+    g_autoptr (GTask) task = g_task_new (source, cancellable, callback, user_data);
 
     g_task_set_source_tag (task, g_paste_clipboard_meta_source_read_async);
 
@@ -562,7 +721,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     {
         g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CLOSED,
                                  "The selection source is gone");
-        g_object_unref (task);
         return;
     }
 
@@ -571,7 +729,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     if (bytes)
     {
         g_task_return_pointer (task, g_memory_input_stream_new_from_bytes (bytes), g_object_unref);
-        g_object_unref (task);
         return;
     }
 
@@ -579,7 +736,7 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
     {
         GPasteClipboardMetaSourceSerializeData *data = g_new0 (GPasteClipboardMetaSourceSerializeData, 1);
 
-        data->task = task;
+        data->task = g_steal_pointer (&task);
         data->ostream = g_memory_output_stream_new_resizable ();
 
         /* Let GDK render the typed payload into the requested format on demand. */
@@ -595,7 +752,6 @@ g_paste_clipboard_meta_source_read_async (MetaSelectionSource *source,
 
     g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                              "Mimetype '%s' is not available", mimetype);
-    g_object_unref (task);
 }
 
 static GInputStream *
@@ -653,8 +809,12 @@ g_paste_clipboard_meta_source_add (GPasteClipboardMetaSource *self,
                                    const gchar               *mimetype,
                                    GBytes                    *bytes)
 {
-    /* Keep the first representation registered for a given mimetype. */
-    if (g_hash_table_contains (self->contents, mimetype))
+    /* Keep the first representation registered for a given mimetype, the
+     * typed payload's among them: a host that initialised GTK has GDK serialise
+     * a file list to its text form too, which would otherwise be advertised
+     * twice. */
+    if (g_hash_table_contains (self->contents, mimetype) ||
+        g_hash_table_contains (self->serialize_mimetypes, mimetype))
         return;
 
     self->mimetypes = g_list_append (self->mimetypes, g_strdup (mimetype));
@@ -682,8 +842,7 @@ g_paste_clipboard_meta_source_add_value (GPasteClipboardMetaSource *self,
     gsize n_mimetypes = 0;
     const gchar * const *mimetypes = gdk_content_formats_get_mime_types (formats, &n_mimetypes);
 
-    g_value_init (&self->value, G_VALUE_TYPE (value));
-    g_value_copy (value, &self->value);
+    gboolean serves = FALSE;
 
     for (gsize i = 0; i < n_mimetypes; ++i)
     {
@@ -692,7 +851,18 @@ g_paste_clipboard_meta_source_add_value (GPasteClipboardMetaSource *self,
             continue;
 
         self->mimetypes = g_list_append (self->mimetypes, g_strdup (mimetypes[i]));
+        serves = TRUE;
     }
+
+    /* Held only to serve a format the bytes already added do not: an image
+     * offered as its own PNG, all gnome-shell serialises a texture to, would
+     * otherwise keep its decoded pixels alive past the history letting them go,
+     * outside max-memory-usage, for as long as the source owns the selection. */
+    if (!serves)
+        return;
+
+    g_value_init (&self->value, G_VALUE_TYPE (value));
+    g_value_copy (value, &self->value);
 }
 
 /* Append every rich-text/HTML/XML/gnome-copied-files representation an item
@@ -730,7 +900,7 @@ static void
 g_paste_clipboard_meta_publish_source (GPasteClipboardMeta       *self,
                                        GPasteClipboardMetaSource *source)
 {
-    g_paste_clipboard_update_supersede (&self->update);
+    g_paste_clipboard_meta_supersede (self);
 
     /* Mutter emits owner-changed synchronously; owned_source makes that
      * notification a no-op here. Its set_owner does not cancel transfers;
@@ -788,7 +958,7 @@ g_paste_clipboard_meta_sync_ready (GPasteClipboardMeta *self G_GNUC_UNUSED,
 
     /* An empty transfer is an empty text, as update_on_text () takes it: the
      * other selection gets the empty string rather than keeping what it had. */
-    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
+    g_autoptr (GPasteCleartext) text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
     if (text)
         g_paste_clipboard_sync_data_deliver (data, text);
@@ -860,6 +1030,14 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_auto (GValue) value = G_VALUE_INIT;
         GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
 
+        GBytes *png = g_paste_image_item_get_png_bytes (G_PASTE_IMAGE_ITEM (item));
+
+        /* The PNG the item carries, where it carries one: served as it is,
+         * rather than encoded again from the texture on every read -- on the
+         * compositor's thread, this being gnome-shell. The texture stands in
+         * for the rest, and for an item read off its file. */
+        if (png)
+            g_paste_clipboard_meta_source_add (source, META_MIME_IMAGE, png);
         g_value_init (&value, GDK_TYPE_TEXTURE);
         g_value_set_object (&value, texture);
         g_paste_clipboard_meta_source_add_value (source, &value);
@@ -906,6 +1084,26 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
         g_value_init (&value, GDK_TYPE_FILE_LIST);
         g_value_set_boxed (&value, file_list);
         g_paste_clipboard_meta_source_add_value (source, &value);
+
+        /* Plus the text form GTK serialises a file list to, which the GDK
+         * backend offers through it: each file's path, or its uri for one with
+         * none, a line each -- what a terminal or a text field pastes. */
+        g_autoptr (GString) paths = g_string_new (NULL);
+        g_autoptr (GSList) files = gdk_file_list_get_files (file_list);
+
+        for (const GSList *f = files; f; f = f->next)
+        {
+            g_autofree gchar *path = g_file_get_path (f->data);
+            g_autofree gchar *uri = (path) ? NULL : g_file_get_uri (f->data);
+
+            if (paths->len)
+                g_string_append_c (paths, '\n');
+            g_string_append (paths, (path) ? path : uri);
+        }
+
+        g_autoptr (GBytes) paths_bytes = g_string_free_to_bytes (g_steal_pointer (&paths));
+
+        g_paste_clipboard_meta_source_add (source, META_MIME_TEXT, paths_bytes);
         g_paste_clipboard_meta_source_add_special_values (source, item);
         g_paste_clipboard_meta_publish_source (self, source);
         return G_PASTE_CLIPBOARD_PUBLICATION_PUBLISHED;
@@ -915,7 +1113,10 @@ g_paste_clipboard_meta_select_item (GPasteClipboardMeta *self,
     const gchar *real_value = g_paste_item_get_real_value (item);
     g_paste_clipboard_meta_private_set_text (self, real_value);
 
-    g_autoptr (GBytes) bytes = g_bytes_new (real_value, strlen (real_value));
+    /* A copy wiped as it goes, as the content cache's is: a password published
+     * lives in the source for as long as the selection carries it. */
+    gchar *copy = g_strdup (real_value);
+    g_autoptr (GBytes) bytes = g_bytes_new_with_free_func (copy, strlen (copy), (GDestroyNotify) g_paste_util_free_cleartext, copy);
     GPasteClipboardMetaSource *source = g_object_new (G_PASTE_TYPE_CLIPBOARD_META_SOURCE, NULL);
 
     g_paste_clipboard_meta_source_add_text (source, bytes);
@@ -968,7 +1169,7 @@ g_paste_clipboard_meta_update_on_text (GPasteClipboardMeta *self G_GNUC_UNUSED,
      * countdown, fails every re-exec and storage migration waiting on expiry.
      *
      * A text that is not UTF-8 is no text this backend can read. */
-    g_autofree gchar *text = g_paste_clipboard_text_from_bytes (bytes, NULL);
+    g_autoptr (GPasteCleartext) text = g_paste_clipboard_text_from_bytes (bytes, NULL);
 
     if (!text)
     {
@@ -1230,13 +1431,9 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     const gchar *content_mime = NULL;
 
     if ((content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_FILE_LIST, META_MIME_URIS)))
-    {
         content_kind = CLIPBOARD_CONTENT_FILE_LIST;
-    }
     else if ((content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_RGBA, NULL)))
-    {
         content_kind = CLIPBOARD_CONTENT_COLOR;
-    }
     /* Text before an image, as in the GDK backend's update (). */
     else if (mimetypes_contain (mimetypes, META_MIME_TEXT) ||
              mimetypes_contain (mimetypes, META_MIME_TEXT_PLAIN))
@@ -1246,18 +1443,16 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
     }
     else if (g_paste_settings_get_images_support (self->settings) &&
              (content_mime = g_paste_clipboard_meta_pick_mime (mimetypes, GDK_TYPE_TEXTURE, META_MIME_IMAGE)))
-    {
         content_kind = CLIPBOARD_CONTENT_IMAGE;
-    }
     else if (!mimetypes)
     {
-        /* The selection was released: clear our cache so callers see an
-         * empty clipboard and act accordingly (e.g. ensure_not_empty).
-         * See g_paste_clipboard_update_supersede () for changes with no read. */
-        g_paste_clipboard_update_supersede (&self->update);
-        g_paste_clipboard_content_clear (&self->content);
-        if (callback)
-            callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
+        /* The selection was released. The update in flight ends with what it
+         * read, the owner gone having served its content -- what it has left
+         * is the reads riding along with it, a hint among them -- and the
+         * release is answered once that is recorded
+         * (g_paste_clipboard_meta_answer_release ()). */
+        g_paste_clipboard_meta_supersede_release (self);
+        g_paste_clipboard_meta_answer_release (self, g_paste_clipboard_update_owner_gone (&self->update), callback, user_data);
         return;
     }
     else
@@ -1267,12 +1462,14 @@ g_paste_clipboard_meta_update (GPasteClipboardMeta                  *self,
          * clipboard as non-empty so ensure_not_empty doesn't override it --
          * and give up on the update the previous owner was being read for. */
         g_list_free_full (mimetypes, g_free);
-        g_paste_clipboard_update_supersede (&self->update);
+        g_paste_clipboard_meta_supersede (self);
         g_paste_clipboard_content_set_ignored (&self->content);
         if (callback)
             callback (G_PASTE_CLIPBOARD_PROVIDER (self), NULL, FALSE, G_PASTE_CLIPBOARD_SECRET_NO, user_data);
         return;
     }
+
+    g_paste_clipboard_meta_supersede_release (self);
 
     GPasteClipboardUpdate *update = g_paste_clipboard_update_new (G_PASTE_CLIPBOARD_PROVIDER (self),
                                                                   self->settings,
@@ -1351,6 +1548,11 @@ g_paste_clipboard_meta_on_owner_changed (GPasteClipboardMeta *self,
     if (source && source == self->owned_source)
         return;
 
+    /* Another owner's now, which mutter has let go of: what it was published
+     * with -- an image's whole texture -- has no business staying in
+     * gnome-shell's memory until the next publication. */
+    g_clear_object (&self->owned_source);
+
     g_debug ("%s: owner change", g_paste_clipboard_provider_target_name (self->is_clipboard));
     g_paste_clipboard_provider_emit_changed (G_PASTE_CLIPBOARD_PROVIDER (self));
 }
@@ -1367,6 +1569,8 @@ g_paste_clipboard_meta_dispose (GObject *object)
      * disconnects, so the instance is the only thing left to check for. */
     if (self->selection)
         g_clear_signal_handler (&self->owner_changed_id, self->selection);
+    /* The read in flight goes too, as in the GDK backend's dispose (). */
+    g_paste_clipboard_meta_supersede (self);
     g_clear_object (&self->owned_source);
     g_clear_object (&self->selection);
     g_clear_object (&self->settings);

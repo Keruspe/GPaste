@@ -13,34 +13,34 @@
 
 typedef struct
 {
-    GDBusConnection *connection;
+    GDBusConnection       *connection;
     GDBusMethodInvocation *invocation;
-    gchar *sender;
-    gchar *path;
-    gchar *session;
-    GVariant *shortcuts;
-    guint registration;
-    guint closes;
-    guint close_failures;
-    gboolean responded;
+    gchar                 *sender;
+    gchar                 *path;
+    gchar                 *session;
+    GVariant              *shortcuts;
+    guint                  registration;
+    guint                  closes;
+    guint                  close_failures;
+    gboolean               responded;
 } Request;
 
 typedef struct
 {
-    GTestDBus *bus;
-    GDBusConnection *server;
-    GDBusConnection *replacement;
-    GDBusConnection *connection;
+    GTestDBus                  *bus;
+    GDBusConnection            *server;
+    GDBusConnection            *replacement;
+    GDBusConnection            *connection;
     GPasteGlobalShortcutClient *client;
-    GDBusNodeInfo *info;
-    GPtrArray *creates;
-    GPtrArray *binds;
-    guint registration;
-    guint replacement_registration;
-    guint activations;
-    guint watchdog;
-    gboolean ready;
-    gboolean automatic;
+    GDBusNodeInfo              *info;
+    GPtrArray                  *creates;
+    GPtrArray                  *binds;
+    guint                       registration;
+    guint                       replacement_registration;
+    guint                       activations;
+    guint                       watchdog;
+    gboolean                    ready;
+    gboolean                    automatic;
 } Fixture;
 
 static const gchar portal_xml[] =
@@ -79,15 +79,17 @@ request_free (gpointer data)
     g_free (request->session);
 }
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (Request, request_free)
+
 static void
-on_close (GDBusConnection *connection G_GNUC_UNUSED,
-          const gchar *sender G_GNUC_UNUSED,
-          const gchar *path G_GNUC_UNUSED,
-          const gchar *interface G_GNUC_UNUSED,
-          const gchar *method,
-          GVariant *parameters G_GNUC_UNUSED,
+on_close (GDBusConnection       *connection G_GNUC_UNUSED,
+          const gchar           *sender     G_GNUC_UNUSED,
+          const gchar           *path       G_GNUC_UNUSED,
+          const gchar           *interface  G_GNUC_UNUSED,
+          const gchar           *method,
+          GVariant              *parameters G_GNUC_UNUSED,
           GDBusMethodInvocation *invocation,
-          gpointer user_data)
+          gpointer               user_data)
 {
     Request *request = user_data;
     g_assert_cmpstr (method, ==, "Close");
@@ -103,14 +105,14 @@ on_close (GDBusConnection *connection G_GNUC_UNUSED,
 }
 
 static void
-on_method (GDBusConnection *connection,
-           const gchar *sender,
-           const gchar *path G_GNUC_UNUSED,
-           const gchar *interface G_GNUC_UNUSED,
-           const gchar *method,
-           GVariant *parameters,
+on_method (GDBusConnection       *connection,
+           const gchar           *sender,
+           const gchar           *path      G_GNUC_UNUSED,
+           const gchar           *interface G_GNUC_UNUSED,
+           const gchar           *method,
+           GVariant              *parameters,
            GDBusMethodInvocation *invocation,
-           gpointer user_data)
+           gpointer               user_data)
 {
     Fixture *f = user_data;
     if (g_str_equal (method, "Barrier"))
@@ -194,8 +196,7 @@ method_reply (Request *request)
 static void
 respond (Request *request, guint response)
 {
-    g_auto (GVariantBuilder) results;
-    g_variant_builder_init (&results, G_VARIANT_TYPE_VARDICT);
+    g_auto (GVariantBuilder) results = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     if (request->registration && !response)
         g_variant_builder_add (&results, "{sv}", "session_handle", g_variant_new_string (request->session));
     g_autoptr (GError) error = NULL;
@@ -235,7 +236,10 @@ on_client_ready (GObject *source G_GNUC_UNUSED, GAsyncResult *result, gpointer u
 }
 
 static void
-on_activated (GPasteGlobalShortcutClient *client G_GNUC_UNUSED, const gchar *id, gpointer user_data)
+on_activated (GPasteGlobalShortcutClient *client G_GNUC_UNUSED,
+              const gchar                *id,
+              const gchar                *activation_token G_GNUC_UNUSED,
+              gpointer                    user_data)
 {
     Fixture *f = user_data;
     g_assert_cmpstr (id, ==, "first");
@@ -264,6 +268,7 @@ setup (Fixture *f, gconstpointer user_data)
 {
     g_autoptr (GError) error = NULL;
     f->watchdog = g_timeout_add_seconds (10, test_timed_out, NULL);
+    g_source_set_name_by_id (f->watchdog, "[GPaste] portal test watchdog");
     f->bus = g_test_dbus_new (G_TEST_DBUS_NONE);
     gboolean activate = GPOINTER_TO_UINT (user_data) == 100;
     /* Nobody owns the name at first, nor can the bus start anyone for it. */
@@ -367,14 +372,24 @@ bind_session (Fixture *f, Request *create, gboolean response_first)
     return bind;
 }
 
+/* The portal activating "first" on @session, handing @token with it if any. */
+static void
+activate_with_token (Fixture *f, Request *session, const gchar *token)
+{
+    g_auto (GVariantBuilder) options = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
+    g_autoptr (GError) error = NULL;
+    if (token)
+        g_variant_builder_add (&options, "{sv}", "activation_token", g_variant_new_string (token));
+    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
+        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, &options), &error);
+    g_assert_no_error (error);
+    barrier (f);
+}
+
 static void
 activate (Fixture *f, Request *session)
 {
-    g_autoptr (GError) error = NULL;
-    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
-        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, NULL), &error);
-    g_assert_no_error (error);
-    barrier (f);
+    activate_with_token (f, session, NULL);
 }
 
 static void
@@ -873,14 +888,20 @@ count_creates_sent (GDBusConnection *connection G_GNUC_UNUSED,
 {
     if (!incoming && g_dbus_message_get_message_type (message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
         g_paste_str_equal (g_dbus_message_get_member (message), "CreateSession"))
+    {
         g_atomic_int_inc (&creates_sent);
+        /* As g_paste_test_bus_wait_for_count () asks of a count bumped off the
+         * main context. The bus's error answering each send wakes it too, which
+         * is why no wait stalls without this. */
+        g_main_context_wakeup (NULL);
+    }
 
     return message;
 }
 
 /* Retries spent against a name nobody owned say nothing of the portal that then
- * comes up: it gets the whole budget, a failure of its first ask retried rather
- * than given up on. */
+ * comes up: it gets the whole budget, its first ask and nine retries failing
+ * with a tenth retry still sent. */
 static void
 retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 {
@@ -903,11 +924,15 @@ retries_reset_on_appearance (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
                                                   g_variant_new ("(su)", PORTAL_NAME, 1u)), ==, 1);
     while (f->creates->len < 1)
         g_main_context_iteration (NULL, TRUE);
-    complete (f, g_ptr_array_index (f->creates, 0), FALSE, 2);
-    while (f->creates->len < 2)
-        g_main_context_iteration (NULL, TRUE);
+    /* Bounded by the fixture's watchdog, as retry_exhaustion ()'s are. */
+    for (guint i = 0; i < 10; ++i)
+    {
+        complete (f, g_ptr_array_index (f->creates, i), FALSE, 2);
+        while (f->creates->len < i + 2)
+            g_main_context_iteration (NULL, TRUE);
+    }
 
-    Request *current = g_ptr_array_index (f->creates, 1);
+    Request *current = g_ptr_array_index (f->creates, 10);
 
     complete (f, bind_session (f, current, FALSE), FALSE, 0);
     activate (f, current);
@@ -1018,8 +1043,7 @@ changed_request_path (Fixture *f, gconstpointer user_data)
     Request *session = grab (f, shortcuts);
     Request *request = GPOINTER_TO_UINT (user_data) ? bind_session (f, session, FALSE) : session;
     g_autofree gchar *path = g_strconcat (request->path, "_actual", NULL);
-    g_free (request->path);
-    request->path = g_steal_pointer (&path);
+    g_set_str_take (&request->path, g_steal_pointer (&path));
     if (request == session)
         request = bind_session (f, session, FALSE);
     complete (f, request, FALSE, 0);
@@ -1034,8 +1058,7 @@ invalid_session_handle (Fixture *f, gconstpointer user_data)
     Request *session = grab (f, shortcuts);
     method_reply (session);
     barrier (f);
-    g_auto (GVariantBuilder) results;
-    g_variant_builder_init (&results, G_VARIANT_TYPE_VARDICT);
+    g_auto (GVariantBuilder) results = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE_VARDICT);
     if (mode != 0)
     {
         GVariant *handle = mode == 1 ? g_variant_new_uint32 (42) :
@@ -1185,8 +1208,7 @@ partial_bind (Fixture *f, gconstpointer user_data)
     Request *bind = bind_session (f, session, FALSE);
     method_reply (bind);
     barrier (f);
-    g_auto (GVariantBuilder) bound;
-    g_variant_builder_init (&bound, G_VARIANT_TYPE ("a(sa{sv})"));
+    g_auto (GVariantBuilder) bound = G_VARIANT_BUILDER_INIT (G_VARIANT_TYPE ("a(sa{sv})"));
     if (GPOINTER_TO_UINT (user_data))
         g_variant_builder_add (&bound, "(sa{sv})", "first", NULL);
     g_autoptr (GVariant) results = g_variant_ref_sink (
@@ -1307,8 +1329,7 @@ activation_disposed (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
             G_VARIANT_TYPE ("(uuu)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &error);
         g_assert_no_error (error);
         g_variant_get (counts, "(uuu)", &creates, &binds, &closes);
-        while (g_main_context_iteration (NULL, FALSE))
-            ;
+        g_paste_test_bus_drain ();
     }
     g_assert_cmpuint (creates, ==, 1);
     g_assert_cmpuint (binds, ==, 0);
@@ -1349,6 +1370,7 @@ retired_method_denied (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
 
 static void
 keybinder_activated (GPasteKeybinding *binding G_GNUC_UNUSED,
+                     const gchar      *activation_token G_GNUC_UNUSED,
                      gpointer          user_data)
 {
     ++*(guint *) user_data;
@@ -1397,15 +1419,85 @@ keybinder_order (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
         g_assert_cmpstr (id, ==, ids[i]);
     }
     complete (f, bind, FALSE, 0);
-
-    g_autoptr (GError) error = NULL;
-
-    g_dbus_connection_emit_signal (session->connection, session->sender, PORTAL_PATH,
-        PORTAL_IFACE, "Activated", g_variant_new ("(osta{sv})", session->session, "first", (guint64) 1, NULL), &error);
-    g_assert_no_error (error);
-    barrier (f);
+    activate (f, session);
     g_assert_cmpuint (fresh, ==, 1);
     g_assert_cmpuint (stale, ==, 0);
+}
+
+/* A keybinder of the one binding "first", on launch-ui's <Control>a, its
+ * session bound: @session is set to that session. */
+static GPasteKeybinder *
+one_binding_keybinder (Fixture *f, GPasteSettings *settings, GPasteKeybindingFunc callback, gpointer data, Request **session)
+{
+    g_paste_settings_set_keybindings_enabled (settings, TRUE);
+    g_paste_settings_set_launch_ui (settings, "<Control>a");
+
+    GPasteKeybinder *keybinder = g_paste_keybinder_new (settings, f->client);
+
+    g_paste_keybinder_add_keybinding (keybinder,
+                                      g_paste_keybinding_new ("first", "First", g_paste_settings_get_launch_ui,
+                                                              callback, data));
+    g_paste_keybinder_activate_all (keybinder);
+    barrier (f);
+
+    *session = g_ptr_array_index (f->creates, 0);
+    complete (f, bind_session (f, *session, FALSE), FALSE, 0);
+
+    return keybinder;
+}
+
+static void
+keybinder_record_token (GPasteKeybinding *binding G_GNUC_UNUSED,
+                        const gchar      *activation_token,
+                        gpointer          user_data)
+{
+    g_ptr_array_add (user_data, g_strdup ((activation_token) ? activation_token : "(none)"));
+}
+
+/* The token the portal hands with an activation reaches the binding, for the
+ * graphical tool the launch-ui shortcut opens to be raised with: without one,
+ * the shell's focus-stealing prevention says a window already open is ready
+ * rather than raising it. */
+static void
+keybinder_activation_token (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    g_autoptr (GPtrArray) tokens = g_ptr_array_new_with_free_func (g_free);
+    Request *session;
+    g_autoptr (GPasteKeybinder) keybinder = one_binding_keybinder (f, settings, keybinder_record_token, tokens, &session);
+
+    activate_with_token (f, session, "token");
+    activate (f, session);
+    g_assert_cmpuint (tokens->len, ==, 2);
+    g_assert_cmpstr (tokens->pdata[0], ==, "token");
+    g_assert_cmpstr (tokens->pdata[1], ==, "(none)");
+}
+
+/* A shortcut cleared -- Backspace in the preferences writes "" -- is dropped
+ * from the grab: an accelerator is parsed when its binding is activated, so
+ * every binding is deactivated before the rebind activates the ones that still
+ * parse, where one that parsed once would otherwise stay grabbed. */
+static void
+keybinder_cleared (Fixture *f, gconstpointer user_data G_GNUC_UNUSED)
+{
+    g_autoptr (GPasteSettings) settings = g_paste_settings_new ();
+    guint activations = 0;
+    Request *session;
+    g_autoptr (GPasteKeybinder) keybinder = one_binding_keybinder (f, settings, keybinder_activated, &activations, &session);
+
+    activate (f, session);
+    g_assert_cmpuint (activations, ==, 1);
+
+    /* Nothing left to grab: the session goes, and no other is asked for --
+     * one binding the cleared shortcut with no trigger would have the portal
+     * ask the user for one. */
+    g_paste_settings_set_launch_ui (settings, "");
+    wait_for_timers (f, 350);
+    g_assert_cmpuint (session->closes, ==, 1);
+    g_assert_cmpuint (f->creates->len, ==, 1);
+    activate (f, session);
+    g_assert_cmpuint (activations, ==, 1);
+    g_paste_settings_reset (settings, G_PASTE_LAUNCH_UI_SETTING);
 }
 
 static void
@@ -1471,6 +1563,8 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, G_TEST_OPTION_ISOLATE_DIRS, NULL);
     g_test_add ("/keybinder/switch-enabled", Fixture, GINT_TO_POINTER (TRUE), setup, keybinder_switch, teardown);
     g_test_add ("/keybinder/order", Fixture, NULL, setup, keybinder_order, teardown);
+    g_test_add ("/keybinder/activation-token", Fixture, NULL, setup, keybinder_activation_token, teardown);
+    g_test_add ("/keybinder/cleared", Fixture, NULL, setup, keybinder_cleared, teardown);
     g_test_add ("/keybinder/switch-disabled", Fixture, GINT_TO_POINTER (FALSE), setup, keybinder_switch, teardown);
     /* Unexpected warnings are failures; exhaustion tests expect theirs
      * explicitly. */

@@ -26,15 +26,61 @@ import GPasteDaemon from 'gi://GPasteDaemon?version=1';
 // dialogs only collect a passphrase, or a backend and two toggles, and hand
 // them to the request.
 
-// A wrong passphrase is reported by re-asking with an error message, so the
-// dialog never has to know whether the one it collected was any good.
-const PassphraseDialog = GObject.registerClass(
-class GPastePassphraseDialog extends ModalDialog.ModalDialog {
+// What the Adwaita prompt says under a row, said under the St widget it
+// explains, in a class the shell's theme styles.
+function explanation(text) {
+    const label = new St.Label({style_class: 'message-dialog-description', text});
+
+    label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+    label.clutter_text.line_wrap = true;
+
+    return label;
+}
+
+// A dialog asking @request: whichever way it goes away, the request gets
+// exactly one answer. Replying marks it, so 'closed' and 'destroy' only bite on
+// a real dismissal. Both are connected because a dialog can be destroyed
+// without being closed, and 'closed' alone would then strand the request — and
+// with it the daemon waiting on the storage to settle. A close is followed by
+// 'destroy' too, ModalDialog destroying a dialog it closes, so no case tells
+// the 'closed' connection missing (test-prompt.cjs pins 'destroy').
+const RequestDialog = GObject.registerClass(
+class GPasteRequestDialog extends ModalDialog.ModalDialog {
     constructor(request) {
         super({styleClass: 'prompt-dialog'});
 
         this._request = request;
         this._answered = false;
+
+        this.connect('closed', () => this._dismiss());
+        this.connect('destroy', () => this._dismiss());
+    }
+
+    _dismiss() {
+        this._answer(() => this._request.dismiss());
+    }
+
+    _answer(reply) {
+        if (this._answered)
+            return;
+
+        this._answered = true;
+        reply();
+    }
+
+    _reply(reply) {
+        this._answer(reply);
+        this.close();
+    }
+});
+
+// A wrong passphrase is reported by re-asking with an error message, so the
+// dialog never has to know whether the one it collected was any good.
+const PassphraseDialog = GObject.registerClass(
+class GPastePassphraseDialog extends RequestDialog {
+    constructor(request) {
+        super(request);
+
         this._strengthRatingId = 0;
 
         const confirm = request.get_confirm();
@@ -42,11 +88,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         const content = new Dialog.MessageDialogContent({
             title: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_TITLE),
-            description: request.get_description() ?? (confirm
-                // Translators: shown when choosing a new passphrase for the encrypted history
-                ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_DESCRIPTION)
-                // Translators: shown when unlocking the encrypted history at startup
-                : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_DESCRIPTION)),
+            description: request.get_shown_description(),
         });
 
         this._entry = this._addEntry(content, GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE));
@@ -72,6 +114,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
             this._remember = new CheckBox.CheckBox(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.REMEMBER));
             this._remember.checked = startsOn;
             content.add_child(this._remember);
+            content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.REMEMBER_SUBTITLE)));
         }
 
         this._errorLabel = new St.Label({style_class: 'prompt-dialog-error-label'});
@@ -85,7 +128,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         this.contentLayout.add_child(content);
 
         this._okButton = this.addButton({
-            label: confirm ? GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_CONFIRM_ACCEPT) : GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_ACCEPT),
+            label: request.get_accept_label(),
             action: () => this._onOk(),
             default: true,
         });
@@ -97,14 +140,6 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
 
         this.setInitialKeyFocus(this._entry);
         this._updateOk();
-
-        // Whichever way the dialog goes away, the request gets exactly one
-        // answer: replying already marked it, so these only bite on a real
-        // dismissal. Both are connected because a dialog can be destroyed
-        // without being closed, and 'closed' alone would then strand the
-        // request — and with it the daemon waiting on the storage to settle.
-        this.connect('closed', () => this._dismiss());
-        this.connect('destroy', () => this._dismiss());
     }
 
     _dismiss() {
@@ -115,7 +150,7 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
             this._strengthRatingId = 0;
         }
 
-        this._answer(null, GPasteDaemon.StorageRemember.UNCHANGED);
+        this._answer(() => this._request.reply_passphrase(null, GPasteDaemon.StorageRemember.UNCHANGED));
     }
 
     _addEntry(content, hintText) {
@@ -154,6 +189,11 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
         // 'barlevel' class gets no height and no colours, the theme styling a
         // bar only as a 'slider' or an OSD's 'level'.
         const box = new St.BoxLayout({style: 'spacing: 12px;'});
+
+        box.add_child(new St.Label({
+            text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.PASSPHRASE_STRENGTH),
+            y_align: Clutter.ActorAlign.CENTER,
+        }));
 
         // BarLevel is normalized to 0..1, so the 0-4 rating is scaled into it.
         this._strengthLevel = new BarLevel.BarLevel({
@@ -222,37 +262,17 @@ class GPastePassphraseDialog extends ModalDialog.ModalDialog {
     }
 
     _onOk() {
-        let remember = GPasteDaemon.StorageRemember.UNCHANGED;
+        // What the switch answers is asked C-side too, as where it starts is.
+        const remember = GPasteDaemon.Prompt.remember_answer(!!this._remember?.checked, !!this._remembered);
 
-        // Only report the choice: the keyring is written by whoever established
-        // that this passphrase is the right one, which cannot be known here.
-        // Turning the switch off is a request to forget; finding it off and
-        // leaving it there is not.
-        if (this._remember?.checked)
-            remember = GPasteDaemon.StorageRemember.YES;
-        else if (this._remembered)
-            remember = GPasteDaemon.StorageRemember.NO;
-
-        this._answer(this._entry.get_text(), remember);
-        this.close();
-    }
-
-    _answer(passphrase, remember) {
-        if (this._answered)
-            return;
-
-        this._answered = true;
-        this._request.reply_passphrase(passphrase, remember);
+        this._reply(() => this._request.reply_passphrase(this._entry.get_text(), remember));
     }
 });
 
 const MigrationDialog = GObject.registerClass(
-class GPasteMigrationDialog extends ModalDialog.ModalDialog {
+class GPasteMigrationDialog extends RequestDialog {
     constructor(request) {
-        super({styleClass: 'prompt-dialog'});
-
-        this._request = request;
-        this._answered = false;
+        super(request);
 
         this._current = request.get_current();
         this._offered = request.get_offered();
@@ -280,6 +300,13 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         // St has no radio button, so a set of toggles kept mutually exclusive by
         // hand is the closest thing; the labels and the offered set both come
         // from the C side, which knows what this build can construct.
+        // Headed as the Adwaita dialog's group of radios is, in bold for want
+        // of a heading class the theme styles.
+        backends.add_child(new St.Label({
+            text: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.STORAGE_BACKEND),
+            style: 'font-weight: bold;',
+        }));
+
         for (const backend of this._offered) {
             const button = new CheckBox.CheckBox(GPasteDaemon.Prompt.storage_label(backend));
 
@@ -296,7 +323,9 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this._import.connect('clicked', () => this._updateState());
         this._cleanup.connect('clicked', () => this._updateState());
         content.add_child(this._import);
+        content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.IMPORT_SUBTITLE)));
         content.add_child(this._cleanup);
+        content.add_child(explanation(GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CLEANUP_SUBTITLE)));
 
         this._warning = new St.Label({
             style_class: 'prompt-dialog-error-label',
@@ -330,20 +359,6 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         });
 
         this._updateState();
-
-        // See the passphrase dialog: exactly one answer, whichever way we go.
-        this.connect('closed', () => this._dismiss());
-        this.connect('destroy', () => this._dismiss());
-    }
-
-    // Dismissing is an answer of its own: the storage layer takes it as "no
-    // choice made", leaves the revision alone and asks again on the next start.
-    _dismiss() {
-        if (this._answered)
-            return;
-
-        this._answered = true;
-        this._request.dismiss();
     }
 
     _selectBackend(backend) {
@@ -371,8 +386,7 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
         this._setSensitive(this._import, canImport);
         this._setSensitive(this._cleanup, backendChanges);
 
-        // Deleting the old data without importing it first throws it away.
-        this._warning.visible = this._cleanup.checked && !this._import.checked;
+        this._warning.visible = GPasteDaemon.Prompt.cleanup_warns(this._import.checked, this._cleanup.checked);
     }
 
     _setSensitive(check, sensitive) {
@@ -388,31 +402,49 @@ class GPasteMigrationDialog extends ModalDialog.ModalDialog {
     }
 
     _onApply() {
-        // Nothing to apply, and Enter reaches this even with the button greyed
-        // out: it is the dialog's default action, which is a key binding rather
-        // than the button's own reactivity.
+        // Nothing to apply. The dialog's Enter binding skips a default button
+        // that is not reactive, but a greyed-out Apply is still the key focus
+        // the dialog opens with, and whether St clicks a focused button that is
+        // not reactive on a key press is St's business: with nothing picked,
+        // the answer is refused here, whatever asked for it (test-prompt.cjs).
         if (this._chosen === null)
             return;
 
-        if (!this._answered) {
-            this._answered = true;
-            this._request.reply_migration(this._chosen, this._import.checked, this._cleanup.checked);
-        }
-
-        this.close();
+        this._reply(() => this._request.reply_migration(this._chosen, this._import.checked, this._cleanup.checked));
     }
 
     // "Nothing changes, and stop asking", which Cancel next to it does not do:
-    // dismissing leaves the revision alone and the dialog comes back on the next
-    // start. Answers with the current backend rather than what is ticked, so it
-    // undoes the fiddling too.
+    // dismissing, the storage layer's "no choice made", leaves the revision
+    // alone and the dialog comes back on the next start. Answers with the
+    // current backend rather than what is ticked, so it undoes the fiddling
+    // too.
     _onKeep() {
-        if (!this._answered) {
-            this._answered = true;
-            this._request.reply_migration(this._current, false, false);
-        }
+        this._reply(() => this._request.reply_migration(this._current, false, false));
+    }
+});
 
-        this.close();
+// Whether to go through with what cannot be undone, worded by the request:
+// Cancel is the default, the destructive answer never one a stray Enter gives.
+const ConfirmDialog = GObject.registerClass(
+class GPasteConfirmDialog extends RequestDialog {
+    constructor(request) {
+        super(request);
+
+        this.contentLayout.add_child(new Dialog.MessageDialogContent({
+            title: request.get_title(),
+            description: request.get_description(),
+        }));
+
+        this.addButton({
+            label: GPasteDaemon.prompt_text(GPasteDaemon.PromptText.CANCEL),
+            action: () => this.close(),
+            key: Clutter.KEY_Escape,
+            default: true,
+        });
+        this.addButton({
+            label: request.get_accept_label(),
+            action: () => this._reply(() => request.reply_confirm()),
+        });
     }
 });
 
@@ -461,8 +493,14 @@ export const GPasteShellPrompt = GObject.registerClass({
     // shield's.
     //
     // @create builds the dialog once it can be shown; @abandon answers for one
-    // that never is (shutdown ()).
+    // that never is, asked once the extension is going or still held back by
+    // the lock then (shutdown ()).
     _show(create, abandon) {
+        if (this._shutDown) {
+            abandon();
+            return;
+        }
+
         if (Main.sessionMode.isLocked) {
             this._deferred.push({create, abandon});
             return;
@@ -476,8 +514,11 @@ export const GPasteShellPrompt = GObject.registerClass({
         dialog.connect('destroy', () => this._open.delete(dialog));
 
         // It cannot fail on GNOME Shell 51, the only one metadata.json declares:
-        // ModalDialog.pushModal() takes the grab whatever else holds one, a
-        // dialog opened over another modal stacking on it.
+        // open() answers false only when pushModal() does, and Shell 51's
+        // pushModal() answers true whatever else holds a grab -- a dialog
+        // opened over another modal stacks on it, and no check of the seat's
+        // grab state is there to refuse it -- so no answer is owed for an open
+        // that failed.
         dialog.open();
     }
 
@@ -517,27 +558,20 @@ export const GPasteShellPrompt = GObject.registerClass({
     }
 
     vfunc_passphrase(request) {
-        if (this._shutDown)
-            request.dismiss();
-        else
-            this._show(() => new PassphraseDialog(request), () => request.dismiss());
+        this._show(() => new PassphraseDialog(request), () => request.dismiss());
     }
 
     vfunc_migration(request) {
-        if (this._shutDown)
-            request.dismiss();
-        else
-            this._show(() => new MigrationDialog(request), () => request.dismiss());
+        this._show(() => new MigrationDialog(request), () => request.dismiss());
+    }
+
+    vfunc_confirm(request) {
+        this._show(() => new ConfirmDialog(request), () => request.dismiss());
     }
 
     // There is nothing to dismiss here, so a report never shown ends in the
     // log rather than nowhere: it still has to reach someone.
     vfunc_report(title, message) {
-        const log = () => console.error(`GPaste: ${title}: ${message}`);
-
-        if (this._shutDown)
-            log();
-        else
-            this._show(() => new ReportDialog(title, message), log);
+        this._show(() => new ReportDialog(title, message), () => console.error(`GPaste: ${title}: ${message}`));
     }
 });

@@ -7,8 +7,8 @@
 // rewriting, and how it runs a check of the store for the daemon. Not the
 // daemon itself, which the C suites cover.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const vm = require('node:vm');
+const {loadShipped, runSuite, settle} = require('./suite.cjs');
 
 const errors = [];
 // Every main loop source, by id: what runs it is the test.
@@ -47,8 +47,8 @@ function runSources(kind) {
     }
 }
 
-function settle() {
-    return new Promise(resolve => setImmediate(resolve));
+function countSources(kind) {
+    return [...sources.values()].filter(source => source.kind === kind).length;
 }
 
 // Signals as connectObject () takes them: pairs, then the owner.
@@ -96,7 +96,10 @@ class Daemon extends Connected {
         daemons.push(this);
     }
 
-    expire_password() {}
+    // Before the flush and the dispose, which leaves no clipboards manager to
+    // take a password off the selection through.
+    expire_password() { assert.equal(this.disposed, false); happened.push('expire'); }
+    extension_state_changed(state) { (this.extensionStates ??= []).push(state); }
     flush() { assert.equal(this.disposed, false); ++this.flushes; happened.push('flush'); }
     reload_storage() { ++this.reloads; happened.push('reload'); }
     doctor_done(report, healthy) { this.doctored = [report, healthy]; }
@@ -173,9 +176,7 @@ const context = vm.createContext({
     },
     global: {display: {get_selection: () => ({})}},
 });
-const source = fs.readFileSync(process.argv[2], 'utf8')
-    .replace(/^import [^;]*;\n/gm, '').replace('export class ', 'class ');
-vm.runInContext(`${source}\nthis.Runner = GPasteDaemonRunner;`, context);
+loadShipped(context, {Runner: 'GPasteDaemonRunner'});
 
 const settings = {reload() {}};
 
@@ -189,18 +190,7 @@ async function acquired() {
     return [runner, bus];
 }
 
-// Node exits 0 once nothing is left to run, so an await that never settles
-// would end the suite there, every assertion after it skipped: only reaching
-// the end counts as passing.
-let finished = false;
-process.on('exit', () => {
-    if (!finished) {
-        console.error('Daemon runner: the suite stopped on a promise that never settled');
-        process.exitCode = 1;
-    }
-});
-
-(async () => {
+runSuite('Daemon runner', async () => {
     // Another daemon taking the name over: the one built here is flushed and
     // disposed rather than left to the collector, the bus let go of, the
     // prompt shut down, and the passphrase wiped with the lock.
@@ -208,7 +198,11 @@ process.on('exit', () => {
     let [daemon] = daemons.slice(-1);
 
     assert.equal(bus.objects.length, 2);
+    happened.length = 0;
     bus.emit('name-lost', true);
+    // A password counting down taken off the clipboard first, while the
+    // daemon can still reach it.
+    assert.deepEqual(happened, ['expire', 'flush']);
     assert.equal(daemon.flushes, 1);
     assert.equal(daemon.disposed, true);
     assert.equal(bus.unowned, 1);
@@ -253,6 +247,35 @@ process.on('exit', () => {
     runSources('timeout');
     assert.equal(storage.unlocks, 1);
     assert.deepEqual(storage.passphrases, ['settled', null]);
+
+    // A runner with its daemon built tells it the extension went, which is the
+    // report made.
+    [runner, bus] = await acquired();
+    [daemon] = daemons.slice(-1);
+    assert.equal(runner.reportExtensionGone(), true);
+    assert.deepEqual(daemon.extensionStates, [false]);
+    runner.shutdown();
+
+    // A runner owning the name with no daemon built yet, the store still busy,
+    // answers for the extension's report itself -- nobody else would answer
+    // the call but this process, which exports nothing yet -- and one that
+    // lost the name leaves it to the bus.
+    {
+        storage.busy = true;
+        const settling = new context.Runner(settings);
+        const settlingBus = buses.at(-1);
+
+        assert.equal(settling.reportExtensionGone(), false);
+        settlingBus.emit('name-acquired');
+        await settle();
+        assert.equal(settling._daemon ?? null, null);
+        assert.equal(settling.reportExtensionGone(), true);
+        settlingBus.emit('name-lost', false);
+        assert.equal(settling.reportExtensionGone(), false);
+        settling.shutdown();
+        storage.busy = false;
+        runSources('timeout');
+    }
 
     // A runner acquiring the name meanwhile takes the lock and the passphrase
     // over, and settles only once the store is idle.
@@ -311,7 +334,8 @@ process.on('exit', () => {
     // the prompt shut down and the passphrase wiped with the lock, as for a
     // takeover.
     failDaemon = true;
-    errors.length = 0;
+    // Only the name refused to the settling runner above was logged so far.
+    assert.deepEqual(errors.splice(0), ['GPaste: could not acquire the D-Bus name']);
     storage.passphrases.length = 0;
     [runner, bus] = await acquired();
     failDaemon = false;
@@ -359,6 +383,15 @@ process.on('exit', () => {
     storage.busy = false;
     runSources('timeout');
 
+    // A re-exec asked for and shut down on before its idle runs takes the idle
+    // with it.
+    [runner, bus] = await acquired();
+    [daemon] = daemons.slice(-1);
+    daemon.handlers['reexecute-self']();
+    assert.equal(countSources('idle'), 1);
+    runner.shutdown();
+    assert.equal(countSources('idle'), 0);
+
     // A re-exec the daemon asks for runs once, from an idle, however many times
     // it is asked meanwhile.
     [runner, bus] = await acquired();
@@ -368,7 +401,7 @@ process.on('exit', () => {
     runner._migrateInPlace = () => ++migrations;
     daemon.handlers['reexecute-self']();
     daemon.handlers['reexecute-self']();
-    assert.equal([...sources.values()].filter(s => s.kind === 'idle').length, 1);
+    assert.equal(countSources('idle'), 1);
     runSources('idle');
     await settle();
     assert.equal(migrations, 1);
@@ -382,7 +415,7 @@ process.on('exit', () => {
     happened.length = 0;
     daemon.handlers['doctor']();
     daemon.handlers['doctor']();
-    assert.equal([...sources.values()].filter(s => s.kind === 'idle').length, 1);
+    assert.equal(countSources('idle'), 1);
     runSources('idle');
     for (let i = 0; i < 10 && !daemon.doctored; ++i)
         await settle();
@@ -421,6 +454,5 @@ process.on('exit', () => {
     runner.shutdown();
 
     assert.deepEqual(errors, []);
-    finished = true;
     console.log('Daemon runner: stand-down, reconnect, shutdown and storage hand-over passed');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+});

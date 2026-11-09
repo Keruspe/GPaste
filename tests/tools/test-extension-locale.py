@@ -44,7 +44,33 @@ def shadow(build, scratch):
     return root
 
 
+def link_target(destdir, link):
+    """Where @link, installed under @destdir, leads: an absolute target names a
+    path of the installed system, below @destdir here, and a relative one
+    leads from the directory @link is in."""
+    target = link.readlink()
+    if target.is_absolute():
+        return Path(destdir + str(target))
+    return link.parent / target
+
+
+def check_link_target():
+    """link_target () on both kinds of link, checked before the build's: an
+    installation makes one kind only."""
+    with tempfile.TemporaryDirectory() as scratch:
+        catalogs = Path(scratch) / 'usr/share/locale'
+        catalogs.mkdir(parents=True)
+        extension = Path(scratch) / 'usr/share/gnome-shell/extensions/x'
+        extension.mkdir(parents=True)
+        for name, target in (('absolute', '/usr/share/locale'), ('relative', '../../../locale')):
+            (extension / name).symlink_to(target)
+            check(link_target(scratch, extension / name).resolve() == catalogs.resolve(),
+                  f'a {name} link to {target} is not followed to {catalogs}')
+
+
 def main():
+    check_link_target()
+
     build = Path(sys.argv[1]).resolve()
     meson = sys.argv[2:]
 
@@ -58,8 +84,7 @@ def main():
         locale = extensions[0] / 'locale'
         check(locale.is_symlink(), 'the extension has no locale directory')
 
-        target = Path(destdir + str(locale.readlink()))
-        catalogs = list(target.glob('*/LC_MESSAGES/GPaste.mo'))
+        catalogs = list(link_target(destdir, locale).glob('*/LC_MESSAGES/GPaste.mo'))
         check(catalogs, f'{locale} leads to {locale.readlink()}, which holds no catalog')
 
     return 0

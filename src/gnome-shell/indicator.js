@@ -246,7 +246,7 @@ class GPasteIndicator extends Button {
         // One row of actions for every item row, moved under whichever asked
         // for it rather than one built per row: the list holds as many rows as
         // the menu is scrolled through, and only ever one of them is asked.
-        this._itemActions = new GPasteItemActionsItem();
+        this._itemActions = new GPasteItemActionsItem(this._scrollView);
         this._itemActions.connect('strip-rich-text', (item, uuid) => this._stripRichText(uuid));
         this._itemActions.connect('upload', (item, uuid) => this._upload(uuid));
         this._historySection.addMenuItem(this._itemActions);
@@ -438,6 +438,10 @@ class GPasteIndicator extends Button {
     // rather than waiting for one, since this is the user asking -- and start
     // the client's wait over.
     _retry() {
+        // Neither guard here is one a row alone can reach -- the placeholder goes
+        // with the menu, and shows Loading, insensitive, while _connecting --
+        // which is why no test sees one missing: they keep a stray call
+        // harmless.
         if (this._destroyed)
             return;
 
@@ -570,9 +574,7 @@ class GPasteIndicator extends Button {
         this._history = [];
     }
 
-    // The same row again folds the actions away; another row takes them.
-    // Focused when the keyboard asked, which has nowhere else to reach them
-    // from; a click leaves the focus with the pointer.
+    // As the history switcher's _toggleActions () does its rows'.
     _toggleItemActions(row, uuid, fromKeyboard) {
         if (this._itemActions.visible && this._itemActionsRow === row) {
             this._hideItemActions();
@@ -596,11 +598,10 @@ class GPasteIndicator extends Button {
             this._itemActions.focus();
     }
 
-    // A focused actor that is hidden is one Clutter drops the key focus for,
-    // which would strand a keyboard that has just used one of the buttons: it
-    // goes back to the row the actions were for. _refresh() and _rebuild()
-    // pick a surviving focus target after changing the rows. Reached from
-    // teardown as well, which may come before _setup () has built any of this.
+    // As the history switcher's _hideActions() says: the keyboard goes back to
+    // the row the actions were for. _refresh() and _rebuild() pick a surviving
+    // focus target after changing the rows. Reached from teardown as well,
+    // which may come before _setup () has built any of this.
     _hideItemActions(refocus = true) {
         if (!this._itemActions)
             return;
@@ -921,31 +922,23 @@ class GPasteIndicator extends Button {
             return;
 
         const [cancellable, , keptPlace] = this._beginPass(0, keepPlace);
-        // As typed and as text, as Search in org.gnome.GPaste3.xml asks of a
-        // front end: the daemon matches whatever the case already, and
-        // lowercasing would turn \S into \s.
-        const search = GLib.Regex.escape_string(this._searchItem.text, -1);
         let wanted, items;
 
-        // A daemon that has gone fails the match rather than answering an empty
-        // one, and nothing further down repaints the menu: reconciled here as a
-        // fetch that gave up is, so a filtered list does not go on showing rows
-        // for a history nobody can reach. A search past what the daemon takes
-        // is no such thing: it finds nothing.
+        // As typed, the daemon matching whatever the case. A daemon that has
+        // gone fails the match rather than answering an empty one, and nothing
+        // further down repaints the menu: reconciled here as a fetch that gave
+        // up is, so a filtered list does not go on showing rows for a history
+        // nobody can reach.
         try {
             [wanted, items] = await awaitReply(cancellable, this._hasSearch()
-                ? this._client.search(search, cancellable)
+                ? this._client.search_text(this._searchItem.text, cancellable)
                 : this._client.get_favourites(cancellable));
         } catch (e) {
-            if (e.matches?.(GPaste.Error, GPaste.Error.INVALID_ARGUMENT)) {
-                [wanted, items] = [!cancellable.is_cancelled(), []];
-            } else {
-                // As in _fetchAvailable ().
-                if (!daemonGone(e))
-                    console.error(e);
-                this._passFailed(cancellable);
-                return;
-            }
+            // As in _fetchAvailable ().
+            if (!daemonGone(e))
+                console.error(e);
+            this._passFailed(cancellable);
+            return;
         }
 
         if (!wanted || !this._client)
@@ -1371,7 +1364,10 @@ class GPasteIndicator extends Button {
         this._destroyed = true;
         // And the reads still out go with it: nothing is left to show them, and
         // what awaits them stops at the reply rather than reaching for a menu
-        // that has gone.
+        // that has gone. Both this and the select-search idle below are
+        // doubled -- by _reconcileConnection ()'s _destroyed check, and by the
+        // menu's own close on destroy (_onOpenStateChanged ()) -- which is why
+        // no test sees either missing alone.
         this._listing?.cancel();
         this._cancelConnectRetry();
         this._cancelSelectSearch();
